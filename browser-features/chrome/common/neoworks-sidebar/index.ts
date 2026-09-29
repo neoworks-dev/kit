@@ -17,7 +17,11 @@ import { createTabState } from "./tab-state.ts";
 import { toggleSidebarDocked, watchSidebarDocking } from "./sidebar-docking.ts";
 import { registerCommands } from "../neoworks-commands/registry.ts";
 import { closeWorkspaceMenu } from "./workspace-switcher.tsx";
-import { switchWorkspaceBy, watchWorkspaces } from "./workspaces.ts";
+import {
+  switchWorkspaceBy,
+  switchWorkspaceByNumber,
+  watchWorkspaces,
+} from "./workspaces.ts";
 
 @noraComponent(import.meta.hot)
 export default class NeoworksSidebar extends NoraComponentBase {
@@ -54,6 +58,12 @@ export default class NeoworksSidebar extends NoraComponentBase {
         title: "Previous Workspace",
         listed: true,
         run: () => switchWorkspaceBy(-1),
+      },
+      {
+        id: "workspace:switch",
+        title: "Switch Workspace",
+        listed: false,
+        run: (invocation) => switchWorkspaceByNumber(invocation.letter),
       },
     ]);
 

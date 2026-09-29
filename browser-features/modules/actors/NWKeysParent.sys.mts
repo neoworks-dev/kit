@@ -3,8 +3,8 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import {
+  isBindingLetter,
   isChromeCommand,
-  isQuickmarkLetter,
   isValidKeySequence,
   NW_COMMAND_EVENT,
   NW_KEYS_OPEN_IN_BACKGROUND_MESSAGE,
@@ -30,7 +30,7 @@ function toInvocation(data: KeysMessage["data"]): NWCommandInvocation | null {
     return null;
   }
   const invocation: NWCommandInvocation = { command };
-  if (isQuickmarkLetter(data?.letter)) {
+  if (isBindingLetter(data?.letter)) {
     invocation.letter = data.letter;
   }
   return invocation;

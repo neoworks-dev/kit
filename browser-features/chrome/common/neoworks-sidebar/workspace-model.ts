@@ -31,6 +31,18 @@ export function parseWorkspaces(json: string, fallback: Workspace[]): Workspace[
   return stored;
 }
 
+// Workspaces are numbered from 1 in list order, as in `gw1`.
+export function workspaceAtNumber(
+  workspaces: Workspace[],
+  number: string,
+): Workspace | undefined {
+  const index = Number.parseInt(number, 10) - 1;
+  if (Number.isNaN(index) || index < 0) {
+    return undefined;
+  }
+  return workspaces[index];
+}
+
 // Index `step` places away from `index`, wrapping around both ends.
 export function cycleIndex(index: number, step: number, length: number): number {
   return (((index + step) % length) + length) % length;

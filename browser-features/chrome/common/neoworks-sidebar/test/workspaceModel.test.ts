@@ -7,7 +7,7 @@ import {
   type TestCase,
 } from "../../../test/utils/test_harness.ts";
 import type { Workspace } from "../types.ts";
-import { cycleIndex, parseWorkspaces } from "../workspace-model.ts";
+import { cycleIndex, parseWorkspaces, workspaceAtNumber } from "../workspace-model.ts";
 
 const FALLBACK: Workspace[] = [
   { id: "default", name: "Default", color: "blue", userContextId: 0 },
@@ -43,8 +43,20 @@ function testCycleIndexWraps(): void {
   assertEquals(cycleIndex(1, 1, 3), 2, "next moves forward");
 }
 
+function testWorkspaceAtNumber(): void {
+  const list: Workspace[] = [
+    FALLBACK[0],
+    { id: "work", name: "Work", color: "green", userContextId: 7 },
+  ];
+  assertEquals(workspaceAtNumber(list, "1")?.id, "default", "1 is the first workspace");
+  assertEquals(workspaceAtNumber(list, "2")?.id, "work", "2 is the second workspace");
+  assertEquals(workspaceAtNumber(list, "3"), undefined, "past the end");
+  assertEquals(workspaceAtNumber(list, "0"), undefined, "0 is not a workspace number");
+}
+
 export async function runAllTests(): Promise<void> {
   const tests: TestCase[] = [
+    { name: "workspaceAtNumber counts from 1", fn: testWorkspaceAtNumber },
     { name: "valid list is parsed", fn: testValidListIsParsed },
     { name: "malformed JSON falls back", fn: testMalformedJsonFallsBack },
     { name: "empty list falls back", fn: testEmptyListFallsBack },

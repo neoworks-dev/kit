@@ -8,6 +8,7 @@ import {
   type TestCase,
 } from "../../chrome/test/utils/test_harness.ts";
 import {
+  isBindingLetter,
   isModifierKey,
   keyToken,
   type NWKeyBinding,
@@ -142,6 +143,28 @@ function testQuickmarkLetters(): void {
   assertEquals(harness.ran[0].letter, "a", "letter is passed along");
 }
 
+function testWorkspaceSequences(): void {
+  const harness = new DispatcherHarness();
+  harness.press("g");
+  harness.press("w");
+  assertEquals(harness.ran.length, 0, "gw waits for a third key");
+  assertEquals(harness.pending[harness.pending.length - 1].join(" "), "g w", "gw is pending");
+  harness.press("3");
+  assertEquals(harness.lastCommand(), "workspace:switch", "gw3 switches workspace");
+  assertEquals(harness.ran[0].letter, "3", "workspace number is passed along");
+  harness.press("g");
+  harness.press("w");
+  harness.press("n");
+  assertEquals(harness.lastCommand(), "workspace:next", "gwn goes to the next workspace");
+}
+
+function testBindingLetters(): void {
+  assert(isBindingLetter("a"), "quickmark letters are binding letters");
+  assert(isBindingLetter("9"), "workspace numbers are binding letters");
+  assert(!isBindingLetter("0"), "workspaces are numbered from 1");
+  assert(!isBindingLetter("ab"), "only single keys");
+}
+
 function testUnboundKeysPassThrough(): void {
   const harness = new DispatcherHarness();
   assert(!harness.press("q"), "unbound keys reach the page");
@@ -158,6 +181,8 @@ export async function runAllTests(): Promise<void> {
     { name: "lone Space is handed back", fn: testLoneSpaceIsAbandoned },
     { name: "held keys", fn: testHeldKeys },
     { name: "quickmark bindings carry their letter", fn: testQuickmarkLetters },
+    { name: "workspace sequences under gw", fn: testWorkspaceSequences },
+    { name: "binding letters", fn: testBindingLetters },
     { name: "unbound keys pass through", fn: testUnboundKeysPassThrough },
   ];
   await runTests("NWKeymap.test.ts", tests);

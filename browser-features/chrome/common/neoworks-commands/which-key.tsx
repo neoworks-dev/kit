@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-// Which-key hint: while a key sequence is pending (g, m, '), list the keys
+// Which-key hint: while a key sequence is pending (g, gw, m, '), list the keys
 // that can follow and what they do.
 
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
@@ -10,6 +10,7 @@ import {
   describeKeys,
   type NWCommandId,
 } from "#features-modules/common/NWKeymap.ts";
+import { workspaces } from "../neoworks-sidebar/workspaces.ts";
 import { readQuickmarks } from "./quickmarks.ts";
 import { commandTitle } from "./registry.ts";
 import glassStyle from "../neoworks-ui/glass.css?inline";
@@ -23,6 +24,11 @@ interface WhichKeyEntry {
 // Avoids flashing the panel for sequences typed quickly (gg, gt).
 const SHOW_DELAY_MS = 250;
 const ANY_LETTER = "a–z";
+const MAX_NUMBERED_WORKSPACES = 9;
+// Titles for keys that lead to a further menu, keyed by the typed sequence.
+const PREFIX_TITLES: Record<string, string> = {
+  "g w": "Workspaces…",
+};
 
 const [pendingKeys, setPendingKeys] = createSignal<string[]>([]);
 let showTimer: ReturnType<typeof setTimeout> | undefined;
@@ -35,28 +41,55 @@ function quickmarkJumpEntries(): WhichKeyEntry[] {
   return quickmarks.map((quickmark) => ({ key: quickmark.letter, title: quickmark.title }));
 }
 
+// Numbered like the gw1–gw9 bindings.
+function workspaceSwitchEntries(): WhichKeyEntry[] {
+  return workspaces()
+    .slice(0, MAX_NUMBERED_WORKSPACES)
+    .map((workspace, index) => ({ key: String(index + 1), title: workspace.name }));
+}
+
 function letterEntries(command: NWCommandId): WhichKeyEntry[] {
   if (command === "quickmark:jump") {
     return quickmarkJumpEntries();
   }
+  if (command === "workspace:switch") {
+    return workspaceSwitchEntries();
+  }
   return [{ key: ANY_LETTER, title: commandTitle(command) + " for this page" }];
 }
 
-// Letter bindings (26 quickmark slots) collapse into one entry per command.
+function prefixTitle(prefix: string[]): string {
+  const title = PREFIX_TITLES[describeKeys(prefix)];
+  if (!title) {
+    return "More…";
+  }
+  return title;
+}
+
+// Letter bindings (26 quickmark slots) collapse into one entry per command,
+// and longer sequences (gw1, gwn) into one entry for their next key.
 function whichKeyEntries(typedKeys: string[]): WhichKeyEntry[] {
-  const entries: WhichKeyEntry[] = [];
+  const commandEntries: WhichKeyEntry[] = [];
   const letterCommands = new Set<NWCommandId>();
+  const prefixKeys = new Set<string>();
   for (const binding of bindingsStartingWith(typedKeys)) {
+    const nextKey = binding.keys[typedKeys.length];
+    if (binding.keys.length > typedKeys.length + 1) {
+      prefixKeys.add(nextKey);
+      continue;
+    }
     if (binding.letter) {
       letterCommands.add(binding.command);
       continue;
     }
-    entries.push({ key: binding.keys[typedKeys.length], title: commandTitle(binding.command) });
+    commandEntries.push({ key: nextKey, title: commandTitle(binding.command) });
   }
-  for (const command of letterCommands) {
-    entries.push(...letterEntries(command));
-  }
-  return entries;
+  const letterCommandEntries = Array.from(letterCommands).flatMap(letterEntries);
+  const prefixEntries = Array.from(prefixKeys).map((key) => ({
+    key,
+    title: prefixTitle([...typedKeys, key]),
+  }));
+  return [...letterCommandEntries, ...commandEntries, ...prefixEntries];
 }
 
 // Double Space is a gesture, not a menu.

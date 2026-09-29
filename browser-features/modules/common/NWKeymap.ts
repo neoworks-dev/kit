@@ -41,6 +41,7 @@ export const NW_CHROME_COMMAND_IDS = [
   "window:toggle-transparent",
   "workspace:next",
   "workspace:previous",
+  "workspace:switch",
   "find:open",
   "quickmark:set",
   "quickmark:jump",
@@ -52,6 +53,7 @@ export type NWCommandId = NWPageCommandId | NWChromeCommandId;
 
 export interface NWCommandInvocation {
   command: NWCommandId;
+  // The key that picked the argument: a quickmark letter or a workspace number.
   letter?: string;
 }
 
@@ -70,6 +72,7 @@ export type NWKeyResult =
 const DEFAULT_SEQUENCE_TIMEOUT_MS = 2000;
 const DOUBLE_SPACE_TIMEOUT_MS = 200;
 const QUICKMARK_LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
+const WORKSPACE_NUMBERS = "123456789".split("");
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta", "AltGraph", "OS"]);
 
 // Outside text fields Space only exists for double Space: it never scrolls,
@@ -87,6 +90,14 @@ function quickmarkBindings(
   }));
 }
 
+function workspaceNumberBindings(): NWKeyBinding[] {
+  return WORKSPACE_NUMBERS.map((number) => ({
+    keys: ["g", "w", number],
+    command: "workspace:switch",
+    letter: number,
+  }));
+}
+
 export const NW_KEY_BINDINGS: readonly NWKeyBinding[] = [
   { keys: ["j"], command: "page:scroll-down" },
   { keys: ["k"], command: "page:scroll-up" },
@@ -100,8 +111,9 @@ export const NW_KEY_BINDINGS: readonly NWKeyBinding[] = [
   { keys: ["K"], command: "tab:previous" },
   { keys: ["g", "t"], command: "tab:next" },
   { keys: ["g", "T"], command: "tab:previous" },
-  { keys: ["g", "w"], command: "workspace:next" },
-  { keys: ["g", "W"], command: "workspace:previous" },
+  { keys: ["g", "w", "n"], command: "workspace:next" },
+  { keys: ["g", "w", "p"], command: "workspace:previous" },
+  ...workspaceNumberBindings(),
   { keys: ["t"], command: "tab:new" },
   { keys: ["x"], command: "tab:close" },
   { keys: ["H"], command: "navigation:back" },
@@ -130,6 +142,15 @@ export function isChromeCommand(command: string): command is NWChromeCommandId {
 
 export function isQuickmarkLetter(value: unknown): value is string {
   return typeof value === "string" && /^[a-z]$/.test(value);
+}
+
+export function isWorkspaceNumber(value: unknown): value is string {
+  return typeof value === "string" && WORKSPACE_NUMBERS.includes(value);
+}
+
+// Any argument key a binding can carry.
+export function isBindingLetter(value: unknown): value is string {
+  return isQuickmarkLetter(value) || isWorkspaceNumber(value);
 }
 
 export function isValidKeySequence(value: unknown): value is string[] {

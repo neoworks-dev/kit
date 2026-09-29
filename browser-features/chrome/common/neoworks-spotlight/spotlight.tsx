@@ -6,6 +6,7 @@ import { jumpToQuickmark } from "../neoworks-commands/quickmarks.ts";
 import { runCommand } from "../neoworks-commands/registry.ts";
 import { selectTab } from "../neoworks-sidebar/tab-actions.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
+import { switchWorkspace } from "../neoworks-sidebar/workspaces.ts";
 import { placesResults } from "./places.ts";
 import { isSearchQuery, localResults, navigateResult, openTabUrls } from "./search.ts";
 import { stopSuggestions, suggestionResults } from "./suggestions.ts";
@@ -139,6 +140,8 @@ function runResult(result: SpotlightResult | undefined): void {
       return runCommand({ command: result.command });
     case "quickmark":
       return jumpToQuickmark(result.quickmark);
+    case "workspace":
+      return switchWorkspace(result.workspace.id);
     default:
       return browserWindow.openTrustedLinkIn(result.url, "tab");
   }

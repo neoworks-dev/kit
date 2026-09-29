@@ -15,7 +15,7 @@ import {
 } from "./containers.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type { BrowserTab, Workspace } from "./types.ts";
-import { cycleIndex, parseWorkspaces } from "./workspace-model.ts";
+import { cycleIndex, parseWorkspaces, workspaceAtNumber } from "./workspace-model.ts";
 
 const WORKSPACES_PREF = "neoworks.workspaces";
 const ACTIVE_WORKSPACE_PREF = "neoworks.workspaces.active";
@@ -161,6 +161,16 @@ export function switchWorkspaceBy(step: number): void {
   const index = list.findIndex((workspace) => workspace.id === activeWorkspaceId());
   const next = list[cycleIndex(index, step, list.length)];
   switchWorkspace(next.id);
+}
+
+export function switchWorkspaceByNumber(number: string | undefined): void {
+  if (!number) {
+    return;
+  }
+  const target = workspaceAtNumber(workspaces(), number);
+  if (target) {
+    switchWorkspace(target.id);
+  }
 }
 
 export function createWorkspace(name: string): void {

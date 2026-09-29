@@ -4,6 +4,7 @@ import { bindingsForCommand, describeKeys } from "#features-modules/common/NWKey
 import { readQuickmarks } from "../neoworks-commands/quickmarks.ts";
 import { listedCommands, type NeoworksCommand } from "../neoworks-commands/registry.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
+import { activeWorkspaceId, workspaces } from "../neoworks-sidebar/workspaces.ts";
 import { fuzzyScore, rankByScore } from "./fuzzy.ts";
 import type { SpotlightResult } from "./types.ts";
 
@@ -63,6 +64,35 @@ function quickmarkResults(): SpotlightResult[] {
   }));
 }
 
+// Matches the gw1–gw9 bindings; later workspaces have no shortcut.
+function workspaceShortcut(index: number): string {
+  const number = String(index + 1);
+  const binding = bindingsForCommand("workspace:switch").find((candidate) =>
+    candidate.letter === number
+  );
+  if (!binding) {
+    return "";
+  }
+  return describeKeys(binding.keys);
+}
+
+function workspaceSubtitle(workspaceId: string): string {
+  if (workspaceId === activeWorkspaceId()) {
+    return "Current";
+  }
+  return "";
+}
+
+function workspaceResults(): SpotlightResult[] {
+  return workspaces().map((workspace, index) => ({
+    kind: "workspace",
+    title: workspace.name,
+    subtitle: workspaceSubtitle(workspace.id),
+    workspace,
+    shortcut: workspaceShortcut(index),
+  }));
+}
+
 function commandShortcut(command: NeoworksCommand): string {
   const binding = bindingsForCommand(command.id)[0];
   if (!binding) {
@@ -81,9 +111,15 @@ function commandResults(): SpotlightResult[] {
   }));
 }
 
-// Everything that can be listed without I/O: open tabs, quickmarks, commands.
+// Everything that can be listed without I/O: open tabs, workspaces,
+// quickmarks, commands.
 export function localResults(query: string): SpotlightResult[] {
-  const candidates = [...tabResults(), ...quickmarkResults(), ...commandResults()];
+  const candidates = [
+    ...tabResults(),
+    ...workspaceResults(),
+    ...quickmarkResults(),
+    ...commandResults(),
+  ];
   if (!query) {
     return candidates;
   }
