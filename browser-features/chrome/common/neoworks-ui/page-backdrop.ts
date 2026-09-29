@@ -10,18 +10,18 @@
 // glass.css (.nw-glass-backdrop).
 const BLUR_MARGIN_PX = 96;
 // Top bar color; fills parts of the margin that lie outside the page.
-const OUTSIDE_PAGE_COLOR = "#141416";
+export const OUTSIDE_PAGE_COLOR = "#141416";
 
 interface SnapshotWindowGlobal {
   drawSnapshot(rect: DOMRect, scale: number, backgroundColor: string): Promise<ImageBitmap>;
 }
 
-interface SnapshotBrowser extends Element {
+export interface SnapshotBrowser extends Element {
   fullZoom: number;
   browsingContext: { currentWindowGlobal: SnapshotWindowGlobal | null } | null;
 }
 
-function selectedBrowser(): SnapshotBrowser {
+export function selectedBrowser(): SnapshotBrowser {
   return (gBrowser as unknown as { selectedBrowser: SnapshotBrowser }).selectedBrowser;
 }
 

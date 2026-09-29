@@ -26,10 +26,28 @@
   display: none !important;
 }
 
+/* Glass top bar, layered bottom to top: the toolbox color as fallback, the
+   mirrored page strip from toolbar-backdrop.ts, then the nav-bar's tint. */
 #navigator-toolbox {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
   border-bottom: none !important;
   background: var(--bg) !important;
   color: var(--text) !important;
+}
+
+/* Oversized so the blur has pixels to sample at the bar's edges instead of
+   fading into the fallback color. */
+#neoworks-toolbar-backdrop {
+  position: absolute;
+  top: -48px;
+  left: -48px;
+  z-index: -1;
+  width: calc(100% + 96px);
+  height: calc(100% + 96px);
+  filter: blur(24px) saturate(180%);
+  pointer-events: none;
 }
 
 /* Two ids so this beats Floorp's `:root:not([lwtheme]) #nav-bar` surface
@@ -51,8 +69,12 @@
   min-height: 40px;
   padding-inline: 8px !important;
   border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  /* Same tint and sheen as .nw-glass::before, with a faint rim along the
+     page edge. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02) 40%),
+    rgba(22, 22, 26, 0.68) !important;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
 #nav-bar-customization-target {
@@ -105,14 +127,41 @@
   border-radius: 10px !important;
 }
 
-/* Firefox stripes the URL bar red while Marionette drives the browser, which
-   the dev build always does. Keep the hint but make it legible on dark. */
+/* While Marionette drives the browser (the dev build always), Firefox shows a
+   robot icon and red stripes in the URL bar. Kit shows a breathing blue glow
+   around the page instead. */
+#remote-control-box {
+  display: none !important;
+}
+
 :root[remotecontrol] #urlbar .urlbar-background {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgba(255, 90, 90, 0.1) 0 10px,
-    transparent 10px 20px
-  ) !important;
+  background-image: none !important;
+}
+
+:root[remotecontrol] #tabbrowser-tabbox {
+  position: relative;
+}
+
+/* Breathes through opacity rather than box-shadow so the compositor animates
+   it without repainting. Color is --ctx-blue from @neoworks-dev/ui. */
+:root[remotecontrol] #tabbrowser-tabbox::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  box-shadow: inset 0 0 28px 2px rgba(96, 165, 250, 0.55);
+  pointer-events: none;
+  animation: nw-remote-control-breathe 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes nw-remote-control-breathe {
+  from {
+    opacity: 0.3;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 #urlbar-input {

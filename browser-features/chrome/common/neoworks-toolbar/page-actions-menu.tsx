@@ -136,6 +136,15 @@ function attributeFlag(enabled: boolean): string | undefined {
   return undefined;
 }
 
+// solid-xul writes `false` as disabled="false", which still disables; only
+// undefined removes the attribute.
+function disabledFlag(disabled: boolean): true | undefined {
+  if (disabled) {
+    return true;
+  }
+  return undefined;
+}
+
 function ToolGrid(props: { state: PageState }) {
   return (
     <div class="nw-page-actions-tools">
@@ -145,7 +154,7 @@ function ToolGrid(props: { state: PageState }) {
             type="button"
             class="nw-page-actions-tool"
             title={tool.label}
-            disabled={attributeFlag(!tool.enabled)}
+            disabled={disabledFlag(!tool.enabled)}
             onClick={runAndClose(tool.label, tool.run)}
           >
             <span class="nw-icon" data-icon={tool.icon} />
