@@ -1,10 +1,12 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
+/* Floating: 8px inside the page pane, which is itself inset 8px from the
+   window (neoworks-ui/frame.css). */
 #neoworks-sidebar {
   position: absolute;
   top: 8px;
-  bottom: 8px;
-  left: 8px;
+  bottom: 16px;
+  left: 16px;
   display: flex;
   flex-direction: column;
   width: 248px;
@@ -16,7 +18,7 @@
   font-size: 12px;
   user-select: none;
   pointer-events: auto;
-  transform: translateX(calc(-100% - 16px));
+  transform: translateX(calc(-100% - 24px));
   transition: transform 220ms cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -50,8 +52,53 @@
 #neoworks-sidebar .nw-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 10px 10px 8px;
+}
+
+/* Docked: a full-height panel left of the top bar and the page. The top bar
+   and #browser make room for it: 8px frame + 248px sidebar, and their own
+   8px gap follows. DOM fullscreen (video) gives the page the whole window. */
+:root[nw-sidebar-docked]:not([inDOMFullscreen]) :is(#navigator-toolbox, #browser) {
+  padding-inline-start: 256px !important;
+}
+
+:root[nw-sidebar-docked] #neoworks-sidebar-layer {
+  position: fixed;
+}
+
+:root[nw-sidebar-docked][inDOMFullscreen] #neoworks-sidebar-layer,
+:root[nw-sidebar-docked] #neoworks-sidebar-layer .nw-reveal-edge {
+  display: none;
+}
+
+:root[nw-sidebar-docked] #neoworks-sidebar {
+  top: 8px;
+  bottom: 8px;
+  left: 8px;
+  box-shadow: none;
+  transition: none;
+}
+
+/* Sits on the window glass rather than the page: a lighter card instead of
+   the dark tint that keeps floating glass readable over bright pages. */
+:root[nw-sidebar-docked] #neoworks-sidebar::before {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02) 40%),
+    rgba(255, 255, 255, 0.04);
+}
+
+:root[nw-sidebar-docked] #neoworks-sidebar .nw-glass-backdrop {
+  display: none;
+}
+
+/* The docked header takes the titlebar's place beside the top bar. */
+:root[nw-sidebar-docked][customtitlebar] #neoworks-sidebar .nw-header {
+  -moz-window-dragging: drag;
+}
+
+:root[nw-sidebar-docked][customtitlebar] #neoworks-sidebar .nw-header button {
+  -moz-window-dragging: no-drag;
 }
 
 #neoworks-sidebar .nw-scroll {

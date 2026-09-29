@@ -37,6 +37,7 @@ export const NW_CHROME_COMMAND_IDS = [
   "navigation:forward",
   "spotlight:open",
   "page-actions:open",
+  "sidebar:toggle-docked",
   "find:open",
   "quickmark:set",
   "quickmark:jump",

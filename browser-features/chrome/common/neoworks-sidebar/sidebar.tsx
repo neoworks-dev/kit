@@ -5,6 +5,7 @@ import { createPageBackdrop } from "../neoworks-ui/page-backdrop.ts";
 import { ContainerBar } from "./container-bar.tsx";
 import { namedColor } from "./identity-colors.ts";
 import { PinnedGrid } from "./pinned-grid.tsx";
+import { sidebarDocked, toggleSidebarDocked } from "./sidebar-docking.ts";
 import { openNewTab, toggleGroupCollapsed } from "./tab-actions.ts";
 import {
   handleSidebarEnter,
@@ -77,11 +78,28 @@ function EntryRow(props: { entry: SidebarEntry; tabState: TabState }) {
   );
 }
 
+function isShown(): boolean {
+  return sidebarDocked() || sidebarVisible();
+}
+
 function visibleFlag(): string | undefined {
-  if (sidebarVisible()) {
+  if (isShown()) {
     return "true";
   }
   return undefined;
+}
+
+// Docked, the sidebar sits over the window glass, not the page, so there is
+// no page region to snapshot.
+function needsPageBackdrop(): boolean {
+  return !sidebarDocked() && sidebarVisible();
+}
+
+function dockToggleTitle(): string {
+  if (sidebarDocked()) {
+    return "Float sidebar over page";
+  }
+  return "Dock sidebar";
 }
 
 // The layer spans the content area's left edge: a thin hover strip reveals the
@@ -102,7 +120,7 @@ const SIDEBAR_BACKDROP_ID = "neoworks-sidebar-backdrop";
 function SidebarPanel(props: { tabState: TabState }) {
   const backdrop = createPageBackdrop(SIDEBAR_ID, SIDEBAR_BACKDROP_ID);
   createEffect(() => {
-    if (sidebarVisible()) {
+    if (needsPageBackdrop()) {
       backdrop.start();
       return;
     }
@@ -120,6 +138,14 @@ function SidebarPanel(props: { tabState: TabState }) {
     >
       <canvas id={SIDEBAR_BACKDROP_ID} class="nw-glass-backdrop" />
       <div class="nw-header">
+        <button
+          type="button"
+          class="nw-icon-button"
+          title={dockToggleTitle()}
+          onClick={toggleSidebarDocked}
+        >
+          <span class="nw-icon" data-icon="sidebar-simple" />
+        </button>
         <button type="button" class="nw-icon-button" title="New tab" onClick={openNewTab}>
           <span class="nw-icon" data-icon="plus" />
         </button>
