@@ -13,6 +13,7 @@ import {
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
 import { listenForChromeKeys } from "./chrome-keys.ts";
 import { mountWhichKey } from "./mount.tsx";
+import { redirectNativeShortcuts } from "./native-shortcuts.ts";
 import { PAGE_COMMANDS } from "./page-commands.ts";
 import { QUICKMARK_COMMANDS } from "./quickmarks.ts";
 import { registerCommands, runCommand } from "./registry.ts";
@@ -42,6 +43,7 @@ export default class NeoworksCommands extends NoraComponentBase {
     // A sequence pending in the previous tab can no longer complete.
     tabbrowser().tabContainer.addEventListener("TabSelect", hidePendingKeys);
     const stopChromeKeys = listenForChromeKeys(runCommand);
+    const restoreNativeShortcuts = redirectNativeShortcuts(runCommand);
     if (document.body) {
       mountWhichKey(document.body);
     }
@@ -52,6 +54,7 @@ export default class NeoworksCommands extends NoraComponentBase {
       removeEventListener(NW_KEYS_PENDING_EVENT, handlePendingEvent);
       tabbrowser().tabContainer.removeEventListener("TabSelect", hidePendingKeys);
       stopChromeKeys();
+      restoreNativeShortcuts();
     });
   }
 }

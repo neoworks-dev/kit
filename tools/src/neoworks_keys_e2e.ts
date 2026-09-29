@@ -13,9 +13,10 @@ const WAIT_TIMEOUT_MS = 2000;
 const POLL_INTERVAL_MS = 50;
 const QUICKMARKS_PREF = "neoworks.quickmarks";
 // WebDriver code points for keys without a printable character: Shift is
-// U+E008, Escape is U+E00C (both render invisibly in most editors).
+// U+E008, Control U+E009, Escape U+E00C (all render invisibly in most editors).
 const SHIFT_KEY = "";
 const ESCAPE_KEY = "";
+const CONTROL_KEY = "";
 const LONE_SPACE_SETTLE_MS = 500;
 
 function fixturePage(title: string): string {
@@ -84,6 +85,15 @@ class KeysTestContext {
       { type: "keyDown", value: key },
       { type: "keyUp", value: key },
       { type: "keyUp", value: SHIFT_KEY },
+    ]);
+  }
+
+  pressWithControl(key: string): Promise<void> {
+    return this.performKeyActions([
+      { type: "keyDown", value: CONTROL_KEY },
+      { type: "keyDown", value: key },
+      { type: "keyUp", value: key },
+      { type: "keyUp", value: CONTROL_KEY },
     ]);
   }
 
@@ -419,6 +429,23 @@ async function testChromeFocusKeys(context: KeysTestContext): Promise<void> {
   );
 }
 
+async function testControlTOpensSpotlight(context: KeysTestContext): Promise<void> {
+  await context.focusPage();
+  const tabsBefore = await tabCount(context);
+  // Keys synthesized in content never reach Firefox's reserved shortcuts, so
+  // press Ctrl+T at the chrome window like a real keyboard would.
+  await context.client.setContext("chrome");
+  await context.pressWithControl("t");
+  await context.client.setContext("content");
+  await context.waitFor(
+    () => context.isSpotlightOpen(),
+    "Ctrl+T did not open the spotlight",
+  );
+  await context.closeSpotlight();
+  const tabsAfter = await tabCount(context);
+  assert(tabsAfter === tabsBefore, "Ctrl+T still opened a new tab");
+}
+
 async function testTopBar(context: KeysTestContext): Promise<void> {
   const layout = await context.inChrome<{ hidden: string[]; offCenter: number }>(`
     const visible = (id) => document.getElementById(id)?.getBoundingClientRect().width > 0;
@@ -519,6 +546,7 @@ const TESTS: Array<[string, (context: KeysTestContext) => Promise<void>]> = [
   ["pinned tabs render as a three-column grid", testPinnedGrid],
   ["containers can be created and used for new tabs", testContainers],
   ["double Space opens spotlight", testDoubleSpaceOpensSpotlight],
+  ["Ctrl+T opens spotlight instead of a new tab", testControlTOpensSpotlight],
   ["keys typed into inputs stay text", testDoubleSpaceInInputTypesSpaces],
   ["spotlight lists, filters and runs commands", testSpotlightRunsCommands],
   ["j / G / gg scroll the page", testScrollKeys],
