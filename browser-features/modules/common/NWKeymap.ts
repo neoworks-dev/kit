@@ -36,6 +36,7 @@ export const NW_CHROME_COMMAND_IDS = [
   "navigation:back",
   "navigation:forward",
   "spotlight:open",
+  "page-actions:open",
   "find:open",
   "quickmark:set",
   "quickmark:jump",

@@ -1,0 +1,134 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Transparent full-window layer: a click outside the panel closes it. */
+#neoworks-page-actions {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  display: none;
+  font-family: var(--font-sans);
+  -moz-window-dragging: no-drag;
+}
+
+#neoworks-page-actions[data-open] {
+  display: block;
+}
+
+#neoworks-page-actions .nw-page-actions-panel {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  /* Keep in sync with PANEL_WIDTH_PX in page-actions-menu.tsx. */
+  width: 280px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  color: var(--text);
+}
+
+#neoworks-page-actions button {
+  appearance: none;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+#neoworks-page-actions button:not(:disabled):hover {
+  background: var(--glass-hover);
+}
+
+#neoworks-page-actions button:disabled {
+  opacity: 0.4;
+}
+
+#neoworks-page-actions .nw-page-actions-tools {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 8px;
+}
+
+#neoworks-page-actions .nw-page-actions-tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 4px;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+
+#neoworks-page-actions .nw-page-actions-tool .nw-icon {
+  width: 18px;
+  height: 18px;
+}
+
+#neoworks-page-actions .nw-page-actions-tool-label {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#neoworks-page-actions .nw-page-actions-section {
+  padding: 4px;
+  border-top: 1px solid var(--glass-divider);
+}
+
+#neoworks-page-actions .nw-page-actions-zoom {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-inline-start: 14px;
+}
+
+#neoworks-page-actions .nw-page-actions-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+#neoworks-page-actions .nw-page-actions-zoom-value {
+  min-width: 52px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+#neoworks-page-actions .nw-page-actions-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  color: var(--text-dim);
+  text-align: start;
+}
+
+#neoworks-page-actions .nw-page-actions-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#neoworks-page-actions .nw-page-actions-connection {
+  color: #f87171;
+}
+
+#neoworks-page-actions [data-secure] .nw-page-actions-connection {
+  color: #4ade80;
+}

@@ -136,7 +136,8 @@
 #reload-button > .toolbarbutton-icon,
 #stop-button > .toolbarbutton-icon,
 #unified-extensions-button .toolbarbutton-icon,
-#PanelUI-menu-button .toolbarbutton-icon {
+#PanelUI-menu-button .toolbarbutton-icon,
+#neoworks-page-actions-button > .toolbarbutton-icon {
   width: calc(16px + 2 * var(--toolbarbutton-inner-padding)) !important;
   height: calc(16px + 2 * var(--toolbarbutton-inner-padding)) !important;
   list-style-image: none !important;
@@ -186,6 +187,14 @@
 
 #unified-extensions-button .toolbarbutton-icon {
   mask-image: var(--nw-icon-puzzle-piece);
+}
+
+#neoworks-page-actions-button {
+  margin-inline-start: 4px;
+}
+
+#neoworks-page-actions-button > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-sliders);
 }
 
 #PanelUI-menu-button .toolbarbutton-icon {
