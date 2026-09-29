@@ -105,7 +105,6 @@ function SidebarPanel(props: { tabState: TabState }) {
       onMouseLeave={handleSidebarLeave}
     >
       <div class="nw-header">
-        <span class="nw-title">Neoworks</span>
         <button type="button" class="nw-icon-button" title="New tab" onClick={openNewTab}>
           <span class="nw-icon" data-icon="plus" />
         </button>

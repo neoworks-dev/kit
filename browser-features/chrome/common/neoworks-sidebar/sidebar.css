@@ -50,13 +50,8 @@
 #neoworks-sidebar .nw-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 12px 10px 14px;
-}
-
-#neoworks-sidebar .nw-title {
-  font-weight: 600;
-  color: var(--text-muted);
+  justify-content: flex-end;
+  padding: 10px 10px 8px;
 }
 
 #neoworks-sidebar .nw-scroll {
