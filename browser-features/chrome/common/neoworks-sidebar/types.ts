@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: MPL-2.0
+
+export interface BrowserTabGroup extends XULElement {
+  id: string;
+  label: string;
+  color: string;
+  collapsed: boolean;
+  tabs: BrowserTab[];
+}
+
+export interface BrowserTab extends Omit<XULElement, "linkedBrowser"> {
+  label: string;
+  image: string;
+  pinned: boolean;
+  selected: boolean;
+  muted: boolean;
+  userContextId: number;
+  group: BrowserTabGroup | null;
+  linkedBrowser: { currentURI: { spec: string } };
+  toggleMuteAudio(): void;
+}
+
+export interface NeoworksTabbrowser {
+  tabs: BrowserTab[];
+  nonHiddenTabs: BrowserTab[];
+  selectedTab: BrowserTab;
+  selectedBrowser: { focus(): void };
+  tabContainer: EventTarget;
+  pinTab(tab: BrowserTab): void;
+  unpinTab(tab: BrowserTab): void;
+  removeTab(tab: BrowserTab, options?: { animate?: boolean }): void;
+  reloadTab(tab: BrowserTab): void;
+  duplicateTab(tab: BrowserTab): BrowserTab;
+  moveTabTo(tab: BrowserTab, options: { tabIndex: number }): void;
+  moveTabToExistingGroup(tab: BrowserTab, group: BrowserTabGroup): void;
+  addTabGroup(
+    tabs: BrowserTab[],
+    options: { label: string; insertBefore?: BrowserTab },
+  ): BrowserTabGroup;
+  ungroupTab(tab: BrowserTab): void;
+  replaceTabWithWindow(tab: BrowserTab): void;
+}
+
+export type SidebarEntry =
+  | { kind: "tab"; tab: BrowserTab }
+  | { kind: "group"; group: BrowserTabGroup };
+
+export interface TabState {
+  pinnedTabs: () => BrowserTab[];
+  entries: () => SidebarEntry[];
+  // Bumped on every tab event; read it to re-evaluate tab attributes.
+  revision: () => number;
+  dispose: () => void;
+}

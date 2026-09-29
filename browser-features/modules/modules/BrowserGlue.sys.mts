@@ -520,6 +520,25 @@ const JS_WINDOW_ACTORS: {
     safeForUntrustedWebProcess: true,
     allFrames: true,
   },
+  NWSpotlight: {
+    parent: {
+      esModuleURI: localPathToResourceURI(
+        "../actors/NWSpotlightParent.sys.mts",
+      ),
+    },
+    child: {
+      esModuleURI: localPathToResourceURI(
+        "../actors/NWSpotlightChild.sys.mts",
+      ),
+      events: {
+        keydown: { capture: true },
+      },
+    },
+    matches: ["http://*/*", "https://*/*", "file:///*", "about:*"],
+    remoteTypes: WEB_FILE_AND_ABOUT_REMOTE_TYPES,
+    safeForUntrustedWebProcess: true,
+    allFrames: true,
+  },
   NRMouseGestureScroll: {
     parent: {
       esModuleURI: localPathToResourceURI(

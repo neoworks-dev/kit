@@ -1,0 +1,106 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+#neoworks-spotlight {
+  --bg-elevated: rgba(28, 28, 30, 0.82);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --border-faint: rgba(255, 255, 255, 0.08);
+  --text: #fafafa;
+  --text-dim: #71717a;
+  --text-muted: #a1a1aa;
+
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: none;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 18vh;
+  background: rgba(0, 0, 0, 0.25);
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+}
+
+#neoworks-spotlight[data-open] {
+  display: flex;
+}
+
+#neoworks-spotlight .nw-spotlight-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 80vw);
+  max-height: 60vh;
+  overflow: hidden;
+  border: 1px solid var(--border-faint);
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  color: var(--text);
+}
+
+#neoworks-spotlight .nw-spotlight-input {
+  appearance: none;
+  height: 56px;
+  padding: 0 20px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 22px;
+}
+
+#neoworks-spotlight .nw-spotlight-input::placeholder {
+  color: var(--text-dim);
+}
+
+#neoworks-spotlight .nw-spotlight-results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border-faint);
+}
+
+#neoworks-spotlight .nw-spotlight-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+#neoworks-spotlight .nw-spotlight-result[data-highlighted] {
+  background: var(--surface-hover);
+}
+
+#neoworks-spotlight .nw-spotlight-kind {
+  width: 52px;
+  flex-shrink: 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  text-align: center;
+}
+
+#neoworks-spotlight .nw-spotlight-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#neoworks-spotlight .nw-spotlight-title,
+#neoworks-spotlight .nw-spotlight-subtitle {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#neoworks-spotlight .nw-spotlight-title {
+  font-size: 14px;
+}
+
+#neoworks-spotlight .nw-spotlight-subtitle {
+  color: var(--text-muted);
+  font-size: 12px;
+}
