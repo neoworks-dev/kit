@@ -1,0 +1,30 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Kit window frame. The window is transparent, so the desktop shows through
+   and the compositor (e.g. Hyprland) blurs it; one light tint covers the top
+   bar and the frame. The page is a rounded pane inset 8px from the frame.
+   Web content stays opaque.
+
+   The id beats Firefox's `#main-window { background-color: windowframe
+   !important }`. */
+:root#main-window {
+  background: rgba(22, 22, 26, 0.35) !important;
+}
+
+#navigator-toolbox,
+#browser {
+  background: transparent !important;
+}
+
+/* DOM fullscreen (video) gives the page the whole window. */
+:root:not([inDOMFullscreen]) #tabbrowser-tabbox {
+  margin: 0 8px 8px;
+  border-radius: 12px;
+  overflow: clip;
+}
+
+/* Floorp's web panel strip right of the page; not part of Kit's layout
+   (see #5). */
+#panel-sidebar-select-box {
+  display: none !important;
+}

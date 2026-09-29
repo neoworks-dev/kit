@@ -9,6 +9,7 @@ import { registerCommands } from "../neoworks-commands/registry.ts";
 import { mountPageActionsMenu } from "./mount.tsx";
 import { insertPageActionsButton, pageActionsButton } from "./page-actions-button.ts";
 import { openPageActions, togglePageActions } from "./page-actions-menu.tsx";
+import frameStyle from "../neoworks-ui/frame.css?inline";
 import glassStyle from "../neoworks-ui/glass.css?inline";
 import iconStyle from "../neoworks-ui/icons.css?inline";
 import toolbarStyle from "./toolbar.css?inline";
@@ -26,7 +27,7 @@ export default class NeoworksToolbar extends NoraComponentBase {
   init(): void {
     const style = document.createElement("style");
     style.id = "neoworks-toolbar-style";
-    style.textContent = glassStyle + iconStyle + toolbarStyle;
+    style.textContent = frameStyle + glassStyle + iconStyle + toolbarStyle;
     document.head.append(style);
     onCleanup(() => style.remove());
 
