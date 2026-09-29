@@ -12,6 +12,11 @@ const SPOTLIGHT_INPUT_ID = "neoworks-spotlight-input";
 const WAIT_TIMEOUT_MS = 2000;
 const POLL_INTERVAL_MS = 50;
 const QUICKMARKS_PREF = "neoworks.quickmarks";
+// WebDriver code points for keys without a printable character: Shift is
+// U+E008, Escape is U+E00C (both render invisibly in most editors).
+const SHIFT_KEY = "";
+const ESCAPE_KEY = "";
+const LONE_SPACE_SETTLE_MS = 500;
 
 function fixturePage(title: string): string {
   return `<!doctype html>
@@ -65,11 +70,24 @@ class KeysTestContext {
     readonly testTabHandle: string,
   ) {}
 
-  async pressKeys(keys: string[]): Promise<void> {
-    const actions = keys.flatMap((key) => [
+  pressKeys(keys: string[]): Promise<void> {
+    return this.performKeyActions(keys.flatMap((key) => [
       { type: "keyDown", value: key },
       { type: "keyUp", value: key },
+    ]));
+  }
+
+  // Holds Shift as its own key, like a real keyboard (Shift keydown first).
+  pressShifted(key: string): Promise<void> {
+    return this.performKeyActions([
+      { type: "keyDown", value: SHIFT_KEY },
+      { type: "keyDown", value: key },
+      { type: "keyUp", value: key },
+      { type: "keyUp", value: SHIFT_KEY },
     ]);
+  }
+
+  private async performKeyActions(actions: { type: string; value: string }[]): Promise<void> {
     await this.client.send("WebDriver:PerformActions", {
       actions: [{ type: "key", id: "neoworks-keyboard", actions }],
     });
@@ -137,8 +155,13 @@ class KeysTestContext {
     return this.inChrome<number>("return gBrowser.tabs.indexOf(gBrowser.selectedTab);");
   }
 
-  pageUrl(): Promise<string> {
-    return this.inPage<string>("return location.href;");
+  // Scripts run mid-navigation return null; treat that as "not there yet".
+  async pageUrl(): Promise<string> {
+    const url = await this.inPage<string | null>("return location.href;");
+    if (typeof url !== "string") {
+      return "";
+    }
+    return url;
   }
 }
 
@@ -209,6 +232,14 @@ async function testScrollKeys(context: KeysTestContext): Promise<void> {
   await context.waitFor(async () => (await context.scrollY()) === 0, "gg did not scroll to top");
 }
 
+async function testLoneSpaceDoesNotScroll(context: KeysTestContext): Promise<void> {
+  await context.loadFixture("/lone-space");
+  await context.pressKeys([" "]);
+  await new Promise((resolve) => setTimeout(resolve, LONE_SPACE_SETTLE_MS));
+  assert((await context.scrollY()) === 0, "A single Space scrolled the page");
+  assert(!(await context.isSpotlightOpen()), "A single Space opened the spotlight");
+}
+
 // Marionette keeps sending page keys to the test tab even after it goes to the
 // background, so the second key is pressed with focus in the browser chrome.
 async function testTabSwitchKeys(context: KeysTestContext): Promise<void> {
@@ -229,12 +260,57 @@ async function testTabSwitchKeys(context: KeysTestContext): Promise<void> {
   );
 }
 
+// Real keyboards send a separate Shift keydown between g and T.
+async function testShiftedSequence(context: KeysTestContext): Promise<void> {
+  await context.focusPage();
+  const startIndex = await context.selectedTabIndex();
+  await context.pressKeys(["g"]);
+  await context.pressShifted("T");
+  await context.waitFor(
+    async () => (await context.selectedTabIndex()) !== startIndex,
+    "g Shift+T did not switch to the previous tab",
+  );
+}
+
+async function testWhichKeyOverlay(context: KeysTestContext): Promise<void> {
+  await context.loadFixture("/which-key");
+  const isOverlayOpen = () =>
+    context.inChrome<boolean>(
+      `return document.getElementById("neoworks-which-key")?.hasAttribute("data-open") === true;`,
+    );
+  await context.pressKeys(["g"]);
+  await context.waitFor(isOverlayOpen, "Pending g did not show the which-key overlay");
+  await context.pressKeys([ESCAPE_KEY]);
+  await context.waitFor(async () => !(await isOverlayOpen()), "Escape did not hide which-key");
+
+  await context.pressKeys(["g"]);
+  await context.waitFor(isOverlayOpen, "Second pending g did not show which-key");
+  await context.pressKeys(["g"]);
+  await context.waitFor(
+    async () => !(await isOverlayOpen()),
+    "Completing gg did not hide which-key",
+  );
+}
+
+async function testSidebarPeeksOnTabSwitch(context: KeysTestContext): Promise<void> {
+  await context.focusPage();
+  const isSidebarVisible = () =>
+    context.inChrome<boolean>(
+      `return document.getElementById("neoworks-sidebar")?.hasAttribute("data-visible") === true;`,
+    );
+  await context.pressKeys(["J"]);
+  await context.waitFor(isSidebarVisible, "J did not slide the sidebar in");
+  await context.waitFor(async () => !(await isSidebarVisible()), "Sidebar did not hide again");
+}
+
 async function testQuickmarks(context: KeysTestContext): Promise<void> {
   await context.inChrome(`Services.prefs.clearUserPref(${JSON.stringify(QUICKMARKS_PREF)});`);
   await context.loadFixture("/marked");
   await context.pressKeys(["m", "q"]);
   await context.loadFixture("/elsewhere");
-  await context.pressKeys(["'", "q"]);
+  // German layouts type ' as Shift+#, so a Shift keydown lands inside the
+  // sequence. (WebDriver maps Shift+' to ", so Shift is pressed on its own.)
+  await context.pressKeys(["'", SHIFT_KEY, "q"]);
   await context.waitFor(
     async () => (await context.pageUrl()).endsWith("/marked"),
     "'q did not return to the quickmarked page",
@@ -348,8 +424,12 @@ const TESTS: Array<[string, (context: KeysTestContext) => Promise<void>]> = [
   ["keys typed into inputs stay text", testDoubleSpaceInInputTypesSpaces],
   ["spotlight lists, filters and runs commands", testSpotlightRunsCommands],
   ["j / G / gg scroll the page", testScrollKeys],
+  ["single Space neither scrolls nor opens spotlight", testLoneSpaceDoesNotScroll],
   ["K / J switch tabs", testTabSwitchKeys],
-  ["m<letter> and '<letter> quickmarks", testQuickmarks],
+  ["g Shift+T switches tabs", testShiftedSequence],
+  ["which-key overlay shows pending keys", testWhichKeyOverlay],
+  ["sidebar slides in on J and hides again", testSidebarPeeksOnTabSwitch],
+  ["m<letter> and '<letter> quickmarks (Shift in between)", testQuickmarks],
   ["f link hints follow a link", testLinkHints],
   ["F link hints open a background tab", testBackgroundLinkHints],
   ["t opens and x closes a tab", testNewAndCloseTab],

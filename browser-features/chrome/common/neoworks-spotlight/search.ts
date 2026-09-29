@@ -75,7 +75,7 @@ function commandResults(): SpotlightResult[] {
   return listedCommands().map((command) => ({
     kind: "command",
     title: command.title,
-    subtitle: command.id,
+    subtitle: "",
     command: command.id,
     shortcut: commandShortcut(command),
   }));

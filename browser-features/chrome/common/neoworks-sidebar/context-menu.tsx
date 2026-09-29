@@ -6,6 +6,7 @@ import {
   createGroupFromTab,
   togglePinned,
 } from "./tab-actions.ts";
+import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type { BrowserTab, TabState } from "./types.ts";
 
@@ -61,7 +62,14 @@ function muteLabel(tabState: TabState): string {
 // platform styling for free.
 export function TabContextMenu(props: { tabState: TabState }) {
   return (
-    <xul:menupopup id={MENU_ID} onPopupHiding={() => setMenuTab(null)}>
+    <xul:menupopup
+      id={MENU_ID}
+      onPopupShowing={() => setSidebarMenuOpen(true)}
+      onPopupHiding={() => {
+        setMenuTab(null);
+        setSidebarMenuOpen(false);
+      }}
+    >
       <xul:menuitem
         label="Reload tab"
         onCommand={withMenuTab((tab) => tabbrowser().reloadTab(tab))}

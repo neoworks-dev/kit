@@ -42,3 +42,11 @@ export function runCommand(invocation: NWCommandInvocation): void {
 export function listedCommands(): NeoworksCommand[] {
   return Array.from(commands.values()).filter((command) => command.listed);
 }
+
+export function commandTitle(id: NWCommandId): string {
+  const command = commands.get(id);
+  if (!command) {
+    return id;
+  }
+  return command.title;
+}

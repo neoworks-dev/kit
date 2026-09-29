@@ -18,20 +18,53 @@
   --dur-fast: 120ms;
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
 
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 6px;
   display: flex;
   flex-direction: column;
   width: 240px;
-  flex-shrink: 0;
   box-sizing: border-box;
-  margin: 6px 0 6px 6px;
   overflow: hidden;
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-lg);
   background: var(--bg-elevated);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 12px;
   user-select: none;
+  pointer-events: auto;
+  transform: translateX(calc(-100% - 12px));
+  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+#neoworks-sidebar[data-visible] {
+  transform: none;
+}
+
+/* Overlay host: #browser is the content area left of/below the (hidden) toolbox. */
+#browser {
+  position: relative;
+}
+
+#neoworks-sidebar-layer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+#neoworks-sidebar-layer .nw-reveal-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 8px;
+  pointer-events: auto;
 }
 
 :root[neoworks-hide-toolbox] #navigator-toolbox {

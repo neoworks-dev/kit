@@ -5,8 +5,11 @@
 import {
   isChromeCommand,
   isQuickmarkLetter,
+  isValidKeySequence,
   NW_COMMAND_EVENT,
   NW_KEYS_OPEN_IN_BACKGROUND_MESSAGE,
+  NW_KEYS_PENDING_EVENT,
+  NW_KEYS_PENDING_MESSAGE,
   NW_KEYS_RUN_MESSAGE,
   type NWCommandInvocation,
 } from "../common/NWKeymap.ts";
@@ -18,7 +21,7 @@ interface BrowserWindow extends Window {
 
 interface KeysMessage {
   name: string;
-  data?: { command?: unknown; letter?: unknown; url?: unknown };
+  data?: { command?: unknown; letter?: unknown; url?: unknown; keys?: unknown };
 }
 
 function toInvocation(data: KeysMessage["data"]): NWCommandInvocation | null {
@@ -47,7 +50,20 @@ export class NWKeysParent extends JSWindowActorParent {
     }
     if (message.name === NW_KEYS_OPEN_IN_BACKGROUND_MESSAGE) {
       this.openInBackground(browserWindow, message.data?.url);
+      return;
     }
+    if (message.name === NW_KEYS_PENDING_MESSAGE) {
+      this.dispatchPending(browserWindow, message.data?.keys);
+    }
+  }
+
+  private dispatchPending(browserWindow: BrowserWindow, keys: unknown): void {
+    if (!isValidKeySequence(keys)) {
+      return;
+    }
+    browserWindow.dispatchEvent(
+      new browserWindow.CustomEvent(NW_KEYS_PENDING_EVENT, { detail: { keys } }),
+    );
   }
 
   private selectedTabWindow(): BrowserWindow | null {

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import { SIDEBAR_PEEK_EVENT } from "../neoworks-sidebar/sidebar-visibility.ts";
 import { togglePinned } from "../neoworks-sidebar/tab-actions.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
 import type { NeoworksCommand } from "./registry.ts";
@@ -25,6 +26,12 @@ function openNewTab(): void {
   browser.selectedBrowser.focus();
 }
 
+// The sidebar briefly slides in so the new position in the tab list shows.
+function advanceTab(direction: number): void {
+  tabbrowser().tabContainer.advanceSelectedTab(direction, true);
+  dispatchEvent(new CustomEvent(SIDEBAR_PEEK_EVENT));
+}
+
 function closeCurrentTab(): void {
   const browser = tabbrowser();
   browser.removeTab(browser.selectedTab, { animate: true });
@@ -42,13 +49,13 @@ export const TAB_COMMANDS: NeoworksCommand[] = [
     id: "tab:next",
     title: "Next Tab",
     listed: true,
-    run: () => tabbrowser().tabContainer.advanceSelectedTab(NEXT, true),
+    run: () => advanceTab(NEXT),
   },
   {
     id: "tab:previous",
     title: "Previous Tab",
     listed: true,
-    run: () => tabbrowser().tabContainer.advanceSelectedTab(PREVIOUS, true),
+    run: () => advanceTab(PREVIOUS),
   },
   {
     id: "tab:reload",

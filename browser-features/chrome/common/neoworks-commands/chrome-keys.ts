@@ -5,12 +5,15 @@
 // the actor.
 
 import {
+  isModifierKey,
   keyToken,
+  NW_KEYS_PENDING_EVENT,
   type NWCommandInvocation,
-  NWKeySequenceMatcher,
+  NWKeyDispatcher,
 } from "#features-modules/common/NWKeymap.ts";
 
 const EDITABLE_TAGS = new Set(["input", "textarea", "select"]);
+const SPACE_ACTIVATED_TAGS = new Set(["button", "toolbarbutton", "checkbox", "menuitem"]);
 
 function isEditableElement(element: Element): boolean {
   if (EDITABLE_TAGS.has(element.localName)) {
@@ -28,41 +31,61 @@ function isTypingTarget(event: KeyboardEvent): boolean {
   return false;
 }
 
+function isSpaceActivatedTarget(event: KeyboardEvent): boolean {
+  const target = event.target as Element | null;
+  if (event.key !== " " || !target) {
+    return false;
+  }
+  return SPACE_ACTIVATED_TAGS.has(target.localName);
+}
+
 // Remote <browser> elements forward keys to content, where the actor decides.
 function targetsWebContent(event: KeyboardEvent): boolean {
   const target = event.target as Element | null;
   return target?.localName === "browser";
 }
 
-function shouldIgnore(event: KeyboardEvent): boolean {
-  if (event.key === "Escape") {
+function shouldCancel(event: KeyboardEvent): boolean {
+  if (event.key === "Escape" || targetsWebContent(event)) {
     return true;
   }
-  return isTypingTarget(event) || targetsWebContent(event);
+  return isTypingTarget(event) || isSpaceActivatedTarget(event);
+}
+
+function announcePending(keys: string[]): void {
+  dispatchEvent(new CustomEvent(NW_KEYS_PENDING_EVENT, { detail: { keys } }));
 }
 
 export function listenForChromeKeys(
   onCommand: (invocation: NWCommandInvocation) => void,
 ): () => void {
-  const matcher = new NWKeySequenceMatcher();
+  const dispatcher = new NWKeyDispatcher({
+    runBinding: (binding) => onCommand({ command: binding.command, letter: binding.letter }),
+    pendingChanged: announcePending,
+    prefixAbandoned: () => {},
+    startTimer: (callback, delayMs) => {
+      const timer = setTimeout(callback, delayMs);
+      return () => clearTimeout(timer);
+    },
+  });
 
   function handleKeyDown(event: KeyboardEvent): void {
-    const token = keyToken(event);
-    if (!token || shouldIgnore(event)) {
-      matcher.reset();
+    if (event.isComposing || isModifierKey(event)) {
       return;
     }
-    const decision = matcher.handleKey(token, event.repeat, Date.now());
-    if (!decision.consume) {
+    if (shouldCancel(event)) {
+      dispatcher.cancel();
       return;
     }
-    event.preventDefault();
-    event.stopPropagation();
-    if (decision.binding) {
-      onCommand({ command: decision.binding.command, letter: decision.binding.letter });
+    if (dispatcher.handleKey(keyToken(event), event.repeat)) {
+      event.preventDefault();
+      event.stopPropagation();
     }
   }
 
   addEventListener("keydown", handleKeyDown, true);
-  return () => removeEventListener("keydown", handleKeyDown, true);
+  return () => {
+    removeEventListener("keydown", handleKeyDown, true);
+    dispatcher.cancel();
+  };
 }

@@ -6,6 +6,11 @@ import {
   NoraComponentBase,
 } from "#features-chrome/utils/base.ts";
 import { mountSidebar, mountTabContextMenu } from "./mount.tsx";
+import {
+  disposeSidebarVisibility,
+  peekSidebar,
+  SIDEBAR_PEEK_EVENT,
+} from "./sidebar-visibility.ts";
 import { createTabState } from "./tab-state.ts";
 import { applyToolboxVisibility, restoreToolbox } from "./toolbox-visibility.ts";
 
@@ -23,8 +28,11 @@ export default class NeoworksSidebar extends NoraComponentBase {
     mountSidebar(browserBox, tabState);
     mountTabContextMenu(popupSet, tabState);
     applyToolboxVisibility();
+    addEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
 
     onCleanup(() => {
+      removeEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
+      disposeSidebarVisibility();
       tabState.dispose();
       restoreToolbox();
     });

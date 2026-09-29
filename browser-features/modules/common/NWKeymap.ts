@@ -6,9 +6,11 @@
 export const NW_KEYS_RUN_MESSAGE = "NWKeys:Run";
 export const NW_KEYS_RUN_IN_PAGE_MESSAGE = "NWKeys:RunInPage";
 export const NW_KEYS_OPEN_IN_BACKGROUND_MESSAGE = "NWKeys:OpenInBackground";
+export const NW_KEYS_PENDING_MESSAGE = "NWKeys:Pending";
 
-// Window event the chrome command feature listens for.
+// Window events the chrome features listen for.
 export const NW_COMMAND_EVENT = "NeoworksCommand";
+export const NW_KEYS_PENDING_EVENT = "NeoworksKeysPending";
 
 // Commands that act on the page itself; they run inside the content process.
 export const NW_PAGE_COMMAND_IDS = [
@@ -57,18 +59,17 @@ export interface NWKeyBinding {
 
 export type NWKeyResult =
   | { kind: "none" }
-  | { kind: "pending"; consume: boolean }
+  | { kind: "pending" }
   | { kind: "match"; binding: NWKeyBinding };
 
-export interface NWKeyDecision {
-  consume: boolean;
-  binding: NWKeyBinding | null;
-}
-
-const DEFAULT_SEQUENCE_TIMEOUT_MS = 800;
-const DOUBLE_SPACE_TIMEOUT_MS = 400;
+const DEFAULT_SEQUENCE_TIMEOUT_MS = 2000;
+const DOUBLE_SPACE_TIMEOUT_MS = 200;
 const QUICKMARK_LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta", "AltGraph", "OS"]);
+
+// Outside text fields Space only exists for double Space: it never scrolls,
+// not even when held.
+const ALWAYS_CONSUMED_KEYS = new Set(["Space"]);
 
 function quickmarkBindings(
   prefix: string,
@@ -124,6 +125,13 @@ export function isQuickmarkLetter(value: unknown): value is string {
   return typeof value === "string" && /^[a-z]$/.test(value);
 }
 
+export function isValidKeySequence(value: unknown): value is string[] {
+  if (!Array.isArray(value) || value.length > 4) {
+    return false;
+  }
+  return value.every((key) => typeof key === "string" && key.length <= 16);
+}
+
 function modifierPrefix(event: KeyboardEvent, namedKey: boolean): string {
   let prefix = "";
   if (event.ctrlKey) {
@@ -142,12 +150,12 @@ function modifierPrefix(event: KeyboardEvent, namedKey: boolean): string {
   return prefix;
 }
 
+export function isModifierKey(event: KeyboardEvent): boolean {
+  return MODIFIER_KEYS.has(event.key);
+}
+
 // Normalized key name used in bindings, e.g. "j", "G", "Space", "C-d".
-// Returns null for keys that can never start or continue a binding.
-export function keyToken(event: KeyboardEvent): string | null {
-  if (event.isComposing || MODIFIER_KEYS.has(event.key)) {
-    return null;
-  }
+export function keyToken(event: KeyboardEvent): string {
   let key = event.key;
   if (key === " ") {
     key = "Space";
@@ -178,63 +186,157 @@ export function bindingsForCommand(command: NWCommandId): NWKeyBinding[] {
   return NW_KEY_BINDINGS.filter((binding) => binding.command === command);
 }
 
+// Bindings that could still complete after `typedKeys`.
+export function bindingsStartingWith(typedKeys: string[]): NWKeyBinding[] {
+  return NW_KEY_BINDINGS.filter((binding) =>
+    binding.keys.length > typedKeys.length && startsWithSequence(binding.keys, typedKeys)
+  );
+}
+
+// Pure sequence state: which keys are typed so far and what they complete.
 export class NWKeySequenceMatcher {
-  private typedKeys: string[] = [];
-  private lastKeyTime = 0;
+  private typed: string[] = [];
 
   constructor(private readonly bindings: readonly NWKeyBinding[] = NW_KEY_BINDINGS) {}
 
+  get typedKeys(): string[] {
+    return [...this.typed];
+  }
+
+  isPending(): boolean {
+    return this.typed.length > 0;
+  }
+
   reset(): void {
-    this.typedKeys = [];
+    this.typed = [];
   }
 
-  // Event-level wrapper around `handle`: whether to swallow the key and which
-  // binding (if any) completed.
-  handleKey(token: string, repeat: boolean, now: number): NWKeyDecision {
-    // Held keys may repeat single-key motions but never complete a sequence.
-    if (repeat) {
-      this.reset();
-    }
-    const result = this.handle(token, now);
-    if (result.kind === "match") {
-      return { consume: true, binding: result.binding };
-    }
-    if (result.kind === "pending") {
-      return { consume: result.consume, binding: null };
-    }
-    return { consume: false, binding: null };
+  continues(token: string): boolean {
+    return this.candidates([...this.typed, token]).length > 0;
   }
 
-  handle(token: string, now: number): NWKeyResult {
-    const elapsedMs = now - this.lastKeyTime;
-    this.lastKeyTime = now;
-    if (this.typedKeys.length > 0) {
-      const continued = this.resolve([...this.typedKeys, token], elapsedMs);
+  pendingTimeoutMs(): number {
+    const timeouts = this.candidates(this.typed).map(bindingTimeout);
+    return Math.min(DEFAULT_SEQUENCE_TIMEOUT_MS, ...timeouts);
+  }
+
+  handle(token: string): NWKeyResult {
+    if (this.typed.length > 0) {
+      const continued = this.resolve([...this.typed, token]);
       if (continued.kind !== "none") {
         return continued;
       }
     }
-    return this.resolve([token], 0);
+    return this.resolve([token]);
   }
 
-  private resolve(sequence: string[], elapsedMs: number): NWKeyResult {
-    const candidates = this.bindings.filter((binding) =>
-      startsWithSequence(binding.keys, sequence) &&
-      elapsedMs <= bindingTimeout(binding)
-    );
+  private candidates(sequence: string[]): NWKeyBinding[] {
+    return this.bindings.filter((binding) => startsWithSequence(binding.keys, sequence));
+  }
+
+  private resolve(sequence: string[]): NWKeyResult {
+    const candidates = this.candidates(sequence);
     if (candidates.length === 0) {
-      this.typedKeys = [];
+      this.typed = [];
       return { kind: "none" };
     }
     const exactMatch = candidates.find((binding) => binding.keys.length === sequence.length);
     if (exactMatch) {
-      this.typedKeys = [];
+      this.typed = [];
       return { kind: "match", binding: exactMatch };
     }
-    this.typedKeys = sequence;
-    // A lone Space keeps its native meaning (scroll, activate) so double
-    // Space doesn't delay single-Space scrolling.
-    const lastKey = sequence[sequence.length - 1];
-    return { kind: "pending", consume: lastKey !== "Space" };
+    this.typed = sequence;
+    return { kind: "pending" };
+  }
+}
+
+export interface NWKeyDispatcherHost {
+  runBinding(binding: NWKeyBinding): void;
+  // Called with [] when no sequence is pending anymore.
+  pendingChanged(typedKeys: string[]): void;
+  // A pending prefix was dropped (timeout or a non-continuing key).
+  prefixAbandoned(typedKeys: string[]): void;
+  // Returns a function that cancels the timer.
+  startTimer(callback: () => void, delayMs: number): () => void;
+}
+
+// Event-level driver around the matcher: consumption, key repeat, pending
+// timeouts and notifications. Returns whether the key event must be swallowed.
+export class NWKeyDispatcher {
+  private readonly matcher = new NWKeySequenceMatcher();
+  private cancelExpiry: (() => void) | null = null;
+
+  constructor(private readonly host: NWKeyDispatcherHost) {}
+
+  handleKey(token: string, repeat: boolean): boolean {
+    this.stopExpiryTimer();
+    if (repeat) {
+      return this.handleRepeat(token);
+    }
+    this.abandonIfNotContinued(token);
+    const wasPending = this.matcher.isPending();
+    const result = this.matcher.handle(token);
+    if (result.kind === "match") {
+      if (wasPending) {
+        this.host.pendingChanged([]);
+      }
+      this.host.runBinding(result.binding);
+      return true;
+    }
+    if (result.kind === "pending") {
+      this.host.pendingChanged(this.matcher.typedKeys);
+      this.startExpiryTimer();
+      return true;
+    }
+    return ALWAYS_CONSUMED_KEYS.has(token);
+  }
+
+  // Escape and focus changes drop a pending sequence without side effects.
+  cancel(): void {
+    this.stopExpiryTimer();
+    if (!this.matcher.isPending()) {
+      return;
+    }
+    this.matcher.reset();
+    this.host.pendingChanged([]);
+  }
+
+  // Held keys repeat single-key motions but never start or finish a sequence.
+  private handleRepeat(token: string): boolean {
+    this.cancel();
+    const result = this.matcher.handle(token);
+    if (result.kind === "match") {
+      this.host.runBinding(result.binding);
+      return true;
+    }
+    this.matcher.reset();
+    return ALWAYS_CONSUMED_KEYS.has(token);
+  }
+
+  private abandonIfNotContinued(token: string): void {
+    if (!this.matcher.isPending() || this.matcher.continues(token)) {
+      return;
+    }
+    const abandoned = this.matcher.typedKeys;
+    this.matcher.reset();
+    this.host.pendingChanged([]);
+    this.host.prefixAbandoned(abandoned);
+  }
+
+  private startExpiryTimer(): void {
+    this.cancelExpiry = this.host.startTimer(() => {
+      this.cancelExpiry = null;
+      const abandoned = this.matcher.typedKeys;
+      this.matcher.reset();
+      this.host.pendingChanged([]);
+      this.host.prefixAbandoned(abandoned);
+    }, this.matcher.pendingTimeoutMs());
+  }
+
+  private stopExpiryTimer(): void {
+    if (this.cancelExpiry) {
+      this.cancelExpiry();
+      this.cancelExpiry = null;
+    }
   }
 }

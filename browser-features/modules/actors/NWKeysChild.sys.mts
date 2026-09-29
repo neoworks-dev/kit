@@ -6,17 +6,27 @@ import { isKeyboardShortcutEditableFocusEvent } from "./NRKeyboardShortcutFocusC
 import { findScrollableElement } from "./NRMouseGestureScrollUtils.ts";
 import { NWLinkHintSession } from "./NWLinkHints.ts";
 import {
+  isModifierKey,
   isPageCommand,
   keyToken,
   NW_KEYS_OPEN_IN_BACKGROUND_MESSAGE,
+  NW_KEYS_PENDING_MESSAGE,
   NW_KEYS_RUN_IN_PAGE_MESSAGE,
   NW_KEYS_RUN_MESSAGE,
   type NWKeyBinding,
-  NWKeySequenceMatcher,
+  NWKeyDispatcher,
   type NWPageCommandId,
 } from "../common/NWKeymap.ts";
 
+const { setTimeout, clearTimeout } = ChromeUtils.importESModule(
+  "resource://gre/modules/Timer.sys.mjs",
+);
+
 const SCROLL_STEP_PX = 64;
+
+// Focused controls where Space means "activate", not a shortcut.
+const SPACE_ACTIVATED_SELECTOR =
+  "button, a[href], summary, video, audio, [role=button], [role=link], [role=checkbox], [role=tab], [role=menuitem], [role=switch]";
 
 function scrollPageBy(win: Window, top: number): void {
   findScrollableElement(win, false)?.scrollBy({ top });
@@ -38,13 +48,30 @@ function isKeyDown(event: Event): event is KeyboardEvent {
   return event.type === "keydown";
 }
 
+function isSpaceActivatedFocus(document: Document): boolean {
+  return document.activeElement?.closest(SPACE_ACTIVATED_SELECTOR) != null;
+}
+
 // Actor listeners sit on the frame's chrome event handler, above the page's
 // window, so this capture listener sees keys before any page script.
 export class NWKeysChild extends JSWindowActorChild {
-  private readonly matcher = new NWKeySequenceMatcher();
+  private readonly dispatcher = new NWKeyDispatcher({
+    runBinding: (binding) => this.runBinding(binding),
+    pendingChanged: (keys) => this.sendAsyncMessage(NW_KEYS_PENDING_MESSAGE, { keys }),
+    prefixAbandoned: (keys) => this.replayAbandonedSpace(keys),
+    startTimer: (callback, delayMs) => {
+      const timer = setTimeout(callback, delayMs);
+      return () => clearTimeout(timer);
+    },
+  });
   private hintSession: NWLinkHintSession | null = null;
+  private spaceTarget: EventTarget | null = null;
 
   handleEvent(event: Event): void {
+    // Our own replayed Space must reach the page untouched.
+    if (!event.isTrusted) {
+      return;
+    }
     if (event.type === "pagehide") {
       this.resetModes();
       return;
@@ -76,24 +103,48 @@ export class NWKeysChild extends JSWindowActorChild {
 
   private handleKeyDown(event: KeyboardEvent): void {
     const document = this.contentWindow?.document;
+    if (!document || event.isComposing || isModifierKey(event)) {
+      return;
+    }
+    if (event.key === "Escape" || this.isTypingContext(event, document)) {
+      this.dispatcher.cancel();
+      return;
+    }
     const token = keyToken(event);
-    if (!document || !token || event.key === "Escape") {
-      this.matcher.reset();
-      return;
+    if (token === "Space") {
+      this.spaceTarget = event.target;
     }
+    if (this.dispatcher.handleKey(token, event.repeat)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }
+
+  private isTypingContext(event: KeyboardEvent, document: Document): boolean {
     if (isKeyboardShortcutEditableFocusEvent(event, document)) {
-      this.matcher.reset();
+      return true;
+    }
+    return event.key === " " && isSpaceActivatedFocus(document);
+  }
+
+  // A lone Space goes back to the page as an untrusted event: page shortcuts
+  // (e.g. video play/pause) still work, but the browser never scrolls.
+  private replayAbandonedSpace(keys: string[]): void {
+    const target = this.spaceTarget;
+    const win = this.contentWindow;
+    this.spaceTarget = null;
+    if (keys.join(" ") !== "Space" || !target || !win) {
       return;
     }
-    const decision = this.matcher.handleKey(token, event.repeat, Date.now());
-    if (!decision.consume) {
-      return;
-    }
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    if (decision.binding) {
-      this.runBinding(decision.binding);
-    }
+    target.dispatchEvent(
+      new win.KeyboardEvent("keydown", {
+        key: " ",
+        code: "Space",
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+      }),
+    );
   }
 
   private runBinding(binding: NWKeyBinding): void {
@@ -149,7 +200,7 @@ export class NWKeysChild extends JSWindowActorChild {
   }
 
   private resetModes(): void {
-    this.matcher.reset();
+    this.dispatcher.cancel();
     this.hintSession?.destroy();
   }
 }

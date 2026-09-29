@@ -8,18 +8,10 @@ import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
 import { placesResults } from "./places.ts";
 import { isSearchQuery, localResults, navigateResult, openTabUrls } from "./search.ts";
 import { stopSuggestions, suggestionResults } from "./suggestions.ts";
-import type { SpotlightResult, SpotlightResultKind } from "./types.ts";
+import { ResultRow, sectionTitle, startsSection } from "./result-row.tsx";
+import type { SpotlightResult } from "./types.ts";
+import iconStyle from "./icons.css?inline";
 import spotlightStyle from "./spotlight.css?inline";
-
-const KIND_LABELS: Record<SpotlightResultKind, string> = {
-  navigate: "↵",
-  suggestion: "Search",
-  tab: "Tab",
-  quickmark: "Mark",
-  command: "Command",
-  bookmark: "★",
-  history: "History",
-};
 
 const browserWindow = window as unknown as {
   openTrustedLinkIn(url: string, where: string): void;
@@ -199,33 +191,19 @@ function attributeFlag(enabled: boolean): string | undefined {
   return undefined;
 }
 
-function shortcutOf(result: SpotlightResult): string {
-  if (result.kind === "command") {
-    return result.shortcut;
-  }
-  return "";
-}
-
-function ResultRow(props: { result: SpotlightResult; index: number }) {
+function ResultListItem(props: { result: SpotlightResult; index: number }) {
   return (
-    <div
-      class="nw-spotlight-result"
-      data-highlighted={attributeFlag(props.index === highlightIndex())}
-      onMouseMove={() => setHighlightIndex(props.index)}
-      onMouseDown={(event: MouseEvent) => {
-        event.preventDefault();
-        runResult(props.result);
-      }}
-    >
-      <span class="nw-spotlight-kind">{KIND_LABELS[props.result.kind]}</span>
-      <span class="nw-spotlight-text">
-        <span class="nw-spotlight-title">{props.result.title}</span>
-        <span class="nw-spotlight-subtitle">{props.result.subtitle}</span>
-      </span>
-      <Show when={shortcutOf(props.result)}>
-        <kbd class="nw-spotlight-shortcut">{shortcutOf(props.result)}</kbd>
+    <>
+      <Show when={startsSection(results(), props.index)}>
+        <div class="nw-spotlight-section">{sectionTitle(props.result)}</div>
       </Show>
-    </div>
+      <ResultRow
+        result={props.result}
+        highlighted={props.index === highlightIndex()}
+        onHover={() => setHighlightIndex(props.index)}
+        onRun={() => runResult(props.result)}
+      />
+    </>
   );
 }
 
@@ -240,21 +218,25 @@ export function Spotlight() {
         }
       }}
     >
-      <style>{spotlightStyle}</style>
+      <style>{spotlightStyle + iconStyle}</style>
       <div class="nw-spotlight-panel">
-        <input
-          id={INPUT_ID}
-          class="nw-spotlight-input"
-          placeholder="Search, enter address, or run a command"
-          onInput={(event: InputEvent) =>
-            updateResults((event.currentTarget as HTMLInputElement).value)}
-          onKeyDown={handleKeyDown}
-          onBlur={closeSpotlight}
-        />
+        <div class="nw-spotlight-search">
+          <span class="nw-icon" data-icon="magnifying-glass" />
+          <input
+            id={INPUT_ID}
+            class="nw-spotlight-input"
+            placeholder="Search tabs, enter address, or run a command"
+            spellcheck={false}
+            onInput={(event: InputEvent) =>
+              updateResults((event.currentTarget as HTMLInputElement).value)}
+            onKeyDown={handleKeyDown}
+            onBlur={closeSpotlight}
+          />
+        </div>
         <Show when={results().length > 0}>
           <div id={RESULTS_ID} class="nw-spotlight-results">
             <For each={results()}>
-              {(result, index) => <ResultRow result={result} index={index()} />}
+              {(result, index) => <ResultListItem result={result} index={index()} />}
             </For>
           </div>
         </Show>
