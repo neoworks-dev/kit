@@ -42,7 +42,7 @@ function PinnedTile(props: { tab: BrowserTab; tabState: TabState }) {
   );
 }
 
-// Pinned tabs as a three-column grid of favicon tiles above the tab list.
+// Pinned tabs as a wrapping row of favicon tiles above the tab list.
 export function PinnedGrid(props: { tabState: TabState }) {
   return (
     <Show when={props.tabState.pinnedTabs().length > 0}>
