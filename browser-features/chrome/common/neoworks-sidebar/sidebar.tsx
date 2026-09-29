@@ -13,6 +13,7 @@ import {
   sidebarVisible,
 } from "./sidebar-visibility.ts";
 import { tabReader, TabRow } from "./tab-row.tsx";
+import { WorkspaceSwitcher } from "./workspace-switcher.tsx";
 import type {
   BrowserTab,
   BrowserTabGroup,
@@ -158,7 +159,10 @@ function SidebarPanel(props: { tabState: TabState }) {
         </For>
       </div>
 
-      <ContainerBar />
+      <div class="nw-sidebar-footer">
+        <WorkspaceSwitcher />
+        <ContainerBar />
+      </div>
     </div>
   );
 }

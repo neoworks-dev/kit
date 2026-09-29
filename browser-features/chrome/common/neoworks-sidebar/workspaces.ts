@@ -1,0 +1,324 @@
+// SPDX-License-Identifier: MPL-2.0
+
+// Kit workspaces: named sets of tabs, each with a dedicated container that new
+// tabs open in. A tab belongs to the workspace it was opened in, whatever
+// container it uses; the membership is stored on the tab through SessionStore
+// so it survives restarts. Only the active workspace's tabs are shown. Pinned
+// tabs are shared across workspaces for now (#11).
+
+import { createSignal } from "solid-js";
+import {
+  CONTAINER_COLORS,
+  ContextualIdentityService,
+  NO_CONTAINER,
+  setDefaultContainerId,
+} from "./containers.ts";
+import { tabbrowser } from "./tabbrowser.ts";
+import type { BrowserTab, Workspace } from "./types.ts";
+import { cycleIndex, parseWorkspaces } from "./workspace-model.ts";
+
+const WORKSPACES_PREF = "neoworks.workspaces";
+const ACTIVE_WORKSPACE_PREF = "neoworks.workspaces.active";
+const TAB_WORKSPACE_KEY = "neoworksWorkspaceId";
+const WORKSPACE_CONTAINER_ICON = "briefcase";
+// Floorp's own workspaces also hide tabs; Kit's replace them.
+const FLOORP_WORKSPACES_PREF = "floorp.workspaces.enabled";
+
+// Used until the first workspace is created; keeps tabs without a container.
+const DEFAULT_WORKSPACE: Workspace = {
+  id: "default",
+  name: "Default",
+  color: "blue",
+  userContextId: NO_CONTAINER,
+};
+
+interface SessionStoreApi {
+  getCustomTabValue(tab: BrowserTab, key: string): string;
+  setCustomTabValue(tab: BrowserTab, key: string, value: string): void;
+}
+
+const browserWindow = window as unknown as {
+  SessionStore: SessionStoreApi;
+  BROWSER_NEW_TAB_URL: string;
+};
+
+function readWorkspaces(): Workspace[] {
+  return parseWorkspaces(Services.prefs.getStringPref(WORKSPACES_PREF, "[]"), [
+    DEFAULT_WORKSPACE,
+  ]);
+}
+
+const [workspaces, setWorkspaces] = createSignal<Workspace[]>(readWorkspaces());
+
+export function workspaceById(id: string): Workspace | undefined {
+  return workspaces().find((workspace) => workspace.id === id);
+}
+
+function readActiveWorkspaceId(): string {
+  const id = Services.prefs.getStringPref(ACTIVE_WORKSPACE_PREF, "");
+  if (workspaceById(id)) {
+    return id;
+  }
+  return workspaces()[0].id;
+}
+
+const [activeWorkspaceId, setActiveWorkspaceId] = createSignal(readActiveWorkspaceId());
+
+export { activeWorkspaceId, workspaces };
+
+export function activeWorkspace(): Workspace {
+  const workspace = workspaceById(activeWorkspaceId());
+  if (workspace) {
+    return workspace;
+  }
+  return workspaces()[0];
+}
+
+function saveWorkspaces(next: Workspace[]): void {
+  setWorkspaces(next);
+  Services.prefs.setStringPref(WORKSPACES_PREF, JSON.stringify(next));
+}
+
+// Tabs without a known workspace (opened before workspaces existed, or whose
+// workspace was deleted) count as part of the active one.
+function workspaceIdOf(tab: BrowserTab): string {
+  const stored = browserWindow.SessionStore.getCustomTabValue(tab, TAB_WORKSPACE_KEY);
+  if (stored && workspaceById(stored)) {
+    return stored;
+  }
+  return activeWorkspaceId();
+}
+
+function assignTab(tab: BrowserTab, workspaceId: string): void {
+  browserWindow.SessionStore.setCustomTabValue(tab, TAB_WORKSPACE_KEY, workspaceId);
+}
+
+function workspaceTabs(workspaceId: string): BrowserTab[] {
+  return tabbrowser().tabs.filter(
+    (tab) => !tab.pinned && workspaceIdOf(tab) === workspaceId,
+  );
+}
+
+function applyVisibility(): void {
+  const browser = tabbrowser();
+  for (const tab of browser.tabs) {
+    if (tab.pinned) {
+      continue;
+    }
+    if (workspaceIdOf(tab) === activeWorkspaceId()) {
+      browser.showTab(tab);
+      continue;
+    }
+    browser.hideTab(tab);
+  }
+}
+
+function openTabIn(workspace: Workspace): BrowserTab {
+  const tab = tabbrowser().addTrustedTab(browserWindow.BROWSER_NEW_TAB_URL, {
+    userContextId: workspace.userContextId,
+  });
+  assignTab(tab, workspace.id);
+  return tab;
+}
+
+// Switching back returns to the tab that was selected when the workspace was
+// left.
+const lastSelectedTabs = new Map<string, BrowserTab>();
+
+function tabToSelectIn(workspace: Workspace): BrowserTab {
+  const remembered = lastSelectedTabs.get(workspace.id);
+  if (remembered && remembered.isConnected && workspaceIdOf(remembered) === workspace.id) {
+    return remembered;
+  }
+  const tabs = workspaceTabs(workspace.id);
+  if (tabs.length > 0) {
+    return tabs[0];
+  }
+  return openTabIn(workspace);
+}
+
+function activate(workspace: Workspace): void {
+  setActiveWorkspaceId(workspace.id);
+  Services.prefs.setStringPref(ACTIVE_WORKSPACE_PREF, workspace.id);
+  setDefaultContainerId(workspace.userContextId);
+}
+
+export function switchWorkspace(workspaceId: string): void {
+  const target = workspaceById(workspaceId);
+  if (!target || workspaceId === activeWorkspaceId()) {
+    return;
+  }
+  const browser = tabbrowser();
+  lastSelectedTabs.set(activeWorkspaceId(), browser.selectedTab);
+  activate(target);
+  // Select first: hideTab skips the selected tab.
+  browser.selectedTab = tabToSelectIn(target);
+  applyVisibility();
+}
+
+export function switchWorkspaceBy(step: number): void {
+  const list = workspaces();
+  const index = list.findIndex((workspace) => workspace.id === activeWorkspaceId());
+  const next = list[cycleIndex(index, step, list.length)];
+  switchWorkspace(next.id);
+}
+
+export function createWorkspace(name: string): void {
+  const color = CONTAINER_COLORS[workspaces().length % CONTAINER_COLORS.length];
+  const identity = ContextualIdentityService.create(name, WORKSPACE_CONTAINER_ICON, color);
+  const workspace: Workspace = {
+    id: crypto.randomUUID(),
+    name,
+    color,
+    userContextId: identity.userContextId,
+  };
+  saveWorkspaces([...workspaces(), workspace]);
+  switchWorkspace(workspace.id);
+}
+
+// Keeps the dedicated container's name and color in sync with the workspace.
+function updateWorkspaceContainer(workspace: Workspace): void {
+  if (workspace.userContextId === NO_CONTAINER) {
+    return;
+  }
+  const identity = ContextualIdentityService.getPublicIdentityFromId(workspace.userContextId);
+  if (!identity) {
+    return;
+  }
+  ContextualIdentityService.update(
+    workspace.userContextId,
+    workspace.name,
+    identity.icon,
+    workspace.color,
+  );
+}
+
+export function updateWorkspace(workspace: Workspace): void {
+  saveWorkspaces(
+    workspaces().map((existing) => {
+      if (existing.id === workspace.id) {
+        return workspace;
+      }
+      return existing;
+    }),
+  );
+  updateWorkspaceContainer(workspace);
+  if (workspace.id === activeWorkspaceId()) {
+    setDefaultContainerId(workspace.userContextId);
+  }
+}
+
+async function removeWorkspaceContainer(workspace: Workspace): Promise<void> {
+  if (workspace.userContextId === NO_CONTAINER) {
+    return;
+  }
+  await ContextualIdentityService.closeContainerTabs(workspace.userContextId);
+  ContextualIdentityService.remove(workspace.userContextId);
+}
+
+function confirmDeletion(workspace: Workspace): boolean {
+  return Services.prompt.confirm(
+    window as unknown as mozIDOMWindowProxy,
+    "Delete workspace",
+    `Delete "${workspace.name}"? Its tabs are closed and its container's cookies and site data are removed.`,
+  );
+}
+
+// The last workspace can't be deleted.
+export async function deleteWorkspace(workspace: Workspace): Promise<void> {
+  const remaining = workspaces().filter((existing) => existing.id !== workspace.id);
+  if (remaining.length === 0 || !confirmDeletion(workspace)) {
+    return;
+  }
+  if (workspace.id === activeWorkspaceId()) {
+    switchWorkspace(remaining[0].id);
+  }
+  for (const tab of workspaceTabs(workspace.id)) {
+    tabbrowser().removeTab(tab, { animate: false });
+  }
+  saveWorkspaces(remaining);
+  await removeWorkspaceContainer(workspace);
+}
+
+function handleTabOpen(event: Event): void {
+  const tab = event.target as BrowserTab;
+  if (!browserWindow.SessionStore.getCustomTabValue(tab, TAB_WORKSPACE_KEY)) {
+    assignTab(tab, activeWorkspaceId());
+  }
+}
+
+interface TabSelectEvent extends Event {
+  detail?: { previousTab?: BrowserTab & { closing?: boolean } };
+}
+
+// Closing a workspace's last tab makes Firefox select a tab from another
+// workspace (it picks the successor before TabClose fires). Stay in the
+// workspace on a fresh tab instead.
+function leftByClosingLastTab(event: TabSelectEvent): boolean {
+  const previousTab = event.detail?.previousTab;
+  if (!previousTab || !previousTab.closing || previousTab.pinned) {
+    return false;
+  }
+  return workspaceIdOf(previousTab) === activeWorkspaceId();
+}
+
+// Selecting a hidden tab (e.g. from the spotlight) moves to its workspace.
+function followSelectedTab(event?: TabSelectEvent): void {
+  const browser = tabbrowser();
+  const tab = browser.selectedTab;
+  if (tab.pinned) {
+    return;
+  }
+  const workspace = workspaceById(workspaceIdOf(tab));
+  if (!workspace || workspace.id === activeWorkspaceId()) {
+    return;
+  }
+  if (event && leftByClosingLastTab(event)) {
+    browser.selectedTab = openTabIn(activeWorkspace());
+    applyVisibility();
+    return;
+  }
+  activate(workspace);
+  applyVisibility();
+}
+
+function adoptUnassignedTabs(): void {
+  for (const tab of tabbrowser().tabs) {
+    if (!browserWindow.SessionStore.getCustomTabValue(tab, TAB_WORKSPACE_KEY)) {
+      assignTab(tab, activeWorkspaceId());
+    }
+  }
+}
+
+// Other windows edit the same list; the active workspace stays per window.
+const workspacesObserver = {
+  observe(): void {
+    setWorkspaces(readWorkspaces());
+    if (!workspaceById(activeWorkspaceId())) {
+      switchWorkspace(workspaces()[0].id);
+    }
+  },
+};
+
+// Returns a stop function for hot reload.
+export function watchWorkspaces(): () => void {
+  Services.prefs.setBoolPref(FLOORP_WORKSPACES_PREF, false);
+  Services.prefs.addObserver(WORKSPACES_PREF, workspacesObserver);
+  const tabContainer = tabbrowser().tabContainer;
+  tabContainer.addEventListener("TabOpen", handleTabOpen);
+  tabContainer.addEventListener("TabSelect", followSelectedTab);
+  // Restored tabs get their stored workspace after TabOpen.
+  tabContainer.addEventListener("SSTabRestoring", applyVisibility);
+
+  adoptUnassignedTabs();
+  activate(activeWorkspace());
+  followSelectedTab();
+  applyVisibility();
+
+  return () => {
+    Services.prefs.removeObserver(WORKSPACES_PREF, workspacesObserver);
+    tabContainer.removeEventListener("TabOpen", handleTabOpen);
+    tabContainer.removeEventListener("TabSelect", followSelectedTab);
+    tabContainer.removeEventListener("SSTabRestoring", applyVisibility);
+  };
+}

@@ -60,6 +60,18 @@ export interface NeoworksTabbrowser {
   ): BrowserTabGroup;
   ungroupTab(tab: BrowserTab): void;
   replaceTabWithWindow(tab: BrowserTab): void;
+  // No-ops for pinned tabs and, for hideTab, the selected tab.
+  hideTab(tab: BrowserTab): void;
+  showTab(tab: BrowserTab): void;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  // Firefox container color name, shared with the workspace's container.
+  color: string;
+  // Container new tabs in this workspace open in.
+  userContextId: number;
 }
 
 export type SidebarEntry =

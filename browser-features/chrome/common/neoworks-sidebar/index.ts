@@ -16,6 +16,8 @@ import {
 import { createTabState } from "./tab-state.ts";
 import { toggleSidebarDocked, watchSidebarDocking } from "./sidebar-docking.ts";
 import { registerCommands } from "../neoworks-commands/registry.ts";
+import { closeWorkspaceMenu } from "./workspace-switcher.tsx";
+import { switchWorkspaceBy, watchWorkspaces } from "./workspaces.ts";
 
 @noraComponent(import.meta.hot)
 export default class NeoworksSidebar extends NoraComponentBase {
@@ -30,6 +32,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
     const tabState = createTabState();
     const stopWatchingContainers = watchContainers();
     const stopWatchingDocking = watchSidebarDocking();
+    const stopWatchingWorkspaces = watchWorkspaces();
     mountSidebar(browserBox, tabState);
     mountTabContextMenu(popupSet, tabState);
     addEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
@@ -40,10 +43,24 @@ export default class NeoworksSidebar extends NoraComponentBase {
         listed: true,
         run: toggleSidebarDocked,
       },
+      {
+        id: "workspace:next",
+        title: "Next Workspace",
+        listed: true,
+        run: () => switchWorkspaceBy(1),
+      },
+      {
+        id: "workspace:previous",
+        title: "Previous Workspace",
+        listed: true,
+        run: () => switchWorkspaceBy(-1),
+      },
     ]);
 
     onCleanup(() => {
       unregisterCommands();
+      closeWorkspaceMenu();
+      stopWatchingWorkspaces();
       stopWatchingDocking();
       removeEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
       closeContainerMenu();
