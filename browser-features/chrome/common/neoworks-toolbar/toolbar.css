@@ -64,7 +64,60 @@
    [tabs-hidden], which our CSS-only hiding never sets. */
 :root[customtitlebar] #nav-bar > .titlebar-buttonbox-container {
   display: flex !important;
+  align-items: center;
   margin-inline-start: 4px;
+}
+
+#nav-bar .titlebar-buttonbox {
+  align-items: center;
+}
+
+/* Kit ghost buttons instead of GTK's native window controls. Which buttons
+   exist still follows the desktop's button layout. */
+#nav-bar .titlebar-buttonbox,
+#nav-bar .titlebar-button {
+  appearance: none !important;
+}
+
+#nav-bar .titlebar-button {
+  width: 28px;
+  height: 28px;
+  margin: 0 2px !important;
+  padding: 0 !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-muted);
+}
+
+#nav-bar .titlebar-button > .toolbarbutton-icon {
+  appearance: none !important;
+  width: 14px;
+  height: 14px;
+  list-style-image: none !important;
+  background: currentColor !important;
+  mask-size: 14px;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+#nav-bar .titlebar-button.titlebar-close:hover {
+  background-color: #ef4444 !important;
+  color: #fff;
+}
+
+#nav-bar .titlebar-min > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-minus);
+}
+
+#nav-bar .titlebar-max > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-square);
+}
+
+#nav-bar .titlebar-restore > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-copy-simple);
+}
+
+#nav-bar .titlebar-close > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-x);
 }
 
 /* The top bar doubles as the titlebar: empty space moves the window,
