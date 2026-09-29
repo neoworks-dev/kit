@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { createSignal, For, Show } from "solid-js";
+import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
+import { createPageBackdrop } from "../neoworks-ui/page-backdrop.ts";
 import { jumpToQuickmark } from "../neoworks-commands/quickmarks.ts";
 import { runCommand } from "../neoworks-commands/registry.ts";
 import { selectTab } from "../neoworks-sidebar/tab-actions.ts";
@@ -25,6 +26,8 @@ const [highlightIndex, setHighlightIndex] = createSignal(0);
 // solid-xul has no `use` helper, so refs don't compile; look elements up by id.
 const INPUT_ID = "neoworks-spotlight-input";
 const RESULTS_ID = "neoworks-spotlight-results";
+const PANEL_ID = "neoworks-spotlight-panel";
+const BACKDROP_ID = "neoworks-spotlight-backdrop";
 
 interface AsyncResults {
   suggestions: SpotlightResult[];
@@ -209,6 +212,16 @@ function ResultListItem(props: { result: SpotlightResult; index: number }) {
 }
 
 export function Spotlight() {
+  const backdrop = createPageBackdrop(PANEL_ID, BACKDROP_ID);
+  createEffect(() => {
+    if (isOpen()) {
+      backdrop.start();
+      return;
+    }
+    backdrop.stop();
+  });
+  onCleanup(() => backdrop.stop());
+
   return (
     <div
       id="neoworks-spotlight"
@@ -220,7 +233,8 @@ export function Spotlight() {
       }}
     >
       <style>{glassStyle + iconStyle + spotlightStyle}</style>
-      <div class="nw-spotlight-panel nw-glass">
+      <div id={PANEL_ID} class="nw-spotlight-panel nw-glass">
+        <canvas id={BACKDROP_ID} class="nw-glass-backdrop" />
         <div class="nw-spotlight-search">
           <span class="nw-icon" data-icon="magnifying-glass" />
           <input

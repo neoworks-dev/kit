@@ -3,7 +3,8 @@
 // Which-key hint: while a key sequence is pending (g, m, '), list the keys
 // that can follow and what they do.
 
-import { createSignal, For, Show } from "solid-js";
+import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
+import { createPageBackdrop } from "../neoworks-ui/page-backdrop.ts";
 import {
   bindingsStartingWith,
   describeKeys,
@@ -84,11 +85,25 @@ function openFlag(): string | undefined {
   return undefined;
 }
 
+const PANEL_ID = "neoworks-which-key";
+const BACKDROP_ID = "neoworks-which-key-backdrop";
+
 export function WhichKey() {
   const entries = () => whichKeyEntries(pendingKeys());
+  const backdrop = createPageBackdrop(PANEL_ID, BACKDROP_ID);
+  createEffect(() => {
+    if (pendingKeys().length > 0) {
+      backdrop.start();
+      return;
+    }
+    backdrop.stop();
+  });
+  onCleanup(() => backdrop.stop());
+
   return (
-    <div id="neoworks-which-key" class="nw-glass" data-open={openFlag()}>
+    <div id={PANEL_ID} class="nw-glass" data-open={openFlag()}>
       <style>{glassStyle + whichKeyStyle}</style>
+      <canvas id={BACKDROP_ID} class="nw-glass-backdrop" />
       <Show when={pendingKeys().length > 0}>
         <div class="nw-which-key-typed">{describeKeys(pendingKeys())} …</div>
         <For each={entries()}>

@@ -14,9 +14,11 @@
   --border-strong: #3f3f46;
   --border-faint: rgba(255, 255, 255, 0.06);
   --text: #fafafa;
-  --text-muted: #a1a1aa;
-  --text-dim: #71717a;
-  --text-faint: #52525b;
+  /* Secondary text as translucent white (iOS "vibrancy") rather than fixed
+     grays, so it keeps its contrast when glass sits over a bright page. */
+  --text-muted: rgba(255, 255, 255, 0.72);
+  --text-dim: rgba(255, 255, 255, 0.55);
+  --text-faint: rgba(255, 255, 255, 0.4);
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -31,15 +33,50 @@
 }
 
 /* Frosted material in the spirit of iOS: blurred, saturated backdrop, a light
-   top-down sheen and a bright rim on the upper edge. */
+   top-down sheen and a bright rim on the upper edge.
+
+   Layers, bottom to top: the blurred page snapshot (.nw-glass-backdrop, see
+   page-backdrop.ts), the tint (::before), the content, then the rim (::after).
+   backdrop-filter still covers chrome behind the panel, e.g. a popover over
+   the sidebar.
+
+   No CSS border: it would sit outside the clipped snapshot, so the raw page
+   would show through it as a bright line on white pages. */
 .nw-glass {
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+  isolation: isolate;
+  border: none;
+  backdrop-filter: blur(30px) saturate(180%);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.nw-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+}
+
+.nw-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02) 40%),
-    rgba(22, 22, 26, 0.58);
-  backdrop-filter: blur(30px) saturate(180%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.03),
-    0 18px 48px rgba(0, 0, 0, 0.45);
+    rgba(22, 22, 26, 0.68);
+  pointer-events: none;
+}
+
+.nw-glass-backdrop {
+  position: absolute;
+  z-index: -2;
+  filter: blur(28px) saturate(180%);
+  pointer-events: none;
 }

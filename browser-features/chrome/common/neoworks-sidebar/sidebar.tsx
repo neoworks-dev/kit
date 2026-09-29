@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { For, Match, Show, Switch } from "solid-js";
+import { createEffect, For, Match, onCleanup, Show, Switch } from "solid-js";
+import { createPageBackdrop } from "../neoworks-ui/page-backdrop.ts";
 import { ContainerBar } from "./container-bar.tsx";
 import { namedColor } from "./identity-colors.ts";
 import { PinnedGrid } from "./pinned-grid.tsx";
@@ -95,15 +96,29 @@ export function Sidebar(props: { tabState: TabState }) {
   );
 }
 
+const SIDEBAR_ID = "neoworks-sidebar";
+const SIDEBAR_BACKDROP_ID = "neoworks-sidebar-backdrop";
+
 function SidebarPanel(props: { tabState: TabState }) {
+  const backdrop = createPageBackdrop(SIDEBAR_ID, SIDEBAR_BACKDROP_ID);
+  createEffect(() => {
+    if (sidebarVisible()) {
+      backdrop.start();
+      return;
+    }
+    backdrop.stop();
+  });
+  onCleanup(() => backdrop.stop());
+
   return (
     <div
-      id="neoworks-sidebar"
+      id={SIDEBAR_ID}
       class="nw-glass"
       data-visible={visibleFlag()}
       onMouseEnter={handleSidebarEnter}
       onMouseLeave={handleSidebarLeave}
     >
+      <canvas id={SIDEBAR_BACKDROP_ID} class="nw-glass-backdrop" />
       <div class="nw-header">
         <button type="button" class="nw-icon-button" title="New tab" onClick={openNewTab}>
           <span class="nw-icon" data-icon="plus" />

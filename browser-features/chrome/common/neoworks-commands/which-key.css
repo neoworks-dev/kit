@@ -12,7 +12,8 @@
   max-width: 360px;
   max-height: 60vh;
   padding: 8px;
-  overflow-y: auto;
+  /* Clips the oversized backdrop canvas; a scroll container would scroll it. */
+  overflow: hidden;
   border-radius: 16px;
   color: var(--text);
   font-family: var(--font-sans);
