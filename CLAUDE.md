@@ -203,6 +203,18 @@ deno task dev-tool eval "document.title" -c content         # Get page title fro
 6. `deno task dev-tool rebuild` — if HMR didn't pick up changes (modules/startup only)
 7. `deno task dev-tool stop` — shut down when done
 
+## Issues
+
+Issues live on `neoworks-dev/kit`. Create and edit them as the neoworks bot, not
+as a person: prefix every write with the `gh bot` extension, e.g.
+`gh bot issue create -R neoworks-dev/kit --title "…" --label "type:feature,area:sidebar"`.
+
+Labels use canonical `category:value` names: `type:*` (feature, bug, chore,
+design), `area:*` (keys, spotlight, sidebar, toolbar, containers, workspaces,
+tabs, content, branding, build) and `priority:*` (high, medium, low). Give every
+issue one `type:`, one or more `area:` and one `priority:` label. Split larger
+work into one issue per part.
+
 ## Debugging
 
 - Browser Console: `Ctrl+Shift+J` / `Cmd+Option+J`
