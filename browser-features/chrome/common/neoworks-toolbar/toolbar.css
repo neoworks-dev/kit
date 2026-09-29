@@ -48,7 +48,9 @@
   --toolbar-field-focus-border-color: var(--border-strong);
   --toolbar-field-focus-color: var(--text);
 
-  min-height: 40px;
+  /* 48px puts the controls' center at y=24, level with the docked sidebar's
+     header buttons (neoworks-sidebar/sidebar.css). */
+  min-height: 48px;
   padding-inline: 8px !important;
   border: none !important;
   background: transparent !important;

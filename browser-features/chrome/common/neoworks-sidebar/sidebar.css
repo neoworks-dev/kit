@@ -12,7 +12,8 @@
   width: 248px;
   box-sizing: border-box;
   overflow: hidden;
-  border-radius: 18px;
+  /* Matches the page pane (neoworks-ui/frame.css). */
+  border-radius: 12px;
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 12px;
@@ -53,7 +54,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 10px 8px;
+  /* Docked, 8px sidebar inset + 4px + half the 24px buttons = y 24, the top
+     bar's center line. */
+  padding: 4px 10px 8px;
 }
 
 /* Docked: a full-height panel left of the top bar and the page. The top bar
