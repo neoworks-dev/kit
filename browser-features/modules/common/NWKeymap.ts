@@ -92,7 +92,7 @@ function quickmarkBindings(
 
 function workspaceNumberBindings(): NWKeyBinding[] {
   return WORKSPACE_NUMBERS.map((number) => ({
-    keys: ["g", "w", number],
+    keys: ["g", number],
     command: "workspace:switch",
     letter: number,
   }));
@@ -111,8 +111,8 @@ export const NW_KEY_BINDINGS: readonly NWKeyBinding[] = [
   { keys: ["K"], command: "tab:previous" },
   { keys: ["g", "t"], command: "tab:next" },
   { keys: ["g", "T"], command: "tab:previous" },
-  { keys: ["g", "w", "n"], command: "workspace:next" },
-  { keys: ["g", "w", "p"], command: "workspace:previous" },
+  { keys: ["g", "w"], command: "workspace:next" },
+  { keys: ["g", "W"], command: "workspace:previous" },
   ...workspaceNumberBindings(),
   { keys: ["t"], command: "tab:new" },
   { keys: ["x"], command: "tab:close" },

@@ -31,7 +31,7 @@ export function parseWorkspaces(json: string, fallback: Workspace[]): Workspace[
   return stored;
 }
 
-// Workspaces are numbered from 1 in list order, as in `gw1`.
+// Workspaces are numbered from 1 in list order, as in `g1`.
 export function workspaceAtNumber(
   workspaces: Workspace[],
   number: string,

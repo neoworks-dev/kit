@@ -64,7 +64,7 @@ function quickmarkResults(): SpotlightResult[] {
   }));
 }
 
-// Matches the gw1–gw9 bindings; later workspaces have no shortcut.
+// Matches the g1–g9 bindings; later workspaces have no shortcut.
 function workspaceShortcut(index: number): string {
   const number = String(index + 1);
   const binding = bindingsForCommand("workspace:switch").find((candidate) =>

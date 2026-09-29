@@ -146,16 +146,15 @@ function testQuickmarkLetters(): void {
 function testWorkspaceSequences(): void {
   const harness = new DispatcherHarness();
   harness.press("g");
-  harness.press("w");
-  assertEquals(harness.ran.length, 0, "gw waits for a third key");
-  assertEquals(harness.pending[harness.pending.length - 1].join(" "), "g w", "gw is pending");
   harness.press("3");
-  assertEquals(harness.lastCommand(), "workspace:switch", "gw3 switches workspace");
+  assertEquals(harness.lastCommand(), "workspace:switch", "g3 switches workspace");
   assertEquals(harness.ran[0].letter, "3", "workspace number is passed along");
   harness.press("g");
   harness.press("w");
-  harness.press("n");
-  assertEquals(harness.lastCommand(), "workspace:next", "gwn goes to the next workspace");
+  assertEquals(harness.lastCommand(), "workspace:next", "gw goes to the next workspace");
+  harness.press("g");
+  harness.press("W");
+  assertEquals(harness.lastCommand(), "workspace:previous", "gW goes to the previous workspace");
 }
 
 function testBindingLetters(): void {
@@ -181,7 +180,7 @@ export async function runAllTests(): Promise<void> {
     { name: "lone Space is handed back", fn: testLoneSpaceIsAbandoned },
     { name: "held keys", fn: testHeldKeys },
     { name: "quickmark bindings carry their letter", fn: testQuickmarkLetters },
-    { name: "workspace sequences under gw", fn: testWorkspaceSequences },
+    { name: "workspace sequences under g", fn: testWorkspaceSequences },
     { name: "binding letters", fn: testBindingLetters },
     { name: "unbound keys pass through", fn: testUnboundKeysPassThrough },
   ];

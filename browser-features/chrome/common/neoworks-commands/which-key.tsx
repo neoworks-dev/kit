@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-// Which-key hint: while a key sequence is pending (g, gw, m, '), list the keys
+// Which-key hint: while a key sequence is pending (g, m, '), list the keys
 // that can follow and what they do.
 
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
@@ -25,10 +25,6 @@ interface WhichKeyEntry {
 const SHOW_DELAY_MS = 250;
 const ANY_LETTER = "a–z";
 const MAX_NUMBERED_WORKSPACES = 9;
-// Titles for keys that lead to a further menu, keyed by the typed sequence.
-const PREFIX_TITLES: Record<string, string> = {
-  "g w": "Workspaces…",
-};
 
 const [pendingKeys, setPendingKeys] = createSignal<string[]>([]);
 let showTimer: ReturnType<typeof setTimeout> | undefined;
@@ -41,7 +37,7 @@ function quickmarkJumpEntries(): WhichKeyEntry[] {
   return quickmarks.map((quickmark) => ({ key: quickmark.letter, title: quickmark.title }));
 }
 
-// Numbered like the gw1–gw9 bindings.
+// Numbered like the g1–g9 bindings.
 function workspaceSwitchEntries(): WhichKeyEntry[] {
   return workspaces()
     .slice(0, MAX_NUMBERED_WORKSPACES)
@@ -58,38 +54,22 @@ function letterEntries(command: NWCommandId): WhichKeyEntry[] {
   return [{ key: ANY_LETTER, title: commandTitle(command) + " for this page" }];
 }
 
-function prefixTitle(prefix: string[]): string {
-  const title = PREFIX_TITLES[describeKeys(prefix)];
-  if (!title) {
-    return "More…";
-  }
-  return title;
-}
-
-// Letter bindings (26 quickmark slots) collapse into one entry per command,
-// and longer sequences (gw1, gwn) into one entry for their next key.
+// Letter bindings (26 quickmark slots, 9 workspace numbers) collapse into one
+// entry per command.
 function whichKeyEntries(typedKeys: string[]): WhichKeyEntry[] {
-  const commandEntries: WhichKeyEntry[] = [];
+  const entries: WhichKeyEntry[] = [];
   const letterCommands = new Set<NWCommandId>();
-  const prefixKeys = new Set<string>();
   for (const binding of bindingsStartingWith(typedKeys)) {
-    const nextKey = binding.keys[typedKeys.length];
-    if (binding.keys.length > typedKeys.length + 1) {
-      prefixKeys.add(nextKey);
-      continue;
-    }
     if (binding.letter) {
       letterCommands.add(binding.command);
       continue;
     }
-    commandEntries.push({ key: nextKey, title: commandTitle(binding.command) });
+    entries.push({ key: binding.keys[typedKeys.length], title: commandTitle(binding.command) });
   }
-  const letterCommandEntries = Array.from(letterCommands).flatMap(letterEntries);
-  const prefixEntries = Array.from(prefixKeys).map((key) => ({
-    key,
-    title: prefixTitle([...typedKeys, key]),
-  }));
-  return [...letterCommandEntries, ...commandEntries, ...prefixEntries];
+  for (const command of letterCommands) {
+    entries.push(...letterEntries(command));
+  }
+  return entries;
 }
 
 // Double Space is a gesture, not a menu.
