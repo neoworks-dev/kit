@@ -1,15 +1,22 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { createSignal, For, Show } from "solid-js";
+import { jumpToQuickmark } from "../neoworks-commands/quickmarks.ts";
+import { runCommand } from "../neoworks-commands/registry.ts";
 import { selectTab } from "../neoworks-sidebar/tab-actions.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
-import { navigateResult, placesResults, tabResults } from "./search.ts";
+import { placesResults } from "./places.ts";
+import { isSearchQuery, localResults, navigateResult, openTabUrls } from "./search.ts";
+import { stopSuggestions, suggestionResults } from "./suggestions.ts";
 import type { SpotlightResult, SpotlightResultKind } from "./types.ts";
 import spotlightStyle from "./spotlight.css?inline";
 
 const KIND_LABELS: Record<SpotlightResultKind, string> = {
   navigate: "↵",
+  suggestion: "Search",
   tab: "Tab",
+  quickmark: "Mark",
+  command: "Command",
   bookmark: "★",
   history: "History",
 };
@@ -22,23 +29,33 @@ const [isOpen, setIsOpen] = createSignal(false);
 const [results, setResults] = createSignal<SpotlightResult[]>([]);
 const [highlightIndex, setHighlightIndex] = createSignal(0);
 
-// solid-xul has no `use` helper, so refs don't compile; look the input up by id.
+// solid-xul has no `use` helper, so refs don't compile; look elements up by id.
 const INPUT_ID = "neoworks-spotlight-input";
+const RESULTS_ID = "neoworks-spotlight-results";
 
-// Drops Places responses that arrive after a newer keystroke.
+interface AsyncResults {
+  suggestions: SpotlightResult[];
+  places: SpotlightResult[];
+}
+
+// Drops async responses that arrive after a newer keystroke.
 let searchGeneration = 0;
+let asyncResults: AsyncResults = { suggestions: [], places: [] };
+
+function inputElement(): HTMLInputElement | null {
+  return document.getElementById(INPUT_ID) as HTMLInputElement | null;
+}
 
 export function openSpotlight(): void {
   if (isOpen()) {
     return;
   }
-  setResults([]);
-  setHighlightIndex(0);
   setIsOpen(true);
-  const inputElement = document.getElementById(INPUT_ID) as HTMLInputElement | null;
-  if (inputElement) {
-    inputElement.value = "";
-    inputElement.focus();
+  updateResults("");
+  const input = inputElement();
+  if (input) {
+    input.value = "";
+    input.focus();
   }
 }
 
@@ -46,35 +63,72 @@ export function closeSpotlight(): void {
   if (!isOpen()) {
     return;
   }
+  searchGeneration += 1;
+  stopSuggestions();
   setIsOpen(false);
   tabbrowser().selectedBrowser.focus();
 }
 
-function immediateResults(query: string): SpotlightResult[] {
-  const combined: SpotlightResult[] = [];
-  const navigate = navigateResult(query);
-  if (navigate) {
-    combined.push(navigate);
-  }
-  return combined.concat(tabResults(query));
+// Ordering follows the Electron command bar: the open/search row, engine
+// suggestions, matching tabs/quickmarks/commands, then history and bookmarks.
+function showResults(query: string): void {
+  setResults([
+    ...navigateResults(query),
+    ...asyncResults.suggestions,
+    ...localResults(query),
+    ...asyncResults.places,
+  ]);
 }
 
-async function updateResults(query: string): Promise<void> {
-  searchGeneration += 1;
-  const generation = searchGeneration;
-  setHighlightIndex(0);
-  if (!query.trim()) {
-    setResults([]);
-    return;
+function navigateResults(query: string): SpotlightResult[] {
+  if (!query) {
+    return [];
   }
-  const immediate = immediateResults(query);
-  setResults(immediate);
+  const navigate = navigateResult(query);
+  if (!navigate) {
+    return [];
+  }
+  return [navigate];
+}
 
-  const places = await placesResults(query);
+async function requestPlaces(query: string, generation: number): Promise<void> {
+  const places = await placesResults(query, openTabUrls());
   if (generation !== searchGeneration) {
     return;
   }
-  setResults(immediate.concat(places));
+  asyncResults = { ...asyncResults, places };
+  showResults(query);
+}
+
+async function requestSuggestions(query: string, generation: number): Promise<void> {
+  const userContextId = tabbrowser().selectedTab.userContextId;
+  const suggestions = await suggestionResults(query, userContextId);
+  if (generation !== searchGeneration) {
+    return;
+  }
+  asyncResults = { ...asyncResults, suggestions };
+  showResults(query);
+}
+
+function logFailure(source: string): (error: unknown) => void {
+  return (error) => console.error(`[neoworks-spotlight] ${source} failed:`, error);
+}
+
+function updateResults(rawQuery: string): void {
+  searchGeneration += 1;
+  const generation = searchGeneration;
+  const query = rawQuery.trim();
+  asyncResults = { suggestions: [], places: [] };
+  setHighlightIndex(0);
+  showResults(query);
+  if (!query) {
+    stopSuggestions();
+    return;
+  }
+  requestPlaces(query, generation).catch(logFailure("History search"));
+  if (isSearchQuery(navigateResult(query))) {
+    requestSuggestions(query, generation).catch(logFailure("Search suggestions"));
+  }
 }
 
 function runResult(result: SpotlightResult | undefined): void {
@@ -82,11 +136,23 @@ function runResult(result: SpotlightResult | undefined): void {
     return;
   }
   closeSpotlight();
-  if (result.tab) {
-    selectTab(result.tab);
-    return;
+  switch (result.kind) {
+    case "tab":
+      return selectTab(result.tab);
+    case "command":
+      return runCommand({ command: result.command });
+    case "quickmark":
+      return jumpToQuickmark(result.quickmark);
+    default:
+      return browserWindow.openTrustedLinkIn(result.url, "tab");
   }
-  browserWindow.openTrustedLinkIn(result.url, "tab");
+}
+
+function scrollHighlightIntoView(): void {
+  const highlighted = document
+    .getElementById(RESULTS_ID)
+    ?.querySelector(".nw-spotlight-result[data-highlighted]");
+  highlighted?.scrollIntoView({ block: "nearest" });
 }
 
 function moveHighlight(step: number): void {
@@ -95,6 +161,17 @@ function moveHighlight(step: number): void {
     return;
   }
   setHighlightIndex((index) => (index + step + count) % count);
+  scrollHighlightIntoView();
+}
+
+function highlightStep(event: KeyboardEvent): number {
+  if (event.key === "ArrowDown" || (event.ctrlKey && event.key === "n")) {
+    return 1;
+  }
+  if (event.key === "ArrowUp" || (event.ctrlKey && event.key === "p")) {
+    return -1;
+  }
+  return 0;
 }
 
 function handleKeyDown(event: KeyboardEvent): void {
@@ -103,14 +180,10 @@ function handleKeyDown(event: KeyboardEvent): void {
     closeSpotlight();
     return;
   }
-  if (event.key === "ArrowDown") {
+  const step = highlightStep(event);
+  if (step !== 0) {
     event.preventDefault();
-    moveHighlight(1);
-    return;
-  }
-  if (event.key === "ArrowUp") {
-    event.preventDefault();
-    moveHighlight(-1);
+    moveHighlight(step);
     return;
   }
   if (event.key === "Enter") {
@@ -124,6 +197,13 @@ function attributeFlag(enabled: boolean): string | undefined {
     return "true";
   }
   return undefined;
+}
+
+function shortcutOf(result: SpotlightResult): string {
+  if (result.kind === "command") {
+    return result.shortcut;
+  }
+  return "";
 }
 
 function ResultRow(props: { result: SpotlightResult; index: number }) {
@@ -142,6 +222,9 @@ function ResultRow(props: { result: SpotlightResult; index: number }) {
         <span class="nw-spotlight-title">{props.result.title}</span>
         <span class="nw-spotlight-subtitle">{props.result.subtitle}</span>
       </span>
+      <Show when={shortcutOf(props.result)}>
+        <kbd class="nw-spotlight-shortcut">{shortcutOf(props.result)}</kbd>
+      </Show>
     </div>
   );
 }
@@ -162,14 +245,14 @@ export function Spotlight() {
         <input
           id={INPUT_ID}
           class="nw-spotlight-input"
-          placeholder="Search or enter address"
+          placeholder="Search, enter address, or run a command"
           onInput={(event: InputEvent) =>
             updateResults((event.currentTarget as HTMLInputElement).value)}
           onKeyDown={handleKeyDown}
           onBlur={closeSpotlight}
         />
         <Show when={results().length > 0}>
-          <div class="nw-spotlight-results">
+          <div id={RESULTS_ID} class="nw-spotlight-results">
             <For each={results()}>
               {(result, index) => <ResultRow result={result} index={index()} />}
             </For>

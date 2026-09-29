@@ -165,6 +165,40 @@ async function testDoubleSpaceInInputTypesSpaces(context: KeysTestContext): Prom
   assert(!(await context.isSpotlightOpen()), "Double Space inside an input opened the spotlight");
 }
 
+function spotlightTitles(context: KeysTestContext): Promise<string[]> {
+  return context.inChrome<string[]>(`
+    const rows = document.querySelectorAll("#neoworks-spotlight .nw-spotlight-title");
+    return Array.from(rows, (row) => row.textContent);
+  `);
+}
+
+async function testSpotlightRunsCommands(context: KeysTestContext): Promise<void> {
+  await context.loadFixture("/spotlight-command");
+  await context.pressKeys(["o"]);
+  await context.waitFor(() => context.isSpotlightOpen(), "o did not open the spotlight");
+  const initialTitles = await spotlightTitles(context);
+  assert(initialTitles.includes("New Tab"), "Empty spotlight should list commands");
+
+  await context.client.setContext("chrome");
+  await context.pressKeys("to bottom".split(""));
+  await context.client.setContext("content");
+  await context.waitFor(
+    async () => (await spotlightTitles(context)).includes("Scroll to Bottom"),
+    "Typing did not surface the Scroll to Bottom command",
+  );
+  await context.inChrome(`
+    const rows = document.querySelectorAll("#neoworks-spotlight .nw-spotlight-result");
+    const row = Array.from(rows).find((candidate) =>
+      candidate.querySelector(".nw-spotlight-title").textContent === "Scroll to Bottom");
+    row.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  `);
+  assert(!(await context.isSpotlightOpen()), "Running a command should close the spotlight");
+  await context.waitFor(
+    async () => (await context.scrollY()) > 2000,
+    "Scroll to Bottom from the spotlight did not scroll the page",
+  );
+}
+
 async function testScrollKeys(context: KeysTestContext): Promise<void> {
   await context.loadFixture("/scroll");
   await context.pressKeys(["j"]);
@@ -312,6 +346,7 @@ async function testChromeFocusKeys(context: KeysTestContext): Promise<void> {
 const TESTS: Array<[string, (context: KeysTestContext) => Promise<void>]> = [
   ["double Space opens spotlight", testDoubleSpaceOpensSpotlight],
   ["keys typed into inputs stay text", testDoubleSpaceInInputTypesSpaces],
+  ["spotlight lists, filters and runs commands", testSpotlightRunsCommands],
   ["j / G / gg scroll the page", testScrollKeys],
   ["K / J switch tabs", testTabSwitchKeys],
   ["m<letter> and '<letter> quickmarks", testQuickmarks],
