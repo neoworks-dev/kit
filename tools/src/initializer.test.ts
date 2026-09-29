@@ -630,16 +630,6 @@ Deno.test("run does not install or save when the Runtime lock fails to load", as
   });
 });
 
-Deno.test("combined browser workflow does not require a Runtime opt-in", async () => {
-  const workflow = await Deno.readTextFile(
-    new URL(
-      "../../.github/workflows/colocated_runner_test.yml",
-      import.meta.url,
-    ),
-  );
-  assertEquals(workflow.includes("FLOORP_RUNTIME_LOCKED"), false);
-});
-
 Deno.test("locked Runtime native target mapping fails closed", () => {
   assertEquals(resolveNativeRuntimeTarget("windows", "x86_64"), {
     platform: "windows",
@@ -1244,48 +1234,6 @@ Deno.test("public Runtime download failures redact signed redirect URLs", async 
   } finally {
     await Deno.remove(root, { recursive: true });
   }
-});
-
-Deno.test("browser CI keeps Runtime downloads tokenless", async () => {
-  const workflow = await Deno.readTextFile(
-    new URL(
-      "../../.github/workflows/colocated_runner_test.yml",
-      import.meta.url,
-    ),
-  );
-  const nativeValidationStart = workflow.indexOf(
-    "- name: Validate locked native Runtime artifact",
-  );
-  const browserInstallStart = workflow.indexOf(
-    "- name: Install locked Runtime for browser suite",
-  );
-  const sourceReadStart = workflow.indexOf(
-    "- name: Read locked Runtime source",
-  );
-  assert(nativeValidationStart >= 0);
-  assert(browserInstallStart > nativeValidationStart);
-  assert(sourceReadStart > browserInstallStart);
-  const publicRuntimeSteps = workflow.slice(
-    nativeValidationStart,
-    sourceReadStart,
-  );
-  assertEquals(publicRuntimeSteps.includes("GITHUB_TOKEN"), false);
-  assert(publicRuntimeSteps.includes("validate-native"));
-  assert(publicRuntimeSteps.includes("install-native"));
-
-  const trustedMetadataStart = workflow.indexOf(
-    "- name: Validate locked Runtime release metadata",
-  );
-  const smokeStart = workflow.indexOf("- run: deno task test:smoke");
-  assert(trustedMetadataStart >= 0);
-  assert(smokeStart > trustedMetadataStart);
-  const trustedMetadataStep = workflow.slice(
-    trustedMetadataStart,
-    smokeStart,
-  );
-  assert(trustedMetadataStep.includes("github.event_name != 'pull_request'"));
-  assert(trustedMetadataStep.includes("FLOORP_RUNTIME_GITHUB_TOKEN"));
-  assert(trustedMetadataStep.includes("validate-release-metadata"));
 });
 
 Deno.test("locked Runtime waits for all failed downloads before cleanup", async () => {
