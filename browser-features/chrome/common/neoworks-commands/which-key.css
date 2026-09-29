@@ -1,14 +1,6 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
-/* Tokens from @neoworks-dev/ui (dark theme). */
 #neoworks-which-key {
-  --bg-elevated: #1c1c1e;
-  --border: #29292b;
-  --text: #fafafa;
-  --text-muted: #a1a1aa;
-  --text-dim: #71717a;
-  --surface-raised: #262628;
-
   position: fixed;
   right: 16px;
   bottom: 16px;
@@ -21,12 +13,9 @@
   max-height: 60vh;
   padding: 8px;
   overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg-elevated);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  border-radius: 16px;
   color: var(--text);
-  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   pointer-events: none;
 }
@@ -38,7 +27,7 @@
 #neoworks-which-key .nw-which-key-typed {
   padding: 2px 6px 6px;
   color: var(--text-dim);
-  font-family: "Geist Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
 }
 
@@ -55,9 +44,9 @@
   flex-shrink: 0;
   padding: 1px 6px;
   border-radius: 6px;
-  background: var(--surface-raised);
+  background: var(--glass-selected);
   color: var(--text);
-  font-family: "Geist Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   text-align: center;
 }

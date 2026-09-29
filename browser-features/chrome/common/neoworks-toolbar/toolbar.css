@@ -1,0 +1,157 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Neoworks top bar: Firefox's own nav-bar, restyled. Back / forward / reload
+   on the left, the URL bar centered, extensions and the app menu on the right.
+   The horizontal tab strip is replaced by the sidebar. */
+
+#TabsToolbar,
+#nav-bar #vertical-spacer,
+#nav-bar #fxa-toolbar-menu-button,
+#nav-bar #smartwindow-ask-button,
+#nav-bar #taskbar-tabs-audio {
+  display: none !important;
+}
+
+/* Only Neoworks' buttons and extension actions stay in the bar; other widgets
+   (home, library, ...) are still reachable through customize mode. */
+:root:not([customizing]) #nav-bar-customization-target > :not(
+  #back-button,
+  #forward-button,
+  #stop-reload-button,
+  #urlbar-container,
+  #downloads-button,
+  #unified-extensions-button,
+  .webextension-browser-action
+) {
+  display: none !important;
+}
+
+#navigator-toolbox {
+  border-bottom: none !important;
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+#nav-bar {
+  --toolbarbutton-inner-padding: 6px;
+  --toolbarbutton-outer-padding: 1px;
+  --toolbarbutton-border-radius: var(--radius-md);
+  --toolbarbutton-hover-background: var(--glass-hover);
+  --toolbarbutton-active-background: var(--glass-selected);
+  --toolbarbutton-icon-fill: var(--text-muted);
+  --toolbar-field-background-color: rgba(255, 255, 255, 0.05);
+  --toolbar-field-border-color: var(--border-faint);
+  --toolbar-field-color: var(--text);
+  --toolbar-field-focus-background-color: var(--bg-elevated);
+  --toolbar-field-focus-border-color: var(--border-strong);
+  --toolbar-field-focus-color: var(--text);
+
+  min-height: 40px;
+  padding-inline: 8px !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#nav-bar-customization-target {
+  flex: 1 1 auto;
+}
+
+/* Keep the URL bar centered in the window regardless of how many extension
+   buttons sit on the right. */
+#nav-bar #urlbar-container {
+  flex: 0 1 640px !important;
+  width: auto !important;
+  min-width: 280px !important;
+  margin-inline: auto !important;
+}
+
+#nav-bar #downloads-button,
+#nav-bar .webextension-browser-action,
+#nav-bar #unified-extensions-button {
+  order: 10;
+}
+
+#urlbar {
+  --urlbar-container-height: 32px;
+}
+
+#urlbar-background {
+  border-radius: 10px !important;
+}
+
+#urlbar-input {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+#urlbar:not([focused]) #urlbar-input {
+  text-align: center;
+}
+
+/* Phosphor icons for the fixed buttons, drawn as masks so they follow the
+   button's text color. */
+#back-button > .toolbarbutton-icon,
+#forward-button > .toolbarbutton-icon,
+#reload-button > .toolbarbutton-icon,
+#stop-button > .toolbarbutton-icon,
+#unified-extensions-button .toolbarbutton-icon,
+#PanelUI-menu-button .toolbarbutton-icon {
+  width: calc(16px + 2 * var(--toolbarbutton-inner-padding)) !important;
+  height: calc(16px + 2 * var(--toolbarbutton-inner-padding)) !important;
+  list-style-image: none !important;
+  background-color: transparent !important;
+  background-image: linear-gradient(var(--text-muted), var(--text-muted)) !important;
+  background-clip: content-box !important;
+  mask-size: 16px;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+#nav-bar toolbarbutton:not([disabled]):is(:hover, [open]) > .toolbarbutton-icon,
+#nav-bar toolbarbutton:not([disabled]):is(:hover, [open]) > .toolbarbutton-badge-stack {
+  background-color: transparent !important;
+}
+
+/* Masked icons can't draw their own hover plate, so every button draws it
+   itself instead of its icon. */
+#nav-bar toolbarbutton {
+  border-radius: var(--radius-md) !important;
+}
+
+#nav-bar toolbarbutton:not([disabled]):is(:hover, [open]) {
+  background-color: var(--glass-hover) !important;
+}
+
+#back-button[disabled] > .toolbarbutton-icon,
+#forward-button[disabled] > .toolbarbutton-icon {
+  opacity: 0.4;
+}
+
+#back-button > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-arrow-left);
+}
+
+#forward-button > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-arrow-right);
+}
+
+#reload-button > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-arrow-clockwise);
+}
+
+#stop-button > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-x);
+}
+
+#unified-extensions-button .toolbarbutton-icon {
+  mask-image: var(--nw-icon-puzzle-piece);
+}
+
+#PanelUI-menu-button .toolbarbutton-icon {
+  mask-image: var(--nw-icon-dots-three);
+}
+
+#PanelUI-menu-button .toolbarbutton-badge-stack {
+  padding: 0 !important;
+}

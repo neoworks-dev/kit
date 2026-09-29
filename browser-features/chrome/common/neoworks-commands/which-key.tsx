@@ -11,6 +11,7 @@ import {
 } from "#features-modules/common/NWKeymap.ts";
 import { readQuickmarks } from "./quickmarks.ts";
 import { commandTitle } from "./registry.ts";
+import glassStyle from "../neoworks-ui/glass.css?inline";
 import whichKeyStyle from "./which-key.css?inline";
 
 interface WhichKeyEntry {
@@ -86,8 +87,8 @@ function openFlag(): string | undefined {
 export function WhichKey() {
   const entries = () => whichKeyEntries(pendingKeys());
   return (
-    <div id="neoworks-which-key" data-open={openFlag()}>
-      <style>{whichKeyStyle}</style>
+    <div id="neoworks-which-key" class="nw-glass" data-open={openFlag()}>
+      <style>{glassStyle + whichKeyStyle}</style>
       <Show when={pendingKeys().length > 0}>
         <div class="nw-which-key-typed">{describeKeys(pendingKeys())} …</div>
         <For each={entries()}>

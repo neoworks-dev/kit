@@ -18,6 +18,8 @@ export function initBeforeSessionStoreInit() {
     userAgent.replace("Noraneko", "Firefox"),
   );
   prefs.setBoolPref("browser.preferences.moreFromMozilla", false);
+  // Closing the last tab leaves an empty new tab instead of closing the window.
+  prefs.setBoolPref("browser.tabs.closeWindowWithLastTab", false);
 }
 
 export function init() {}

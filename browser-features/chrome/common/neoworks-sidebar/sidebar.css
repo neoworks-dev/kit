@@ -1,50 +1,30 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
-/* Subset of @neoworks-dev/ui tokens (dark theme) until the design system is ported. */
 #neoworks-sidebar {
-  --bg: #141416;
-  --bg-elevated: #1c1c1e;
-  --surface-raised: #262628;
-  --surface-hover: #2e2e31;
-  --border-strong: #3f3f46;
-  --border-faint: rgba(255, 255, 255, 0.06);
-  --text: #fafafa;
-  --text-muted: #a1a1aa;
-  --text-dim: #71717a;
-  --text-faint: #52525b;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --dur-fast: 120ms;
-  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
-
   position: absolute;
-  top: 6px;
-  bottom: 6px;
-  left: 6px;
+  top: 8px;
+  bottom: 8px;
+  left: 8px;
   display: flex;
   flex-direction: column;
-  width: 240px;
+  width: 248px;
   box-sizing: border-box;
   overflow: hidden;
-  border: 1px solid var(--border-faint);
-  border-radius: var(--radius-lg);
-  background: var(--bg-elevated);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  border-radius: 18px;
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 12px;
   user-select: none;
   pointer-events: auto;
-  transform: translateX(calc(-100% - 12px));
-  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1);
+  transform: translateX(calc(-100% - 16px));
+  transition: transform 220ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 #neoworks-sidebar[data-visible] {
   transform: none;
 }
 
-/* Overlay host: #browser is the content area left of/below the (hidden) toolbox. */
+/* Overlay host: #browser is the content area below the top bar. */
 #browser {
   position: relative;
 }
@@ -67,15 +47,11 @@
   pointer-events: auto;
 }
 
-:root[neoworks-hide-toolbox] #navigator-toolbox {
-  display: none !important;
-}
-
 #neoworks-sidebar .nw-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 12px 10px;
+  padding: 12px 12px 10px 14px;
 }
 
 #neoworks-sidebar .nw-title {
@@ -94,21 +70,66 @@
   scrollbar-width: thin;
 }
 
-#neoworks-sidebar .nw-essentials {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 4px;
+/* Pinned tabs: three favicon tiles per row. */
+#neoworks-sidebar .nw-pinned-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  flex-shrink: 0;
+  margin-bottom: 6px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-faint);
+  border-bottom: 1px solid var(--glass-divider);
+}
+
+#neoworks-sidebar .nw-pinned-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.05);
+  transition: background-color var(--dur-fast), border-color var(--dur-fast);
+}
+
+#neoworks-sidebar .nw-pinned-tile:hover {
+  background: var(--glass-hover);
+}
+
+#neoworks-sidebar .nw-pinned-tile[data-selected] {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: var(--glass-selected);
+}
+
+#neoworks-sidebar .nw-pinned-tile[data-unloaded]:not([data-selected]) {
+  opacity: 0.6;
+}
+
+#neoworks-sidebar .nw-pinned-tile .nw-favicon,
+#neoworks-sidebar .nw-pinned-tile .nw-favicon img {
+  width: 18px;
+  height: 18px;
+}
+
+#neoworks-sidebar .nw-pinned-container {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  transform: translateX(-50%);
 }
 
 #neoworks-sidebar .nw-tab,
-#neoworks-sidebar .nw-group-header {
+#neoworks-sidebar .nw-group-header,
+#neoworks-sidebar .nw-container-option,
+#neoworks-sidebar .nw-container-current {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 36px;
+  height: 34px;
   min-width: 0;
   flex-shrink: 0;
   padding: 0 8px;
@@ -117,12 +138,14 @@
 }
 
 #neoworks-sidebar .nw-tab:hover,
-#neoworks-sidebar .nw-group-header:hover {
-  background: var(--surface-hover);
+#neoworks-sidebar .nw-group-header:hover,
+#neoworks-sidebar .nw-container-option:hover,
+#neoworks-sidebar .nw-container-current:hover {
+  background: var(--glass-hover);
 }
 
 #neoworks-sidebar .nw-tab[data-selected] {
-  background: var(--surface-raised);
+  background: var(--glass-selected);
 }
 
 #neoworks-sidebar .nw-tab[data-unloaded]:not([data-selected]) {
@@ -176,7 +199,6 @@
   font-weight: 500;
 }
 
-#neoworks-sidebar .nw-tab-badge,
 #neoworks-sidebar .nw-group-count {
   flex-shrink: 0;
   color: var(--text-dim);
@@ -192,37 +214,43 @@
   cursor: default;
 }
 
+#neoworks-sidebar .nw-icon {
+  width: 14px;
+  height: 14px;
+}
+
 #neoworks-sidebar .nw-icon-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
   padding: 0;
   border-radius: var(--radius-sm);
   color: var(--text-dim);
-  font-size: 15px;
 }
 
 #neoworks-sidebar .nw-icon-button:hover {
-  background: rgba(63, 63, 70, 0.4);
+  background: var(--glass-hover);
   color: var(--text);
 }
 
-#neoworks-sidebar .nw-tab-action {
-  width: 20px;
-  height: 20px;
+#neoworks-sidebar .nw-tab-action,
+#neoworks-sidebar .nw-container-edit {
+  width: 22px;
+  height: 22px;
   opacity: 0;
 }
 
 #neoworks-sidebar .nw-tab:hover .nw-tab-action,
-#neoworks-sidebar .nw-tab-action[data-active] {
+#neoworks-sidebar .nw-container-option:hover .nw-container-edit {
   opacity: 1;
 }
 
-#neoworks-sidebar .nw-tab-action[data-active] {
-  color: var(--text);
+#neoworks-sidebar .nw-tab-audio {
+  width: 22px;
+  height: 22px;
 }
 
 #neoworks-sidebar .nw-group-chevron {
@@ -243,23 +271,113 @@
   gap: 2px;
   margin-left: 12px;
   padding-left: 4px;
-  border-left: 1px solid var(--border-faint);
+  border-left: 1px solid var(--glass-divider);
 }
 
-#neoworks-sidebar .nw-footer {
-  padding: 8px;
-  border-top: 1px solid var(--border-faint);
+/* Container bar and its popover menu. */
+#neoworks-sidebar .nw-container-bar {
+  position: relative;
+  padding: 6px;
+  border-top: 1px solid var(--glass-divider);
 }
 
-#neoworks-sidebar .nw-text-button {
+#neoworks-sidebar .nw-container-current {
   width: 100%;
-  padding: 6px 8px;
-  border-radius: var(--radius-md);
-  color: var(--text-dim);
   text-align: left;
 }
 
-#neoworks-sidebar .nw-text-button:hover {
-  background: var(--surface-hover);
+#neoworks-sidebar .nw-container-current .nw-icon {
+  color: var(--text-dim);
+}
+
+#neoworks-sidebar .nw-container-dismiss {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+#neoworks-sidebar .nw-container-menu {
+  position: absolute;
+  right: 6px;
+  bottom: calc(100% + 4px);
+  left: 6px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 360px;
+  padding: 4px;
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  background-color: rgba(30, 30, 34, 0.85);
+}
+
+#neoworks-sidebar .nw-container-menu .nw-container-option {
+  height: 30px;
+}
+
+#neoworks-sidebar .nw-container-check {
+  color: var(--text-muted);
+}
+
+#neoworks-sidebar .nw-container-new {
+  color: var(--text-muted);
+}
+
+#neoworks-sidebar .nw-container-divider {
+  height: 1px;
+  margin: 2px 4px;
+  background: var(--glass-divider);
+}
+
+#neoworks-sidebar .nw-container-input {
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  outline: none;
+  background: rgba(0, 0, 0, 0.25);
   color: var(--text);
+  font: inherit;
+}
+
+#neoworks-sidebar .nw-container-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--glass-hover);
+}
+
+#neoworks-sidebar .nw-container-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#neoworks-sidebar .nw-container-delete:hover {
+  color: #ff613d;
+}
+
+#neoworks-sidebar .nw-container-swatches {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2px;
+}
+
+#neoworks-sidebar .nw-container-swatch {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+#neoworks-sidebar .nw-container-swatch[data-selected] {
+  box-shadow: 0 0 0 2px rgba(22, 22, 26, 0.9), 0 0 0 3.5px var(--text);
 }

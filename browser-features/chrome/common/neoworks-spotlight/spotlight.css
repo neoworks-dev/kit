@@ -1,19 +1,6 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
-/* Layout follows the Electron command bar; tokens from @neoworks-dev/ui (dark). */
 #neoworks-spotlight {
-  --bg-elevated: #1c1c1e;
-  --surface-hover: #2e2e31;
-  --surface-raised: #262628;
-  --border: #29292b;
-  --border-faint: rgba(255, 255, 255, 0.06);
-  --text: #fafafa;
-  --text-muted: #a1a1aa;
-  --text-dim: #71717a;
-  --text-faint: #52525b;
-  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, "SF Mono", monospace;
-
   position: fixed;
   inset: 0;
   z-index: 2147483647;
@@ -21,7 +8,7 @@
   justify-content: center;
   align-items: flex-start;
   padding-top: 96px;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.18);
   font-family: var(--font-sans);
 }
 
@@ -35,10 +22,7 @@
   width: 640px;
   max-width: calc(100vw - 32px);
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--bg-elevated);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  border-radius: 20px;
   color: var(--text);
 }
 
@@ -46,15 +30,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--border-faint);
+  padding: 0 14px;
+  border-bottom: 1px solid var(--glass-divider);
   color: var(--text-dim);
 }
 
 #neoworks-spotlight .nw-spotlight-input {
   appearance: none;
   flex: 1;
-  height: 48px;
+  height: 50px;
   min-width: 0;
   padding: 0;
   border: none;
@@ -66,14 +50,14 @@
 }
 
 #neoworks-spotlight .nw-spotlight-input::placeholder {
-  color: var(--text-faint);
+  color: var(--text-dim);
 }
 
 #neoworks-spotlight .nw-spotlight-results {
   display: flex;
   flex-direction: column;
   max-height: 360px;
-  padding: 4px;
+  padding: 6px;
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -92,12 +76,12 @@
   min-width: 0;
   flex-shrink: 0;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text-muted);
 }
 
 #neoworks-spotlight .nw-spotlight-result[data-highlighted] {
-  background: var(--surface-hover);
+  background: var(--glass-selected);
   color: var(--text);
 }
 
@@ -126,7 +110,7 @@
   min-width: 0;
   max-width: 45%;
   overflow: hidden;
-  color: var(--text-faint);
+  color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: 11px;
   white-space: nowrap;
@@ -137,7 +121,7 @@
   flex-shrink: 0;
   padding: 1px 6px;
   border-radius: 6px;
-  background: var(--surface-raised);
+  background: var(--glass-hover);
   color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 11px;

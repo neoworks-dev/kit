@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { createSignal, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
+import { type Container, containers, NO_CONTAINER } from "./containers.ts";
 import {
   closeTab,
   createGroupFromTab,
+  moveTabToContainer,
   togglePinned,
 } from "./tab-actions.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
@@ -58,16 +60,54 @@ function muteLabel(tabState: TabState): string {
   return "Mute tab";
 }
 
+function isMenuTabContainer(userContextId: number): boolean {
+  return menuTab()?.userContextId === userContextId;
+}
+
+function ContainerMenuItem(props: { label: string; userContextId: number }) {
+  return (
+    <xul:menuitem
+      type="checkbox"
+      label={props.label}
+      checked={isMenuTabContainer(props.userContextId)}
+      onCommand={withMenuTab((tab) => moveTabToContainer(tab, props.userContextId))}
+    />
+  );
+}
+
+function ContainerSubmenu() {
+  return (
+    <xul:menu label="Move to container">
+      <xul:menupopup>
+        <ContainerMenuItem label="No container" userContextId={NO_CONTAINER} />
+        <xul:menuseparator />
+        <For each={containers()}>
+          {(container: Container) => (
+            <ContainerMenuItem label={container.name} userContextId={container.userContextId} />
+          )}
+        </For>
+      </xul:menupopup>
+    </xul:menu>
+  );
+}
+
 // Native XUL popup: gets Firefox's menu keyboard navigation, positioning and
 // platform styling for free.
 export function TabContextMenu(props: { tabState: TabState }) {
   return (
     <xul:menupopup
       id={MENU_ID}
-      onPopupShowing={() => setSidebarMenuOpen(true)}
-      onPopupHiding={() => {
+      onPopupShowing={(event: Event) => {
+        if (event.target === event.currentTarget) {
+          setSidebarMenuOpen(MENU_ID, true);
+        }
+      }}
+      onPopupHiding={(event: Event) => {
+        if (event.target !== event.currentTarget) {
+          return;
+        }
         setMenuTab(null);
-        setSidebarMenuOpen(false);
+        setSidebarMenuOpen(MENU_ID, false);
       }}
     >
       <xul:menuitem
@@ -92,6 +132,7 @@ export function TabContextMenu(props: { tabState: TabState }) {
           onCommand={withMenuTab(createGroupFromTab)}
         />
       </Show>
+      <ContainerSubmenu />
       <xul:menuitem
         label="Move to new window"
         onCommand={withMenuTab((tab) => tabbrowser().replaceTabWithWindow(tab))}

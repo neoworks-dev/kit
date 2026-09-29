@@ -5,6 +5,8 @@ import {
   noraComponent,
   NoraComponentBase,
 } from "#features-chrome/utils/base.ts";
+import { closeContainerMenu } from "./container-bar.tsx";
+import { watchContainers } from "./containers.ts";
 import { mountSidebar, mountTabContextMenu } from "./mount.tsx";
 import {
   disposeSidebarVisibility,
@@ -12,7 +14,6 @@ import {
   SIDEBAR_PEEK_EVENT,
 } from "./sidebar-visibility.ts";
 import { createTabState } from "./tab-state.ts";
-import { applyToolboxVisibility, restoreToolbox } from "./toolbox-visibility.ts";
 
 @noraComponent(import.meta.hot)
 export default class NeoworksSidebar extends NoraComponentBase {
@@ -25,16 +26,17 @@ export default class NeoworksSidebar extends NoraComponentBase {
     }
 
     const tabState = createTabState();
+    const stopWatchingContainers = watchContainers();
     mountSidebar(browserBox, tabState);
     mountTabContextMenu(popupSet, tabState);
-    applyToolboxVisibility();
     addEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
 
     onCleanup(() => {
       removeEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
+      closeContainerMenu();
+      stopWatchingContainers();
       disposeSidebarVisibility();
       tabState.dispose();
-      restoreToolbox();
     });
   }
 }

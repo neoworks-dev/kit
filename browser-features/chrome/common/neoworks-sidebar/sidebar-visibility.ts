@@ -14,13 +14,14 @@ const PEEK_DURATION_MS = 1200;
 
 const [visible, setVisible] = createSignal(false);
 let hovered = false;
-let menuOpen = false;
+// Menus and popovers currently keeping the sidebar open.
+const openMenus = new Set<string>();
 let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
 export const sidebarVisible = visible;
 
 function isInUse(): boolean {
-  return hovered || menuOpen;
+  return hovered || openMenus.size > 0;
 }
 
 function scheduleHide(delayMs: number): void {
@@ -52,16 +53,18 @@ export function handleSidebarLeave(): void {
   scheduleHide(LEAVE_HIDE_DELAY_MS);
 }
 
-export function setSidebarMenuOpen(open: boolean): void {
-  menuOpen = open;
-  if (!open) {
-    scheduleHide(LEAVE_HIDE_DELAY_MS);
+export function setSidebarMenuOpen(menuName: string, open: boolean): void {
+  if (open) {
+    openMenus.add(menuName);
+    return;
   }
+  openMenus.delete(menuName);
+  scheduleHide(LEAVE_HIDE_DELAY_MS);
 }
 
 export function disposeSidebarVisibility(): void {
   clearTimeout(hideTimer);
   hovered = false;
-  menuOpen = false;
+  openMenus.clear();
   setVisible(false);
 }

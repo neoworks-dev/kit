@@ -10,7 +10,8 @@ import { isSearchQuery, localResults, navigateResult, openTabUrls } from "./sear
 import { stopSuggestions, suggestionResults } from "./suggestions.ts";
 import { ResultRow, sectionTitle, startsSection } from "./result-row.tsx";
 import type { SpotlightResult } from "./types.ts";
-import iconStyle from "./icons.css?inline";
+import glassStyle from "../neoworks-ui/glass.css?inline";
+import iconStyle from "../neoworks-ui/icons.css?inline";
 import spotlightStyle from "./spotlight.css?inline";
 
 const browserWindow = window as unknown as {
@@ -61,8 +62,8 @@ export function closeSpotlight(): void {
   tabbrowser().selectedBrowser.focus();
 }
 
-// Ordering follows the Electron command bar: the open/search row, engine
-// suggestions, matching tabs/quickmarks/commands, then history and bookmarks.
+// Result order: the open/search row, engine suggestions, matching
+// tabs/quickmarks/commands, then history and bookmarks.
 function showResults(query: string): void {
   setResults([
     ...navigateResults(query),
@@ -218,8 +219,8 @@ export function Spotlight() {
         }
       }}
     >
-      <style>{spotlightStyle + iconStyle}</style>
-      <div class="nw-spotlight-panel">
+      <style>{glassStyle + iconStyle + spotlightStyle}</style>
+      <div class="nw-spotlight-panel nw-glass">
         <div class="nw-spotlight-search">
           <span class="nw-icon" data-icon="magnifying-glass" />
           <input

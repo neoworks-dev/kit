@@ -13,7 +13,7 @@ import { allowTabDrop, dropTabOnto, endTabDrag, startTabDrag } from "./tab-drag.
 import type { BrowserTab, TabState } from "./types.ts";
 
 // solid-xul removes attributes set to undefined.
-function attributeFlag(enabled: boolean): string | undefined {
+export function attributeFlag(enabled: boolean): string | undefined {
   if (enabled) {
     return "true";
   }
@@ -27,7 +27,15 @@ function stopThen(action: () => void): (event: Event) => void {
   };
 }
 
-function Favicon(props: { source: string; busy: boolean }) {
+// Getter that re-runs whenever any tab changes.
+export function tabReader(tabState: TabState) {
+  return <T,>(getter: () => T): (() => T) => () => {
+    tabState.revision();
+    return getter();
+  };
+}
+
+export function Favicon(props: { source: string; busy: boolean }) {
   const placeholder = (
     <span class="nw-favicon-placeholder" data-busy={attributeFlag(props.busy)} />
   );
@@ -40,34 +48,26 @@ function Favicon(props: { source: string; busy: boolean }) {
   );
 }
 
+function audioIcon(tab: BrowserTab): string {
+  if (tab.muted) {
+    return "speaker-slash";
+  }
+  return "speaker-high";
+}
+
 export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
   const tab = props.tab;
-  const read = <T,>(getter: () => T): (() => T) => () => {
-    props.tabState.revision();
-    return getter();
-  };
+  const read = tabReader(props.tabState);
 
   const label = read(() => tab.label || "New Tab");
   const favicon = read(() => tab.image);
   const selected = read(() => tab.selected);
-  const pinned = read(() => tab.pinned);
   const busy = read(() => tab.hasAttribute("busy"));
   const unloaded = read(() => tab.hasAttribute("pending"));
   const playing = read(() => tab.hasAttribute("soundplaying"));
   const muted = read(() => tab.muted);
   const container = read(() => containerColor(tab.userContextId));
-  const badgeText = read(() => {
-    if (tab.muted) {
-      return "muted";
-    }
-    return "♪";
-  });
-  const pinTitle = read(() => {
-    if (tab.pinned) {
-      return "Unpin";
-    }
-    return "Pin as essential";
-  });
+  const audio = read(() => audioIcon(tab));
 
   return (
     <div
@@ -90,16 +90,22 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
       <Favicon source={favicon()} busy={busy()} />
       <span class="nw-tab-label">{label()}</span>
       <Show when={playing() || muted()}>
-        <span class="nw-tab-badge">{badgeText()}</span>
+        <button
+          type="button"
+          class="nw-icon-button nw-tab-audio"
+          title="Mute / unmute"
+          onClick={stopThen(() => tab.toggleMuteAudio())}
+        >
+          <span class="nw-icon" data-icon={audio()} />
+        </button>
       </Show>
       <button
         type="button"
         class="nw-icon-button nw-tab-action"
-        title={pinTitle()}
-        data-active={attributeFlag(pinned())}
+        title="Pin tab"
         onClick={stopThen(() => togglePinned(tab))}
       >
-        ⊙
+        <span class="nw-icon" data-icon="push-pin" />
       </button>
       <button
         type="button"
@@ -107,7 +113,7 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
         title="Close tab"
         onClick={stopThen(() => closeTab(tab))}
       >
-        ×
+        <span class="nw-icon" data-icon="x" />
       </button>
     </div>
   );

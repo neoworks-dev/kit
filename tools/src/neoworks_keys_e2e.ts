@@ -419,7 +419,105 @@ async function testChromeFocusKeys(context: KeysTestContext): Promise<void> {
   );
 }
 
+async function testTopBar(context: KeysTestContext): Promise<void> {
+  const layout = await context.inChrome<{ hidden: string[]; offCenter: number }>(`
+    const visible = (id) => document.getElementById(id)?.getBoundingClientRect().width > 0;
+    const required = ["back-button", "forward-button", "stop-reload-button", "urlbar",
+      "unified-extensions-button", "PanelUI-menu-button"];
+    const urlbar = document.getElementById("urlbar-container").getBoundingClientRect();
+    const hidden = required.filter((id) => !visible(id));
+    if (visible("TabsToolbar")) {
+      hidden.push("TabsToolbar should be hidden");
+    }
+    return {
+      hidden,
+      offCenter: Math.abs(urlbar.left + urlbar.width / 2 - window.innerWidth / 2),
+    };
+  `);
+  assert(layout.hidden.length === 0, `Top bar items not visible: ${layout.hidden.join(", ")}`);
+  assert(layout.offCenter < 80, `URL bar is ${layout.offCenter}px off center`);
+}
+
+async function testPinnedGrid(context: KeysTestContext): Promise<void> {
+  await context.focusPage();
+  await context.inChrome("gBrowser.pinTab(gBrowser.selectedTab);");
+  try {
+    await context.waitFor(
+      () =>
+        context.inChrome<boolean>(
+          `return document.querySelector("#neoworks-sidebar .nw-pinned-tile[data-selected]") !== null;`,
+        ),
+      "Pinned tab did not appear as a selected grid tile",
+    );
+    const columns = await context.inChrome<number>(`
+      const grid = document.querySelector("#neoworks-sidebar .nw-pinned-grid");
+      return getComputedStyle(grid).gridTemplateColumns.split(" ").length;
+    `);
+    assert(columns === 3, `Pinned grid has ${columns} columns instead of 3`);
+  } finally {
+    await context.inChrome("gBrowser.unpinTab(gBrowser.selectedTab);");
+  }
+}
+
+const CONTAINER_SERVICE_IMPORT =
+  `ChromeUtils.importESModule("moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs").ContextualIdentityService`;
+
+function createContainerThroughSidebar(context: KeysTestContext, name: string): Promise<number> {
+  return context.inChrome<number>(`
+    const service = ${CONTAINER_SERVICE_IMPORT};
+    document.querySelector("#neoworks-sidebar .nw-container-current").click();
+    document.querySelector("#neoworks-sidebar .nw-container-new").click();
+    const input = document.getElementById("neoworks-new-container-input");
+    input.value = ${JSON.stringify(name)};
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    const created = service.getPublicIdentities()
+      .find((identity) => service.getUserContextLabel(identity.userContextId) === ${JSON.stringify(name)});
+    return created ? created.userContextId : 0;
+  `);
+}
+
+async function selectDefaultContainer(context: KeysTestContext, name: string): Promise<void> {
+  await context.waitFor(
+    () =>
+      context.inChrome<boolean>(`
+        const option = [...document.querySelectorAll("#neoworks-sidebar .nw-container-option")]
+          .find((row) => row.textContent.includes(${JSON.stringify(name)}));
+        option?.click();
+        return option !== undefined;
+      `),
+    "New container did not show up in the container menu",
+  );
+}
+
+async function testContainers(context: KeysTestContext): Promise<void> {
+  const name = "E2E Container";
+  const userContextId = await createContainerThroughSidebar(context, name);
+  assert(userContextId > 0, "Creating a container from the sidebar failed");
+  try {
+    await selectDefaultContainer(context, name);
+    const defaultId = await context.inChrome<number>(
+      `return Services.prefs.getIntPref("neoworks.containers.default", 0);`,
+    );
+    assert(defaultId === userContextId, "Picking a container did not make it the default");
+    await context.focusPage();
+    await context.pressKeys(["t"]);
+    await context.waitFor(
+      () => context.inChrome<boolean>(`return gBrowser.selectedTab.userContextId === ${userContextId};`),
+      "t did not open the new tab in the default container",
+    );
+    await context.inChrome("gBrowser.removeTab(gBrowser.selectedTab);");
+  } finally {
+    await context.inChrome(`
+      Services.prefs.clearUserPref("neoworks.containers.default");
+      ${CONTAINER_SERVICE_IMPORT}.remove(${userContextId});
+    `);
+  }
+}
+
 const TESTS: Array<[string, (context: KeysTestContext) => Promise<void>]> = [
+  ["top bar shows navigation, URL bar, extensions and menu", testTopBar],
+  ["pinned tabs render as a three-column grid", testPinnedGrid],
+  ["containers can be created and used for new tabs", testContainers],
   ["double Space opens spotlight", testDoubleSpaceOpensSpotlight],
   ["keys typed into inputs stay text", testDoubleSpaceInInputTypesSpaces],
   ["spotlight lists, filters and runs commands", testSpotlightRunsCommands],

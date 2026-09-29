@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-const { ContextualIdentityService } = ChromeUtils.importESModule(
-  "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
-) as {
-  ContextualIdentityService: {
-    getPublicIdentityFromId(userContextId: number): { color: string } | null;
-  };
-};
+import { ContextualIdentityService } from "./containers.ts";
 
 // Firefox's container and tab group color names, as hex swatches.
 const NAMED_COLORS: Record<string, string> = {

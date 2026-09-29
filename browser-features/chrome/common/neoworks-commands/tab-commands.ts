@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { SIDEBAR_PEEK_EVENT } from "../neoworks-sidebar/sidebar-visibility.ts";
-import { togglePinned } from "../neoworks-sidebar/tab-actions.ts";
+import { openNewTab, togglePinned } from "../neoworks-sidebar/tab-actions.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
 import type { NeoworksCommand } from "./registry.ts";
 
 const browserWindow = window as unknown as {
-  BROWSER_NEW_TAB_URL: string;
   BrowserCommands: { back(): void; forward(): void; reload(): void };
   SessionWindowUI: { undoCloseTab(window: Window): void };
   gLazyFindCommand(command: string): void;
@@ -14,17 +13,6 @@ const browserWindow = window as unknown as {
 
 const NEXT = 1;
 const PREVIOUS = -1;
-
-// New tabs inherit the current tab's container and take keyboard focus, since
-// the (hidden) URL bar would otherwise swallow typing.
-function openNewTab(): void {
-  const browser = tabbrowser();
-  const tab = browser.addTrustedTab(browserWindow.BROWSER_NEW_TAB_URL, {
-    userContextId: browser.selectedTab.userContextId,
-  });
-  browser.selectedTab = tab;
-  browser.selectedBrowser.focus();
-}
 
 // The sidebar briefly slides in so the new position in the tab list shows.
 function advanceTab(direction: number): void {

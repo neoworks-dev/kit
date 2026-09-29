@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { For, Match, Show, Switch } from "solid-js";
+import { ContainerBar } from "./container-bar.tsx";
 import { namedColor } from "./identity-colors.ts";
+import { PinnedGrid } from "./pinned-grid.tsx";
 import { openNewTab, toggleGroupCollapsed } from "./tab-actions.ts";
 import {
   handleSidebarEnter,
   handleSidebarLeave,
   sidebarVisible,
 } from "./sidebar-visibility.ts";
-import { TabRow } from "./tab-row.tsx";
-import { toggleToolbox, toolboxHidden } from "./toolbox-visibility.ts";
+import { tabReader, TabRow } from "./tab-row.tsx";
 import type {
   BrowserTab,
   BrowserTabGroup,
   SidebarEntry,
   TabState,
 } from "./types.ts";
+import glassStyle from "../neoworks-ui/glass.css?inline";
+import iconStyle from "../neoworks-ui/icons.css?inline";
 import sidebarStyle from "./sidebar.css?inline";
 
 function GroupRow(props: { group: BrowserTabGroup; tabState: TabState }) {
   const group = props.group;
-  const read = <T,>(getter: () => T): (() => T) => () => {
-    props.tabState.revision();
-    return getter();
-  };
+  const read = tabReader(props.tabState);
 
   const label = read(() => group.label || "Folder");
   const collapsed = read(() => group.collapsed);
@@ -76,13 +76,6 @@ function EntryRow(props: { entry: SidebarEntry; tabState: TabState }) {
   );
 }
 
-function toolboxButtonLabel(): string {
-  if (toolboxHidden()) {
-    return "Show Firefox toolbar";
-  }
-  return "Hide Firefox toolbar";
-}
-
 function visibleFlag(): string | undefined {
   if (sidebarVisible()) {
     return "true";
@@ -95,7 +88,7 @@ function visibleFlag(): string | undefined {
 export function Sidebar(props: { tabState: TabState }) {
   return (
     <div id="neoworks-sidebar-layer">
-      <style>{sidebarStyle}</style>
+      <style>{glassStyle + iconStyle + sidebarStyle}</style>
       <div class="nw-reveal-edge" onMouseEnter={handleSidebarEnter} />
       <SidebarPanel tabState={props.tabState} />
     </div>
@@ -106,6 +99,7 @@ function SidebarPanel(props: { tabState: TabState }) {
   return (
     <div
       id="neoworks-sidebar"
+      class="nw-glass"
       data-visible={visibleFlag()}
       onMouseEnter={handleSidebarEnter}
       onMouseLeave={handleSidebarLeave}
@@ -113,28 +107,18 @@ function SidebarPanel(props: { tabState: TabState }) {
       <div class="nw-header">
         <span class="nw-title">Neoworks</span>
         <button type="button" class="nw-icon-button" title="New tab" onClick={openNewTab}>
-          +
+          <span class="nw-icon" data-icon="plus" />
         </button>
       </div>
 
       <div class="nw-scroll">
-        <Show when={props.tabState.pinnedTabs().length > 0}>
-          <div class="nw-essentials">
-            <For each={props.tabState.pinnedTabs()}>
-              {(tab) => <TabRow tab={tab} tabState={props.tabState} />}
-            </For>
-          </div>
-        </Show>
+        <PinnedGrid tabState={props.tabState} />
         <For each={props.tabState.entries()}>
           {(entry) => <EntryRow entry={entry} tabState={props.tabState} />}
         </For>
       </div>
 
-      <div class="nw-footer">
-        <button type="button" class="nw-text-button" onClick={toggleToolbox}>
-          {toolboxButtonLabel()}
-        </button>
-      </div>
+      <ContainerBar />
     </div>
   );
 }

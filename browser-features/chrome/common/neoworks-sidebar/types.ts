@@ -15,6 +15,8 @@ export interface BrowserTab extends Omit<XULElement, "linkedBrowser"> {
   selected: boolean;
   muted: boolean;
   userContextId: number;
+  // Index in gBrowser.tabs.
+  _tPos: number;
   group: BrowserTabGroup | null;
   linkedBrowser: { currentURI: { spec: string } };
   toggleMuteAudio(): void;
@@ -41,7 +43,10 @@ export interface NeoworksTabbrowser {
   tabContainer: EventTarget & {
     advanceSelectedTab(direction: number, wrap: boolean): void;
   };
-  addTrustedTab(url: string, options: { userContextId: number }): BrowserTab;
+  addTrustedTab(
+    url: string,
+    options: { userContextId: number; pinned?: boolean; index?: number },
+  ): BrowserTab;
   pinTab(tab: BrowserTab): void;
   unpinTab(tab: BrowserTab): void;
   removeTab(tab: BrowserTab, options?: { animate?: boolean }): void;
