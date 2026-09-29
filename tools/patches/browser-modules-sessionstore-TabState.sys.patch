@@ -1,0 +1,29 @@
+diff --git a/moz-src/browser/components/sessionstore/TabState.sys.mjs b/moz-src/browser/components/sessionstore/TabState.sys.mjs
+index 68e8cb51e3b..1f9cf0cbdc8 100644
+--- a/moz-src/browser/components/sessionstore/TabState.sys.mjs
++++ b/moz-src/browser/components/sessionstore/TabState.sys.mjs
+@@ -169,6 +169,24 @@ class _TabState {
+     let tabData = { entries: [], lastAccessed: tab.lastAccessed };
+     let browser = tab.linkedBrowser;
+ 
++    /*@nora:inject:start*/
++    // WorkspaceId
++    tabData.floorpWorkspaceId = tab.getAttribute(
++      "floorpWorkspaceId"
++    );
++    // lastShowWorkspaceId
++    tabData.floorpLastShowWorkspaceId = tab.getAttribute(
++      "floorpWorkspaceLastShowId"
++    );
++
++    // Private Container
++    tabData.floorpDisableHistory = tab.getAttribute("floorp-disablehistory");
++    // Split View Group
++    tabData.floorpSplitViewGroupId = tab.getAttribute(
++      "floorpSplitViewGroupId"
++    );
++    /*@nora:inject:end*/
++
+     if (tab.pinned) {
+       tabData.pinned = true;
+     }
