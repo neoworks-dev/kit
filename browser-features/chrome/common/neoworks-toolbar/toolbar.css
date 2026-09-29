@@ -59,6 +59,24 @@
   flex: 1 1 auto;
 }
 
+/* With a client-side titlebar the window controls live in the hidden tab
+   strip. Firefox only moves them into the nav-bar when the toolbox has
+   [tabs-hidden], which our CSS-only hiding never sets. */
+:root[customtitlebar] #nav-bar > .titlebar-buttonbox-container {
+  display: flex !important;
+  margin-inline-start: 4px;
+}
+
+/* The top bar doubles as the titlebar: empty space moves the window,
+   controls stay clickable. */
+:root[customtitlebar] #nav-bar {
+  -moz-window-dragging: drag;
+}
+
+:root[customtitlebar] #nav-bar :is(toolbarbutton, toolbaritem, #urlbar-container) {
+  -moz-window-dragging: no-drag;
+}
+
 /* Keep the URL bar centered in the window regardless of how many extension
    buttons sit on the right. */
 #nav-bar #urlbar-container {
