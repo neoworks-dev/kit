@@ -262,13 +262,11 @@ export function ContainerBar() {
       </Show>
       <button
         type="button"
-        class="nw-container-current"
-        title="Container for new tabs"
+        class="nw-icon-button nw-container-current"
+        title={`Container for new tabs: ${currentContainerName()}`}
         onClick={toggleMenu}
       >
         <span class="nw-container-dot" style={{ background: currentContainerColor() }} />
-        <span class="nw-tab-label">{currentContainerName()}</span>
-        <span class="nw-icon" data-icon="caret-up-down" />
       </button>
     </div>
   );

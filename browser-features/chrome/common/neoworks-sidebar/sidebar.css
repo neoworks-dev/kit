@@ -163,8 +163,7 @@
 
 #neoworks-sidebar .nw-tab,
 #neoworks-sidebar .nw-group-header,
-#neoworks-sidebar .nw-container-option,
-#neoworks-sidebar .nw-container-current {
+#neoworks-sidebar .nw-container-option {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -178,8 +177,7 @@
 
 #neoworks-sidebar .nw-tab:hover,
 #neoworks-sidebar .nw-group-header:hover,
-#neoworks-sidebar .nw-container-option:hover,
-#neoworks-sidebar .nw-container-current:hover {
+#neoworks-sidebar .nw-container-option:hover {
   background: var(--glass-hover);
 }
 
@@ -316,20 +314,19 @@
   border-left: 1px solid var(--glass-divider);
 }
 
-/* Container bar and its popover menu. */
+/* Sidebar footer: the container icon at the end, its popover menu above. */
 #neoworks-sidebar .nw-container-bar {
   position: relative;
-  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 6px 10px;
   border-top: 1px solid var(--glass-divider);
 }
 
-#neoworks-sidebar .nw-container-current {
-  width: 100%;
-  text-align: left;
-}
-
-#neoworks-sidebar .nw-container-current .nw-icon {
-  color: var(--text-dim);
+#neoworks-sidebar .nw-container-current .nw-container-dot {
+  width: 10px;
+  height: 10px;
 }
 
 #neoworks-sidebar .nw-container-dismiss {
