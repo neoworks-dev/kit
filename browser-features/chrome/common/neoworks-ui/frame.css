@@ -8,7 +8,12 @@
    The id beats Firefox's `#main-window { background-color: windowframe
    !important }`. */
 :root#main-window {
-  background: rgba(22, 22, 26, 0.35) !important;
+  /* Kit's chrome is dark-only. Firefox derives browser.theme.toolbar-theme
+     from the active theme at startup, so force the scheme here instead;
+     light-dark() and system colors in Firefox's own widgets follow it. */
+  color-scheme: dark !important;
+  /* Dark enough that white text stays readable over bright wallpapers. */
+  background: rgba(22, 22, 26, 0.6) !important;
 }
 
 #navigator-toolbox,
