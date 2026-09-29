@@ -105,6 +105,21 @@
   border-radius: 10px !important;
 }
 
+/* The page actions menu covers bookmarking; Floorp's QR code action isn't
+   part of Kit's URL bar. The tracking protection shield stays. */
+#star-button-box,
+#QRCodeGeneratePageAction {
+  display: none !important;
+}
+
+/* Inside the URL field, sized like Firefox's page action icons. */
+#page-action-buttons > #neoworks-page-actions-button {
+  --toolbarbutton-inner-padding: 6px;
+  margin: 0 2px 0 0;
+  padding: 0;
+  border-radius: var(--radius-sm) !important;
+}
+
 /* While Marionette drives the browser (the dev build always), Firefox shows a
    robot icon and red stripes in the URL bar. Kit shows a breathing blue glow
    around the page instead. */
@@ -215,10 +230,6 @@
 
 #unified-extensions-button .toolbarbutton-icon {
   mask-image: var(--nw-icon-puzzle-piece);
-}
-
-#neoworks-page-actions-button {
-  margin-inline-start: 4px;
 }
 
 #neoworks-page-actions-button > .toolbarbutton-icon {

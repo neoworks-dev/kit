@@ -6,12 +6,13 @@ export function pageActionsButton(): Element | null {
   return document.getElementById(BUTTON_ID);
 }
 
-// Lives inside #urlbar-container rather than as a CustomizableUI widget, so
-// customize mode can't move or drop it. Returns a remover for hot reload.
+// Sits at the right end of the URL field, with Firefox's page action icons,
+// rather than as a CustomizableUI widget, so customize mode can't move or
+// drop it. Returns a remover for hot reload.
 export function insertPageActionsButton(onActivate: (button: Element) => void): () => void {
-  const urlbarContainer = document.getElementById("urlbar-container");
-  if (!urlbarContainer) {
-    console.error("[neoworks-toolbar] #urlbar-container is missing.");
+  const pageActionButtons = document.getElementById("page-action-buttons");
+  if (!pageActionButtons) {
+    console.error("[neoworks-toolbar] #page-action-buttons is missing.");
     return () => {};
   }
   const button = document.createXULElement("toolbarbutton");
@@ -19,6 +20,6 @@ export function insertPageActionsButton(onActivate: (button: Element) => void): 
   button.className = "toolbarbutton-1";
   button.setAttribute("tooltiptext", "Page actions");
   button.addEventListener("command", () => onActivate(button));
-  urlbarContainer.append(button);
+  pageActionButtons.append(button);
   return () => button.remove();
 }
