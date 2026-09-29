@@ -520,18 +520,19 @@ const JS_WINDOW_ACTORS: {
     safeForUntrustedWebProcess: true,
     allFrames: true,
   },
-  NWSpotlight: {
+  NWKeys: {
     parent: {
       esModuleURI: localPathToResourceURI(
-        "../actors/NWSpotlightParent.sys.mts",
+        "../actors/NWKeysParent.sys.mts",
       ),
     },
     child: {
       esModuleURI: localPathToResourceURI(
-        "../actors/NWSpotlightChild.sys.mts",
+        "../actors/NWKeysChild.sys.mts",
       ),
       events: {
         keydown: { capture: true },
+        pagehide: {},
       },
     },
     matches: ["http://*/*", "https://*/*", "file:///*", "about:*"],

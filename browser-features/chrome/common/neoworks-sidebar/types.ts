@@ -20,12 +20,28 @@ export interface BrowserTab extends Omit<XULElement, "linkedBrowser"> {
   toggleMuteAudio(): void;
 }
 
+export interface WindowActor {
+  sendAsyncMessage(name: string, data?: unknown): void;
+}
+
+export interface SelectedBrowser {
+  focus(): void;
+  currentURI: { spec: string };
+  contentTitle: string;
+  browsingContext: {
+    currentWindowGlobal: { getActor(name: string): WindowActor } | null;
+  } | null;
+}
+
 export interface NeoworksTabbrowser {
   tabs: BrowserTab[];
   nonHiddenTabs: BrowserTab[];
   selectedTab: BrowserTab;
-  selectedBrowser: { focus(): void };
-  tabContainer: EventTarget;
+  selectedBrowser: SelectedBrowser;
+  tabContainer: EventTarget & {
+    advanceSelectedTab(direction: number, wrap: boolean): void;
+  };
+  addTrustedTab(url: string, options: { userContextId: number }): BrowserTab;
   pinTab(tab: BrowserTab): void;
   unpinTab(tab: BrowserTab): void;
   removeTab(tab: BrowserTab, options?: { animate?: boolean }): void;

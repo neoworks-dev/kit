@@ -19,6 +19,7 @@
     "#libs/": "./libs/",
     "#features-chrome/": "./browser-features/chrome/",
     "#modules/": "./browser-features/modules/",
+    "#features-modules/": "./browser-features/modules/",
     "#ui/": "./src/ui/",
     "#themes/": "./src/themes/",
     "@std/assert": "jsr:@std/assert@^1.0.0",
