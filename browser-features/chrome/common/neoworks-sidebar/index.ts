@@ -17,6 +17,7 @@ import { createTabState } from "./tab-state.ts";
 import { toggleSidebarDocked, watchSidebarDocking } from "./sidebar-docking.ts";
 import { registerCommands } from "../neoworks-commands/registry.ts";
 import { closeWorkspaceMenu } from "./workspace-switcher.tsx";
+import { routeNewTabsToDefaultContainer } from "./new-tab-container.ts";
 import {
   switchWorkspaceBy,
   switchWorkspaceByNumber,
@@ -37,6 +38,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
     const stopWatchingContainers = watchContainers();
     const stopWatchingDocking = watchSidebarDocking();
     const stopWatchingWorkspaces = watchWorkspaces();
+    const stopRoutingNewTabs = routeNewTabsToDefaultContainer();
     mountSidebar(browserBox, tabState);
     mountTabContextMenu(popupSet, tabState);
     addEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
@@ -70,6 +72,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
     onCleanup(() => {
       unregisterCommands();
       closeWorkspaceMenu();
+      stopRoutingNewTabs();
       stopWatchingWorkspaces();
       stopWatchingDocking();
       removeEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);

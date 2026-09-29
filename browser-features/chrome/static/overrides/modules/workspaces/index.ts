@@ -206,16 +206,20 @@ export const overrides = [
             const options = {
               relatedToCurrent,
               resolveOnNewTabCreated: resolve,
-              userContextId:
-                gWorkspacesServices?.getCurrentWorkspaceUserContextId() ?? 0,
               allowThirdPartyFixup: undefined as boolean | undefined,
-            } satisfies {
+            } as {
               relatedToCurrent: boolean;
               resolveOnNewTabCreated: (browser: unknown) => void;
-              userContextId: number;
+              userContextId?: number;
               allowThirdPartyFixup?: boolean;
               [key: string]: unknown;
             };
+            // Kit disables Floorp workspaces; without a userContextId,
+            // neoworks-sidebar opens the tab in Kit's default container.
+            if (gWorkspacesServices) {
+              options.userContextId = gWorkspacesServices
+                .getCurrentWorkspaceUserContextId();
+            }
             if (!werePassedURL && searchClipboard) {
               const clipboard = readNewTabClipboard(
                 () => globalThis.readFromClipboard?.() || "",
