@@ -9,6 +9,7 @@ import { registerCommands } from "../neoworks-commands/registry.ts";
 import { mountPageActionsMenu } from "./mount.tsx";
 import { insertPageActionsButton, pageActionsButton } from "./page-actions-button.ts";
 import { openPageActions, togglePageActions } from "./page-actions-menu.tsx";
+import { toggleWindowTransparency, watchWindowTransparency } from "./window-transparency.ts";
 import frameStyle from "../neoworks-ui/frame.css?inline";
 import glassStyle from "../neoworks-ui/glass.css?inline";
 import iconStyle from "../neoworks-ui/icons.css?inline";
@@ -30,6 +31,7 @@ export default class NeoworksToolbar extends NoraComponentBase {
     style.textContent = frameStyle + glassStyle + iconStyle + toolbarStyle;
     document.head.append(style);
     onCleanup(() => style.remove());
+    onCleanup(watchWindowTransparency());
 
     if (!document.body) {
       console.error("[neoworks-toolbar] Browser chrome is unavailable at init.");
@@ -44,6 +46,12 @@ export default class NeoworksToolbar extends NoraComponentBase {
         title: "Page Actions",
         listed: true,
         run: openPageActionsFromCommand,
+      },
+      {
+        id: "window:toggle-transparent",
+        title: "Toggle Transparent Window",
+        listed: true,
+        run: toggleWindowTransparency,
       },
     ]);
     onCleanup(unregister);

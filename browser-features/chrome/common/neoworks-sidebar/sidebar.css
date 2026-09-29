@@ -80,9 +80,13 @@
   transition: none;
 }
 
-/* Sits on the window glass rather than the page: a lighter card instead of
-   the dark tint that keeps floating glass readable over bright pages. */
+/* Docked, it sits on the window frame rather than the page: a solid card on
+   the solid frame, or a lighter glass card on a transparent window. */
 :root[nw-sidebar-docked] #neoworks-sidebar::before {
+  background: var(--bg-elevated);
+}
+
+:root[nw-sidebar-docked][nw-window-transparent] #neoworks-sidebar::before {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02) 40%),
     rgba(255, 255, 255, 0.04);

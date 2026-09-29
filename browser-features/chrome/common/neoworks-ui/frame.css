@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
-/* Kit window frame. The window is transparent, so the desktop shows through
-   and the compositor (e.g. Hyprland) blurs it; one light tint covers the top
-   bar and the frame. The page is a rounded pane inset 8px from the frame.
-   Web content stays opaque.
+/* Kit window frame: one surface behind the top bar and around the page,
+   which is a rounded pane inset 8px from the frame. Solid --bg by default;
+   with [nw-window-transparent] (window-transparency.ts) the desktop shows
+   through and the compositor (e.g. Hyprland) blurs it. Web content stays
+   opaque either way.
 
    The id beats Firefox's `#main-window { background-color: windowframe
    !important }`. */
@@ -12,7 +13,12 @@
      from the active theme at startup, so force the scheme here instead;
      light-dark() and system colors in Firefox's own widgets follow it. */
   color-scheme: dark !important;
-  /* Dark enough that white text stays readable over bright wallpapers. */
+  /* --bg from @neoworks-dev/ui; the tokens aren't scoped to the root. */
+  background: #141416 !important;
+}
+
+/* Dark enough that white text stays readable over bright wallpapers. */
+:root#main-window[nw-window-transparent] {
   background: rgba(22, 22, 26, 0.6) !important;
 }
 
