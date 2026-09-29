@@ -122,7 +122,7 @@
 
 /* While Marionette drives the browser (the dev build always), Firefox shows a
    robot icon and red stripes in the URL bar. Kit shows a breathing blue glow
-   around the page instead. */
+   around the page and inside the URL field instead. */
 #remote-control-box {
   display: none !important;
 }
@@ -133,6 +133,18 @@
 
 :root[remotecontrol] #tabbrowser-tabbox {
   position: relative;
+}
+
+:root[remotecontrol] #urlbar .urlbar-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px rgba(96, 165, 250, 0.6),
+    inset 0 0 12px rgba(96, 165, 250, 0.45);
+  pointer-events: none;
+  animation: nw-remote-control-breathe 2.4s ease-in-out infinite alternate;
 }
 
 /* Breathes through opacity rather than box-shadow so the compositor animates
