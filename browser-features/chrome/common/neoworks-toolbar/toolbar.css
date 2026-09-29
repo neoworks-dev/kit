@@ -32,7 +32,9 @@
   color: var(--text) !important;
 }
 
-#nav-bar {
+/* Two ids so this beats Floorp's `:root:not([lwtheme]) #nav-bar` surface
+   color, which is also !important. */
+#navigator-toolbox #nav-bar {
   --toolbarbutton-inner-padding: 6px;
   --toolbarbutton-outer-padding: 1px;
   --toolbarbutton-border-radius: var(--radius-md);
@@ -74,15 +76,35 @@
 
 #urlbar {
   --urlbar-container-height: 32px;
+  --urlbar-background-color: var(--toolbar-field-background-color);
 }
 
-#urlbar-background {
+#urlbar[focused] {
+  --urlbar-background-color: var(--toolbar-field-focus-background-color);
+}
+
+#urlbar .urlbar-background {
   border-radius: 10px !important;
+}
+
+/* Firefox stripes the URL bar red while Marionette drives the browser, which
+   the dev build always does. Keep the hint but make it legible on dark. */
+:root[remotecontrol] #urlbar .urlbar-background {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 90, 90, 0.1) 0 10px,
+    transparent 10px 20px
+  ) !important;
 }
 
 #urlbar-input {
   font-family: var(--font-mono);
   font-size: 12px;
+}
+
+#urlbar-input::placeholder {
+  color: var(--text-dim);
+  opacity: 1;
 }
 
 #urlbar:not([focused]) #urlbar-input {
