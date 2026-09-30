@@ -79,6 +79,7 @@ export function FolderContextMenu(props: { tabState: TabState }) {
   return (
     <xul:menupopup
       id={MENU_ID}
+      class="nw-menu"
       onPopupShowing={(event: Event) => {
         if (event.target === event.currentTarget) {
           setSidebarMenuOpen(MENU_ID, true);
@@ -106,7 +107,11 @@ export function FolderContextMenu(props: { tabState: TabState }) {
       />
       <xul:menuseparator />
       <xul:menuitem label="Delete folder, keep tabs" onCommand={withMenuFolder(dissolveFolder)} />
-      <xul:menuitem label={closeTabsLabel(props.tabState)} onCommand={withMenuFolder(closeFolder)} />
+      <xul:menuitem
+        label={closeTabsLabel(props.tabState)}
+        class="nw-menu-danger"
+        onCommand={withMenuFolder(closeFolder)}
+      />
     </xul:menupopup>
   );
 }

@@ -115,9 +115,16 @@ function currentContainerName(): string {
 function currentContainerColor(): string {
   const container = containerById(defaultContainerId());
   if (!container) {
-    return "var(--text-faint)";
+    return "var(--text-dim)";
   }
   return namedColor(container.color);
+}
+
+function currentContainerLabel(): string {
+  if (!containerById(defaultContainerId())) {
+    return "None";
+  }
+  return currentContainerName();
 }
 
 function CheckMark(props: { userContextId: number }) {
@@ -262,11 +269,12 @@ export function ContainerBar() {
       </Show>
       <button
         type="button"
-        class="nw-icon-button nw-container-current"
+        class="nw-container-current"
         title={`Container for new tabs: ${currentContainerName()}`}
+        style={{ "--nw-chip-color": currentContainerColor() }}
         onClick={toggleMenu}
       >
-        <span class="nw-container-dot" style={{ background: currentContainerColor() }} />
+        {currentContainerLabel()}
       </button>
     </div>
   );

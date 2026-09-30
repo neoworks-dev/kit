@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: MPL-2.0
 
-// Sidebar footer: shows the active workspace and opens a menu to switch,
-// create, rename, recolor and delete workspaces. Reuses the container menu's
+// Sidebar footer: one icon per workspace to switch in one click, then a +
+// for a new one. The active icon (or a right click) opens a menu to create,
+// rename, recolor and delete workspaces. Reuses the container menu's
 // styles so both footer menus look the same.
 
 import { createSignal, For, Show } from "solid-js";
-import { CONTAINER_COLORS } from "./containers.ts";
+import { CONTAINER_COLORS, containers, NO_CONTAINER } from "./containers.ts";
 import { focusInputSoon } from "./focus-input.ts";
+import { WORKSPACE_ICONS, workspaceIconMask } from "./workspace-icons.ts";
 import { namedColor } from "./identity-colors.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { attributeFlag } from "./tab-row.tsx";
 import type { Workspace } from "./types.ts";
 import {
-  activeWorkspace,
   activeWorkspaceId,
   createWorkspace,
   deleteWorkspace,
@@ -28,6 +29,9 @@ const RENAME_INPUT_ID = "neoworks-rename-workspace-input";
 const [menuOpen, setMenuOpen] = createSignal(false);
 const [creating, setCreating] = createSignal(false);
 const [editingId, setEditingId] = createSignal<string | null>(null);
+const [newIcon, setNewIcon] = createSignal(WORKSPACE_ICONS[0]);
+// null: a container of the workspace's own; otherwise a container to share.
+const [newContainer, setNewContainer] = createSignal<number | null>(null);
 
 function openMenu(): void {
   setMenuOpen(true);
@@ -54,8 +58,16 @@ function pickWorkspace(workspaceId: string): void {
   closeWorkspaceMenu();
 }
 
+// The footer's + button: the menu, straight in its "new workspace" form.
+function openNewWorkspace(): void {
+  openMenu();
+  startCreating();
+}
+
 function startCreating(): void {
   setEditingId(null);
+  setNewIcon(WORKSPACE_ICONS[0]);
+  setNewContainer(null);
   setCreating(true);
   focusInputSoon(NEW_WORKSPACE_INPUT_ID);
 }
@@ -79,7 +91,7 @@ function handleCreateKey(event: KeyboardEvent): void {
   if (event.key !== "Enter" || !inputValue(event)) {
     return;
   }
-  createWorkspace(inputValue(event));
+  createWorkspace(inputValue(event), newIcon(), newContainer());
   closeWorkspaceMenu();
 }
 
@@ -101,6 +113,34 @@ function CheckMark(props: { workspaceId: string }) {
     <Show when={activeWorkspaceId() === props.workspaceId}>
       <span class="nw-icon nw-container-check" data-icon="check" />
     </Show>
+  );
+}
+
+// Picking an icon hands focus back to the name field, so Enter still saves.
+function IconPicker(props: {
+  selected: string;
+  inputId: string;
+  onPick: (icon: string) => void;
+}) {
+  return (
+    <div class="nw-icon-picker">
+      <For each={WORKSPACE_ICONS}>
+        {(icon) => (
+          <button
+            type="button"
+            class="nw-icon-button nw-icon-choice"
+            title={icon}
+            data-selected={attributeFlag(props.selected === icon)}
+            onClick={() => {
+              props.onPick(icon);
+              focusInputSoon(props.inputId);
+            }}
+          >
+            <span class="nw-icon" style={{ "mask-image": workspaceIconMask(icon) }} />
+          </button>
+        )}
+      </For>
+    </div>
   );
 }
 
@@ -145,6 +185,11 @@ function WorkspaceEditor(props: { workspace: Workspace }) {
           </button>
         </Show>
       </div>
+      <IconPicker
+        selected={props.workspace.icon}
+        inputId={RENAME_INPUT_ID}
+        onPick={(icon) => updateWorkspace({ ...props.workspace, icon })}
+      />
       <ColorSwatches workspace={props.workspace} />
     </div>
   );
@@ -158,8 +203,11 @@ function WorkspaceOption(props: { workspace: Workspace }) {
     >
       <div class="nw-container-option" onClick={() => pickWorkspace(props.workspace.id)}>
         <span
-          class="nw-container-dot"
-          style={{ background: namedColor(props.workspace.color) }}
+          class="nw-icon"
+          style={{
+            color: namedColor(props.workspace.color),
+            "mask-image": workspaceIconMask(props.workspace.icon),
+          }}
         />
         <span class="nw-tab-label">{props.workspace.name}</span>
         <CheckMark workspaceId={props.workspace.id} />
@@ -179,6 +227,60 @@ function WorkspaceOption(props: { workspace: Workspace }) {
   );
 }
 
+function ContainerChip(props: {
+  label: string;
+  color: string;
+  title: string;
+  choice: number | null;
+}) {
+  return (
+    <button
+      type="button"
+      class="nw-container-chip"
+      title={props.title}
+      data-selected={attributeFlag(newContainer() === props.choice)}
+      style={{ "--nw-chip-color": props.color }}
+      onClick={() => {
+        setNewContainer(props.choice);
+        focusInputSoon(NEW_WORKSPACE_INPUT_ID);
+      }}
+    >
+      {props.label}
+    </button>
+  );
+}
+
+// Which container the new workspace's tabs open in.
+function ContainerChoice() {
+  return (
+    <div class="nw-container-choice">
+      <span class="nw-container-choice-label">Container</span>
+      <ContainerChip
+        label="New"
+        color="var(--text-muted)"
+        title="A container of its own, named after the workspace"
+        choice={null}
+      />
+      <ContainerChip
+        label="None"
+        color="var(--text-dim)"
+        title="No container"
+        choice={NO_CONTAINER}
+      />
+      <For each={containers()}>
+        {(container) => (
+          <ContainerChip
+            label={container.name}
+            color={namedColor(container.color)}
+            title={`Share the ${container.name} container`}
+            choice={container.userContextId}
+          />
+        )}
+      </For>
+    </div>
+  );
+}
+
 function NewWorkspaceRow() {
   return (
     <Show
@@ -190,13 +292,17 @@ function NewWorkspaceRow() {
         </div>
       }
     >
-      <input
-        id={NEW_WORKSPACE_INPUT_ID}
-        class="nw-container-input"
-        placeholder="Workspace name"
-        spellcheck={false}
-        onKeyDown={handleCreateKey}
-      />
+      <div class="nw-container-editor">
+        <input
+          id={NEW_WORKSPACE_INPUT_ID}
+          class="nw-container-input"
+          placeholder="Workspace name"
+          spellcheck={false}
+          onKeyDown={handleCreateKey}
+        />
+        <IconPicker selected={newIcon()} inputId={NEW_WORKSPACE_INPUT_ID} onPick={setNewIcon} />
+        <ContainerChoice />
+      </div>
     </Show>
   );
 }
@@ -220,6 +326,27 @@ function WorkspaceMenu() {
   );
 }
 
+function workspaceTitle(workspace: Workspace): string {
+  if (activeWorkspaceId() === workspace.id) {
+    return `${workspace.name} (click to manage workspaces)`;
+  }
+  return workspace.name;
+}
+
+// The active icon opens the menu; any other switches in one click.
+function handleIconClick(workspace: Workspace): void {
+  if (activeWorkspaceId() === workspace.id) {
+    toggleMenu();
+    return;
+  }
+  switchWorkspace(workspace.id);
+}
+
+function openMenuFromContext(event: MouseEvent): void {
+  event.preventDefault();
+  openMenu();
+}
+
 export function WorkspaceSwitcher() {
   return (
     <>
@@ -227,18 +354,30 @@ export function WorkspaceSwitcher() {
         <div class="nw-container-dismiss" onClick={closeWorkspaceMenu} />
         <WorkspaceMenu />
       </Show>
+      <div class="nw-workspace-icons">
+        <For each={workspaces()}>
+          {(workspace) => (
+            <button
+              type="button"
+              class="nw-workspace-icon"
+              title={workspaceTitle(workspace)}
+              data-selected={attributeFlag(activeWorkspaceId() === workspace.id)}
+              style={{ "--nw-workspace-color": namedColor(workspace.color) }}
+              onClick={() => handleIconClick(workspace)}
+              onContextMenu={openMenuFromContext}
+            >
+              <span class="nw-icon" style={{ "mask-image": workspaceIconMask(workspace.icon) }} />
+            </button>
+          )}
+        </For>
+      </div>
       <button
         type="button"
-        class="nw-workspace-current"
-        title="Switch workspace"
-        onClick={toggleMenu}
+        class="nw-icon-button nw-footer-button"
+        title="New workspace"
+        onClick={openNewWorkspace}
       >
-        <span
-          class="nw-container-dot"
-          style={{ background: namedColor(activeWorkspace().color) }}
-        />
-        <span class="nw-tab-label">{activeWorkspace().name}</span>
-        <span class="nw-icon" data-icon="caret-up-down" />
+        <span class="nw-icon" data-icon="plus" />
       </button>
     </>
   );

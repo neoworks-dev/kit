@@ -24,7 +24,11 @@ export interface BrowserTab extends Omit<XULElement, "linkedBrowser"> {
   // Index in gBrowser.tabs.
   index: number;
   group: BrowserTabGroup | null;
-  linkedBrowser: { currentURI: { spec: string } };
+  linkedBrowser: {
+    currentURI: { spec: string };
+    // Null while the tab's browser isn't set up (e.g. an unloaded tab).
+    browsingContext: { mediaController: MediaController } | null;
+  };
   toggleMuteAudio(): void;
 }
 
@@ -86,6 +90,11 @@ export interface Workspace {
   color: string;
   // Container new tabs in this workspace open in.
   userContextId: number;
+  // Whether the container was made for this workspace: it is then renamed,
+  // recolored and deleted along with it. False for a shared container.
+  ownsContainer: boolean;
+  // Phosphor icon name (one of WORKSPACE_ICONS) shown in the sidebar footer.
+  icon: string;
 }
 
 export type SidebarEntry =
@@ -98,4 +107,10 @@ export interface TabState {
   // Bumped on every tab event; read it to re-evaluate tab attributes.
   revision: () => number;
   dispose: () => void;
+}
+
+// The tab whose media the sidebar's player controls.
+export interface MediaSession {
+  tab: BrowserTab;
+  controller: MediaController;
 }
