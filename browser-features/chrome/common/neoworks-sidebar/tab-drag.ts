@@ -3,7 +3,8 @@
 // Drag and drop in the tab list. A tab dropped on a tab takes its place (and
 // joins or leaves its folder), on a folder header it joins that folder, and
 // below the list it moves out of any folder to the end. Folders move as a
-// whole the same way. Tabs dropped on the Essentials or pinned grid join it.
+// whole the same way. Tabs dropped on the Essentials or pinned grid join it,
+// and on a workspace icon in the footer they move to that workspace.
 
 import { createSignal } from "solid-js";
 import {
@@ -12,9 +13,10 @@ import {
   moveTabIntoFolder,
   moveTabToListEnd,
 } from "./folder-actions.ts";
-import { addToEssentials } from "./essentials.ts";
+import { addToEssentials, isEssential } from "./essentials.ts";
 import { moveTabOnto, pinTab } from "./tab-actions.ts";
 import type { BrowserTab, BrowserTabGroup, TabListElement } from "./types.ts";
+import { activeWorkspaceId, moveTabToWorkspace } from "./workspaces.ts";
 
 const DRAG_TYPE = "application/x-neoworks-tab";
 
@@ -28,7 +30,10 @@ type DraggedItem =
   | { kind: "tab"; tab: BrowserTab }
   | { kind: "folder"; group: BrowserTabGroup };
 
-type DropTarget = TabListElement | Section;
+// A workspace icon, by workspace id.
+type WorkspaceDrop = `workspace:${string}`;
+
+type DropTarget = TabListElement | Section | WorkspaceDrop;
 
 let draggedItem: DraggedItem | null = null;
 const [dropTarget, setDropTarget] = createSignal<DropTarget | null>(null);
@@ -146,4 +151,24 @@ export function dropIntoGrid(event: DragEvent, grid: typeof ESSENTIALS | typeof 
     return;
   }
   pinTab(item.tab);
+}
+
+export function workspaceDrop(workspaceId: string): WorkspaceDrop {
+  return `workspace:${workspaceId}`;
+}
+
+// Essentials are in every workspace already.
+export function allowWorkspaceDrop(event: DragEvent, workspaceId: string): void {
+  const tab = draggedTab();
+  if (!tab || isEssential(tab) || workspaceId === activeWorkspaceId()) {
+    return;
+  }
+  allowDrop(event, workspaceDrop(workspaceId));
+}
+
+export function dropOntoWorkspace(event: DragEvent, workspaceId: string): void {
+  const item = takeDraggedItem(event);
+  if (item?.kind === "tab") {
+    moveTabToWorkspace(item.tab, workspaceId);
+  }
 }

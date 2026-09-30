@@ -17,6 +17,8 @@ import {
 import { isEssential } from "./essentials.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type { BrowserTab, Workspace } from "./types.ts";
+import { removeFromSplit } from "../neoworks-split/split-view.ts";
+import type { SplitTab } from "../neoworks-split/types.ts";
 import {
   cycleIndex,
   DEFAULT_WORKSPACE,
@@ -227,6 +229,28 @@ export function switchWorkspaceByNumber(number: string | undefined): void {
   if (target) {
     switchWorkspace(target.id);
   }
+}
+
+// The tab keeps its container and whether it is pinned, and goes to the end
+// of the target's list. It leaves its folder and split view, which stay here.
+// Essentials belong to every workspace, so they don't move.
+export function moveTabToWorkspace(tab: BrowserTab, workspaceId: string): void {
+  if (!workspaceById(workspaceId) || isEssential(tab) || workspaceIdOf(tab) === workspaceId) {
+    return;
+  }
+  const browser = tabbrowser();
+  removeFromSplit(tab as SplitTab);
+  browser.ungroupTab(tab);
+  const last = workspaceTabs(workspaceId).filter((other) => other.pinned === tab.pinned).at(-1);
+  if (last) {
+    browser.moveTabAfter(tab, last.group ?? last);
+  }
+  assignTab(tab, workspaceId);
+  if (tab.selected) {
+    // hideTab skips the selected tab.
+    browser.selectedTab = tabToSelectIn(activeWorkspace());
+  }
+  applyVisibility();
 }
 
 // Opens new tabs in a container of its own, or pass an existing container

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
-// Sidebar footer: one icon per workspace to switch in one click, then a +
+// Sidebar footer: one icon per workspace to switch in one click (or to drop
+// a tab on to move it there), then a +
 // for a new one. The active icon (or a right click) opens a menu to create,
 // rename, recolor and delete workspaces. Reuses the container menu's
 // styles so both footer menus look the same.
@@ -12,6 +13,13 @@ import { WORKSPACE_ICONS, workspaceIconMask } from "./workspace-icons.ts";
 import { namedColor } from "./identity-colors.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { attributeFlag } from "./tab-row.tsx";
+import {
+  allowWorkspaceDrop,
+  dropOntoWorkspace,
+  isDropTarget,
+  leaveDrop,
+  workspaceDrop,
+} from "./tab-drag.ts";
 import type { Workspace } from "./types.ts";
 import {
   activeWorkspaceId,
@@ -362,9 +370,13 @@ export function WorkspaceSwitcher() {
               class="nw-workspace-icon"
               title={workspaceTitle(workspace)}
               data-selected={attributeFlag(activeWorkspaceId() === workspace.id)}
+              data-drop-target={attributeFlag(isDropTarget(workspaceDrop(workspace.id)))}
               style={{ "--nw-workspace-color": namedColor(workspace.color) }}
               onClick={() => handleIconClick(workspace)}
               onContextMenu={openMenuFromContext}
+              onDragOver={(event: DragEvent) => allowWorkspaceDrop(event, workspace.id)}
+              onDragLeave={() => leaveDrop(workspaceDrop(workspace.id))}
+              onDrop={(event: DragEvent) => dropOntoWorkspace(event, workspace.id)}
             >
               <span class="nw-icon" style={{ "mask-image": workspaceIconMask(workspace.icon) }} />
             </button>

@@ -22,7 +22,8 @@ import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { removeFromSplit } from "../neoworks-split/split-view.ts";
 import type { SplitTab } from "../neoworks-split/types.ts";
 import { tabbrowser } from "./tabbrowser.ts";
-import type { BrowserTab, BrowserTabGroup, TabState } from "./types.ts";
+import type { BrowserTab, BrowserTabGroup, TabState, Workspace } from "./types.ts";
+import { activeWorkspaceId, moveTabToWorkspace, workspaces } from "./workspaces.ts";
 
 const MENU_ID = "neoworks-sidebar-tab-menu";
 
@@ -143,6 +144,33 @@ function ContainerSubmenu() {
   );
 }
 
+// Essentials are in every workspace already.
+function WorkspaceSubmenu(props: { tabState: TabState }) {
+  const otherWorkspaces = (): Workspace[] =>
+    workspaces().filter((workspace) => workspace.id !== activeWorkspaceId());
+  const movable = () => {
+    props.tabState.revision();
+    const tab = menuTab();
+    return !!tab && !isEssential(tab) && otherWorkspaces().length > 0;
+  };
+  return (
+    <Show when={movable()}>
+      <xul:menu label="Move to workspace">
+        <xul:menupopup>
+          <For each={otherWorkspaces()}>
+            {(workspace: Workspace) => (
+              <xul:menuitem
+                label={workspace.name}
+                onCommand={withMenuTab((tab) => moveTabToWorkspace(tab, workspace.id))}
+              />
+            )}
+          </For>
+        </xul:menupopup>
+      </xul:menu>
+    </Show>
+  );
+}
+
 function moveTabToNewFolder(tab: BrowserTab): void {
   startFolderEdit(createFolder(tab));
 }
@@ -225,6 +253,7 @@ export function TabContextMenu(props: { tabState: TabState }) {
           onCommand={withMenuTab(removeTabFromFolder)}
         />
       </Show>
+      <WorkspaceSubmenu tabState={props.tabState} />
       <ContainerSubmenu />
       <xul:menuitem
         label="Move to new window"
