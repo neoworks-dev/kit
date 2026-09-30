@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { createEffect, For, Match, onCleanup, Switch } from "solid-js";
-import { createPageBackdrop } from "../neoworks-ui/page-backdrop.ts";
+import { For, Match, Switch } from "solid-js";
 import { ContainerBar } from "./container-bar.tsx";
 import { SidebarDownloadsButton } from "../neoworks-downloads/sidebar-downloads-button.tsx";
 import { FolderRow } from "./folder-row.tsx";
@@ -97,21 +96,15 @@ function visibleFlag(): string | undefined {
   return undefined;
 }
 
-// Docked, the sidebar sits over the window glass, not the page, so there is
-// no page region to snapshot.
-function needsPageBackdrop(): boolean {
-  return !sidebarDocked() && sidebarVisible();
-}
-
 function dockToggleTitle(): string {
   if (sidebarDocked()) {
-    return "Float sidebar over page";
+    return "Collapse sidebar";
   }
-  return "Dock sidebar";
+  return "Keep sidebar open";
 }
 
-// The layer spans the content area's left edge: a thin hover strip reveals the
-// floating sidebar, which slides over the page instead of taking space.
+// The layer spans the window's left edge: collapsed, a thin hover strip
+// reveals the sidebar, which slides over the page instead of taking space.
 export function Sidebar(props: { tabState: TabState }) {
   return (
     <div id="neoworks-sidebar-layer">
@@ -122,29 +115,14 @@ export function Sidebar(props: { tabState: TabState }) {
   );
 }
 
-const SIDEBAR_ID = "neoworks-sidebar";
-const SIDEBAR_BACKDROP_ID = "neoworks-sidebar-backdrop";
-
 function SidebarPanel(props: { tabState: TabState }) {
-  const backdrop = createPageBackdrop(SIDEBAR_ID, SIDEBAR_BACKDROP_ID);
-  createEffect(() => {
-    if (needsPageBackdrop()) {
-      backdrop.start();
-      return;
-    }
-    backdrop.stop();
-  });
-  onCleanup(() => backdrop.stop());
-
   return (
     <div
-      id={SIDEBAR_ID}
-      class="nw-glass"
+      id="neoworks-sidebar"
       data-visible={visibleFlag()}
       onMouseEnter={handleSidebarEnter}
       onMouseLeave={handleSidebarLeave}
     >
-      <canvas id={SIDEBAR_BACKDROP_ID} class="nw-glass-backdrop" />
       <div class="nw-header">
         <span class="nw-workspace-name">{activeWorkspace().name}</span>
         <ContainerBar />
