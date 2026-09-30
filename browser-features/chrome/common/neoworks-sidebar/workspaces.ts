@@ -4,7 +4,8 @@
 // tabs open in. A tab belongs to the workspace it was opened in, whatever
 // container it uses; the membership is stored on the tab through SessionStore
 // so it survives restarts. Only the active workspace's tabs are shown,
-// pinned tabs included: each workspace has its own pinned grid.
+// pinned tabs included: each workspace has its own pinned grid. Essentials
+// (essentials.ts) belong to every workspace.
 
 import { createSignal } from "solid-js";
 import {
@@ -13,6 +14,7 @@ import {
   NO_CONTAINER,
   setDefaultContainerId,
 } from "./containers.ts";
+import { isEssential } from "./essentials.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type { BrowserTab, Workspace } from "./types.ts";
 import {
@@ -77,8 +79,12 @@ function saveWorkspaces(next: Workspace[]): void {
 }
 
 // Tabs without a known workspace (opened before workspaces existed, or whose
-// workspace was deleted) count as part of the active one.
+// workspace was deleted) count as part of the active one, and so do
+// Essentials.
 function workspaceIdOf(tab: BrowserTab): string {
+  if (isEssential(tab)) {
+    return activeWorkspaceId();
+  }
   const stored = browserWindow.SessionStore.getCustomTabValue(tab, TAB_WORKSPACE_KEY);
   if (stored && workspaceById(stored)) {
     return stored;
@@ -90,8 +96,16 @@ function assignTab(tab: BrowserTab, workspaceId: string): void {
   browserWindow.SessionStore.setCustomTabValue(tab, TAB_WORKSPACE_KEY, workspaceId);
 }
 
+// A tab leaving the Essentials stays where you are.
+export function claimForActiveWorkspace(tab: BrowserTab): void {
+  assignTab(tab, activeWorkspaceId());
+}
+
+// Essentials excluded: they aren't the workspace's own.
 function workspaceTabs(workspaceId: string): BrowserTab[] {
-  return tabbrowser().tabs.filter((tab) => workspaceIdOf(tab) === workspaceId);
+  return tabbrowser().tabs.filter((tab) =>
+    !isEssential(tab) && workspaceIdOf(tab) === workspaceId
+  );
 }
 
 // gBrowser.hideTab skips pinned tabs, so mirror what it does for them.

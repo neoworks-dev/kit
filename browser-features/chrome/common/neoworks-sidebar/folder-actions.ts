@@ -93,10 +93,15 @@ export function closeFolder(group: BrowserTabGroup): void {
   });
 }
 
-export function moveTabIntoFolder(tab: BrowserTab, group: BrowserTabGroup): void {
+// A pinned tab (or Essential) dropped into the list becomes a normal tab.
+function unpinForList(tab: BrowserTab): void {
   if (tab.pinned) {
-    return;
+    tabbrowser().unpinTab(tab);
   }
+}
+
+export function moveTabIntoFolder(tab: BrowserTab, group: BrowserTabGroup): void {
+  unpinForList(tab);
   tabbrowser().moveTabToExistingGroup(tab, group);
 }
 
@@ -107,9 +112,7 @@ export function removeTabFromFolder(tab: BrowserTab): void {
 // Moves the tab out of its folder, below everything else. Not moveTabToEnd:
 // for the last tab of a folder that one lands in front of the folder.
 export function moveTabToListEnd(tab: BrowserTab): void {
-  if (tab.pinned) {
-    return;
-  }
+  unpinForList(tab);
   tabbrowser().ungroupTab(tab);
   const elements = tabListElements();
   const lastElement = elements[elements.length - 1];

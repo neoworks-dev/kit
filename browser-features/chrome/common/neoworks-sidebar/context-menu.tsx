@@ -9,6 +9,13 @@ import {
   removeTabFromFolder,
   visibleFolders,
 } from "./folder-actions.ts";
+import {
+  addToEssentials,
+  essentialTabs,
+  isEssential,
+  MAX_ESSENTIALS,
+  removeFromEssentials,
+} from "./essentials.ts";
 import { startFolderEdit } from "./folder-editing.ts";
 import { closeTab, moveTabToContainer, togglePinned } from "./tab-actions.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
@@ -64,6 +71,35 @@ function pinLabel(tabState: TabState): string {
     return "Unpin tab";
   }
   return "Pin tab";
+}
+
+function EssentialsMenuItem(props: { tabState: TabState }) {
+  const essential = () => {
+    props.tabState.revision();
+    const tab = menuTab();
+    return !!tab && isEssential(tab);
+  };
+  const full = () => {
+    props.tabState.revision();
+    return essentialTabs().length >= MAX_ESSENTIALS;
+  };
+  return (
+    <Show
+      when={essential()}
+      fallback={
+        <xul:menuitem
+          label="Add to Essentials"
+          disabled={full() || undefined}
+          onCommand={withMenuTab((tab) => addToEssentials(tab))}
+        />
+      }
+    >
+      <xul:menuitem
+        label="Remove from Essentials"
+        onCommand={withMenuTab(removeFromEssentials)}
+      />
+    </Show>
+  );
 }
 
 function muteLabel(tabState: TabState): string {
@@ -167,6 +203,7 @@ export function TabContextMenu(props: { tabState: TabState }) {
         label={pinLabel(props.tabState)}
         onCommand={withMenuTab(togglePinned)}
       />
+      <EssentialsMenuItem tabState={props.tabState} />
       <xul:menuitem
         label={muteLabel(props.tabState)}
         onCommand={withMenuTab((tab) => tab.toggleMuteAudio())}

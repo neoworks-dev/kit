@@ -3,7 +3,7 @@
 // Drag and drop in the tab list. A tab dropped on a tab takes its place (and
 // joins or leaves its folder), on a folder header it joins that folder, and
 // below the list it moves out of any folder to the end. Folders move as a
-// whole the same way.
+// whole the same way. Tabs dropped on the Essentials or pinned grid join it.
 
 import { createSignal } from "solid-js";
 import {
@@ -12,21 +12,37 @@ import {
   moveTabIntoFolder,
   moveTabToListEnd,
 } from "./folder-actions.ts";
-import { moveTabOnto } from "./tab-actions.ts";
+import { addToEssentials } from "./essentials.ts";
+import { moveTabOnto, pinTab } from "./tab-actions.ts";
 import type { BrowserTab, BrowserTabGroup, TabListElement } from "./types.ts";
 
 const DRAG_TYPE = "application/x-neoworks-tab";
 
 export const LIST_END = "list-end";
+export const ESSENTIALS = "essentials";
+export const PINNED = "pinned";
+
+type Section = typeof LIST_END | typeof ESSENTIALS | typeof PINNED;
 
 type DraggedItem =
   | { kind: "tab"; tab: BrowserTab }
   | { kind: "folder"; group: BrowserTabGroup };
 
-type DropTarget = TabListElement | typeof LIST_END;
+type DropTarget = TabListElement | Section;
 
 let draggedItem: DraggedItem | null = null;
 const [dropTarget, setDropTarget] = createSignal<DropTarget | null>(null);
+// A sidebar tab is being dragged: empty grids show where to drop.
+const [draggingTab, setDraggingTab] = createSignal(false);
+
+export { draggingTab };
+
+export function draggedTab(): BrowserTab | null {
+  if (draggedItem?.kind === "tab") {
+    return draggedItem.tab;
+  }
+  return null;
+}
 
 export function isDropTarget(target: DropTarget): boolean {
   return dropTarget() === target;
@@ -40,6 +56,7 @@ function beginDrag(event: DragEvent, item: DraggedItem, label: string): void {
 
 export function startTabDrag(event: DragEvent, tab: BrowserTab): void {
   beginDrag(event, { kind: "tab", tab }, tab.label);
+  setDraggingTab(true);
 }
 
 export function startFolderDrag(event: DragEvent, group: BrowserTabGroup): void {
@@ -63,6 +80,7 @@ export function leaveDrop(target: DropTarget): void {
 export function endDrag(): void {
   draggedItem = null;
   setDropTarget(null);
+  setDraggingTab(false);
 }
 
 function takeDraggedItem(event: DragEvent): DraggedItem | null {
@@ -108,4 +126,24 @@ export function dropAtListEnd(event: DragEvent): void {
     return;
   }
   moveFolderToListEnd(item.group);
+}
+
+// Only tabs join the grids; folders stay in the list.
+export function allowGridDrop(event: DragEvent, grid: typeof ESSENTIALS | typeof PINNED): void {
+  if (draggedItem?.kind !== "tab") {
+    return;
+  }
+  allowDrop(event, grid);
+}
+
+export function dropIntoGrid(event: DragEvent, grid: typeof ESSENTIALS | typeof PINNED): void {
+  const item = takeDraggedItem(event);
+  if (item?.kind !== "tab") {
+    return;
+  }
+  if (grid === ESSENTIALS) {
+    addToEssentials(item.tab);
+    return;
+  }
+  pinTab(item.tab);
 }

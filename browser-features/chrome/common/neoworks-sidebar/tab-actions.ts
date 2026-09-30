@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { defaultContainerId } from "./containers.ts";
+import { addToEssentials, isEssential, removeFromEssentials } from "./essentials.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type { BrowserTab } from "./types.ts";
 
@@ -62,10 +63,34 @@ export function closeOnMiddleClick(event: MouseEvent, tab: BrowserTab): void {
   closeTab(tab);
 }
 
+// Gives `tab` the target's section: Essentials, pinned or the tab list.
+// False when the Essentials are full.
+function joinSectionOf(tab: BrowserTab, target: BrowserTab): boolean {
+  const browser = tabbrowser();
+  if (isEssential(target)) {
+    return addToEssentials(tab);
+  }
+  removeFromEssentials(tab);
+  if (target.pinned && !tab.pinned) {
+    browser.pinTab(tab);
+  }
+  if (!target.pinned && tab.pinned) {
+    browser.unpinTab(tab);
+  }
+  return true;
+}
+
+export function pinTab(tab: BrowserTab): void {
+  removeFromEssentials(tab);
+  if (!tab.pinned) {
+    tabbrowser().pinTab(tab);
+  }
+}
+
 // Moves `draggedTab` to `targetTab`'s position and into (or out of) the
-// target's folder, mirroring Neoworks' drop-on-row behavior.
+// target's folder and section, mirroring Neoworks' drop-on-row behavior.
 export function moveTabOnto(draggedTab: BrowserTab, targetTab: BrowserTab): void {
-  if (draggedTab === targetTab || draggedTab.pinned !== targetTab.pinned) {
+  if (draggedTab === targetTab || !joinSectionOf(draggedTab, targetTab)) {
     return;
   }
   const browser = tabbrowser();
