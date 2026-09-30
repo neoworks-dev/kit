@@ -715,6 +715,13 @@
   color: var(--nw-workspace-color);
 }
 
+/* A tab dragged over the icon moves to that workspace on drop. */
+#neoworks-sidebar .nw-workspace-icon[data-drop-target] {
+  background: var(--glass-hover);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  color: var(--nw-workspace-color);
+}
+
 /* Same chip as the container in the URL bar (neoworks-toolbar/toolbar.css). */
 #neoworks-sidebar .nw-container-current {
   flex-shrink: 1;
