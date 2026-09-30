@@ -3,89 +3,46 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// Exposes the browser calls the new tab page (pages-newtab) needs.
 export class NRStartPageChild extends JSWindowActorChild {
+  resolveGetCurrentTopSites: ((topSites: string) => void) | null = null;
+
   actorCreated() {
-    console.debug("NRStartPageChild created!");
     const window = this.contentWindow;
+    // In dev the actor matches all of localhost; only the new tab's dev
+    // server (port 5186) gets the bridge.
     if (
-      window?.location.port === "5186" ||
-      window?.location.href.startsWith("chrome://") ||
-      window?.location.href.startsWith("about:")
+      window &&
+      (window.location.protocol !== "http:" || window.location.port === "5186")
     ) {
-      console.debug("NRStartPage 5186 ! or Chrome Page!");
       Cu.exportFunction(this.GetCurrentTopSites.bind(this), window, {
         defineAs: "NRGetCurrentTopSites",
       });
-      Cu.exportFunction(this.GetFolderPathFromDialog.bind(this), window, {
-        defineAs: "NRGetFolderPathFromDialog",
-      });
-      Cu.exportFunction(this.GetRandomImageFromFolder.bind(this), window, {
-        defineAs: "NRGetRandomImageFromFolder",
-      });
-      Cu.exportFunction(this.FocusUrlBar.bind(this), window, {
-        defineAs: "NRFocusUrlBar",
+      Cu.exportFunction(this.OpenSpotlight.bind(this), window, {
+        defineAs: "NROpenSpotlight",
       });
     }
   }
 
   GetCurrentTopSites(callback: (topSites: string) => void = () => {}) {
-    const promise = new Promise<string>((resolve, _reject) => {
+    const promise = new Promise<string>((resolve) => {
       this.resolveGetCurrentTopSites = resolve;
     });
     this.sendAsyncMessage("NRStartPage:GetCurrentTopSites");
     promise.then((topSites) => callback(topSites));
   }
 
-  resolveGetCurrentTopSites: ((topSites: string) => void) | null = null;
-
-  GetFolderPathFromDialog(callback: (folderPath: string) => void = () => {}) {
-    const promise = new Promise<string>((resolve, _reject) => {
-      this.resolveGetFolderPathFromDialog = resolve;
-    });
-    this.sendAsyncMessage("NRStartPage:GetFolderPathFromDialog");
-    promise.then((folderPath) => callback(folderPath));
-  }
-
-  resolveGetFolderPathFromDialog: ((folderPath: string) => void) | null = null;
-
-  GetRandomImageFromFolder(
-    folderPath: string,
-    callback: (image: string) => void = () => {},
-  ) {
-    const promise = new Promise<string>((resolve, _reject) => {
-      this.resolveGetRandomImageFromFolder = resolve;
-    });
-    this.sendAsyncMessage("NRStartPage:GetRandomImageFromFolder", {
-      folderPath,
-    });
-    promise.then((image) => callback(image));
-  }
-
-  resolveGetRandomImageFromFolder: ((image: string) => void) | null = null;
-
-  FocusUrlBar() {
-    this.sendAsyncMessage("NRStartPage:FocusUrlBar");
+  OpenSpotlight() {
+    this.sendAsyncMessage("NRStartPage:OpenSpotlight");
   }
 
   receiveMessage(message: ReceiveMessageArgument) {
-    switch (message.name) {
-      case "NRStartPage:GetCurrentTopSites": {
-        this.resolveGetCurrentTopSites?.(message.data);
-        this.resolveGetCurrentTopSites = null;
-        break;
-      }
-      case "NRStartPage:GetFolderPathFromDialog": {
-        this.resolveGetFolderPathFromDialog?.(message.data);
-        this.resolveGetFolderPathFromDialog = null;
-        break;
-      }
-      case "NRStartPage:GetRandomImageFromFolder": {
-        this.resolveGetRandomImageFromFolder?.(message.data);
-        this.resolveGetRandomImageFromFolder = null;
-        break;
-      }
+    if (message.name === "NRStartPage:GetCurrentTopSites") {
+      this.resolveGetCurrentTopSites?.(message.data);
+      this.resolveGetCurrentTopSites = null;
     }
   }
+
   handleEvent(_event: Event): void {
     // No-op
   }
