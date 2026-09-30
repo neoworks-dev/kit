@@ -12,6 +12,7 @@ import {
   model,
   models,
   newChat,
+  resetHelpers,
   running,
   send,
   stop,
@@ -61,6 +62,14 @@ function Header() {
   return (
     <div class="nw-ai-header">
       <span class="nw-ai-title">AI</span>
+      <button
+        type="button"
+        class="nw-ai-icon-button"
+        title="Reset browser helpers to Kit's defaults"
+        onClick={() => void resetHelpers()}
+      >
+        <span class="nw-icon" data-icon="arrow-counter-clockwise" />
+      </button>
       <button type="button" class="nw-ai-icon-button" title="New chat" onClick={newChat}>
         <span class="nw-icon" data-icon="plus" />
       </button>
@@ -151,6 +160,8 @@ function ItemRow(props: { item: ChatItem }): JSX.Element {
       return <ApprovalRow item={item} />;
     case "error":
       return <div class="nw-ai-error">{item.text}</div>;
+    case "notice":
+      return <div class="nw-ai-notice">{item.text}</div>;
   }
 }
 
@@ -241,7 +252,7 @@ function Composer() {
               type="button"
               class="nw-ai-send"
               title="Send"
-              disabled={flag(!draft().trim())}
+              disabled={!draft().trim() || undefined}
               onClick={submit}
             >
               <span class="nw-icon" data-icon="arrow-up" />

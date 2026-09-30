@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
-// The AI agent's hands: an MCP endpoint on 127.0.0.1 with one tool, `bidi`,
-// that sends WebDriver BiDi commands to Kit through a filter (#52).
+// The AI agent's hands: an MCP endpoint on 127.0.0.1 whose `bidi` tool sends
+// WebDriver BiDi commands to Kit through a filter (#52), and whose `helper`
+// tools run the agent-editable helpers.js through the same filter (#53).
 //
 // BiDi runs in-process: Kit keeps one WebDriverSession of its own, without
 // the Remote Agent's WebSocket server or a remote debugging port. The MCP
@@ -30,6 +31,14 @@ import {
   type PageReport,
   type PageTarget,
 } from "../common/NWAgentPage.ts";
+import {
+  DEFAULT_HELPERS,
+  describeAction,
+  helperActions,
+  helperCall,
+  inputSources,
+  isHelperName,
+} from "../common/NWAgentHelpers.ts";
 
 interface HttpRequest {
   method: string;
@@ -120,7 +129,7 @@ const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const MAX_TEXT = 60_000;
 const REDACTED = "[redacted]";
 
-const TOOL = {
+const BIDI_TOOL: JsonObject = {
   name: "bidi",
   description: [
     "Send one WebDriver BiDi command to Kit, the user's web browser, and get its result.",
@@ -131,7 +140,8 @@ const TOOL = {
     "`active: true` marks the tab the user is looking at. Scripts run in a sandbox apart from",
     "the page's own scripts; target them with `target: {context}`. Screenshots come back as",
     "images. Some clicks and key presses (buying, paying, deleting) wait for the user to",
-    "approve them in Kit. Values of password and card fields are redacted.",
+    "approve them in Kit. Values of password and card fields are redacted. For everyday",
+    "reading and clicking, the `helper` tool is shorter.",
   ].join(" "),
   inputSchema: {
     type: "object",
@@ -142,6 +152,71 @@ const TOOL = {
     required: ["method"],
   },
 };
+
+const HELPERS_FILE = PathUtils.join(PathUtils.profileDir, "neoworks-ai", "helpers.js");
+const MAX_HELPERS = 100_000;
+
+const HELPER_TOOLS: JsonObject[] = [
+  {
+    name: "helper",
+    description: [
+      "Run one function from Kit's helpers file (see helpers_source) in a tab, and get its",
+      "result. Start with snapshot() for a numbered list of what's on screen, then click(n),",
+      "type(n, text) or press(key). Helpers that return input actions have Kit perform them as",
+      "real clicks and key presses, which may wait for the user's approval.",
+    ].join(" "),
+    inputSchema: {
+      type: "object",
+      properties: {
+        context: {
+          type: "string",
+          description: "The tab's context id, from browsingContext.getTree. Leave it out for the tab the user is looking at.",
+        },
+        name: { type: "string", description: 'The helper, e.g. "snapshot".' },
+        args: { type: "array", description: "Its arguments (JSON values)." },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "helpers_source",
+    description: "Read Kit's helpers file: the functions the `helper` tool runs and what they can return.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "helpers_edit",
+    description: [
+      "Replace Kit's helpers file with new source, to fix a helper or add the one you're missing.",
+      "Read it with helpers_source first and send the whole file. It persists across chats.",
+    ].join(" "),
+    inputSchema: {
+      type: "object",
+      properties: { source: { type: "string", description: "The whole new helpers.js." } },
+      required: ["source"],
+    },
+  },
+];
+
+async function readHelpers(): Promise<string> {
+  try {
+    return await IOUtils.readUTF8(HELPERS_FILE);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "NotFoundError") {
+      return DEFAULT_HELPERS;
+    }
+    throw error;
+  }
+}
+
+async function writeHelpers(source: string): Promise<void> {
+  await IOUtils.makeDirectory(PathUtils.parent(HELPERS_FILE) ?? "", { ignoreExisting: true });
+  await IOUtils.writeUTF8(HELPERS_FILE, source);
+}
+
+// The sidebar's reset: back to the helpers Kit ships.
+export async function resetAgentHelpers(): Promise<void> {
+  await IOUtils.remove(HELPERS_FILE, { ignoreAbsent: true });
+}
 
 // Commands that go through, and whether they need a web page.
 const ALLOWED: Record<string, { page: boolean }> = {
@@ -483,24 +558,35 @@ class Endpoint {
       case "ping":
         return ok({});
       case "tools/list":
-        return ok({ tools: [TOOL] });
+        return ok({ tools: [BIDI_TOOL, ...HELPER_TOOLS] });
       case "tools/call": {
-        if (params.name !== TOOL.name) {
-          return { jsonrpc: "2.0", id, error: { code: -32602, message: `Unknown tool: ${String(params.name)}` } };
+        const name = String(params.name);
+        if (![BIDI_TOOL, ...HELPER_TOOLS].some((tool) => tool.name === name)) {
+          return { jsonrpc: "2.0", id, error: { code: -32602, message: `Unknown tool: ${name}` } };
         }
         const args = isObject(params.arguments) ? params.arguments : {};
-        return ok(await this.call(args) as unknown as Json);
+        return ok(await this.call(name, args) as unknown as Json);
       }
       default:
         return { jsonrpc: "2.0", id, error: { code: -32601, message: `Method not found: ${String(message.method)}` } };
     }
   }
 
-  async call(args: JsonObject): Promise<ToolResult> {
-    const method = typeof args.method === "string" ? args.method : "";
-    const params = isObject(args.params) ? { ...args.params } : {};
+  async call(tool: string, args: JsonObject): Promise<ToolResult> {
     try {
-      return await this.run(method, params);
+      switch (tool) {
+        case "helper":
+          return await this.runHelper(args);
+        case "helpers_source":
+          return textResult(await readHelpers());
+        case "helpers_edit":
+          return await this.editHelpers(args);
+        default: {
+          const method = typeof args.method === "string" ? args.method : "";
+          const params = isObject(args.params) ? { ...args.params } : {};
+          return await this.run(method, params);
+        }
+      }
     } catch (error) {
       if (error instanceof Declined) {
         return textResult(`The user declined: ${error.message}`, true);
@@ -509,7 +595,77 @@ class Endpoint {
     }
   }
 
+  async editHelpers(args: JsonObject): Promise<ToolResult> {
+    const source = typeof args.source === "string" ? args.source : "";
+    if (!source.trim()) {
+      throw new Error("Send the whole helpers file as `source`.");
+    }
+    if (source.length > MAX_HELPERS) {
+      throw new Error(`The helpers file is limited to ${MAX_HELPERS} characters.`);
+    }
+    await writeHelpers(source);
+    return textResult("Saved. Syntax errors show up when a helper runs.");
+  }
+
+  // The context id of the tab selected in the chat's window.
+  activeContext(): string {
+    const browser = (this.options.window as Window & { gBrowser?: { selectedBrowser: XULBrowserElement } })
+      .gBrowser?.selectedBrowser;
+    const context = browser?.browsingContext;
+    if (!context) {
+      throw new Error("No tab is selected; pass a context from browsingContext.getTree.");
+    }
+    bidi();
+    return NavigableManager.getIdForBrowsingContext(context);
+  }
+
+  // Runs a helper in the page, then performs the input it hands back.
+  async runHelper(args: JsonObject): Promise<ToolResult> {
+    const name = typeof args.name === "string" ? args.name : "";
+    if (!isHelperName(name)) {
+      throw new Error("`name` must be the name of a function in the helpers file.");
+    }
+    const context = typeof args.context === "string" && args.context ? args.context : this.activeContext();
+    const helperArgs = Array.isArray(args.args) ? args.args : [];
+    const { result, secrets } = await this.filtered("script.callFunction", {
+      functionDeclaration: helperCall(await readHelpers(), name),
+      target: { context },
+      arguments: [{ type: "string", value: JSON.stringify(helperArgs) }],
+      awaitPromise: true,
+    });
+    if (!isObject(result) || result.type !== "success") {
+      const details = isObject(result) && isObject(result.exceptionDetails) ? result.exceptionDetails.text : result;
+      return textResult(redact(`${name} failed: ${typeof details === "string" ? details : JSON.stringify(details)}`, secrets), true);
+    }
+    const value = isObject(result.result) && typeof result.result.value === "string" ? result.result.value : "null";
+    const returned: unknown = JSON.parse(value);
+    const actions = helperActions(returned);
+    if (!actions) {
+      return textResult(redact(typeof returned === "string" ? returned : JSON.stringify(returned, null, 1), secrets));
+    }
+    const done: string[] = [];
+    for (const action of actions) {
+      await this.filtered("input.performActions", { context, actions: inputSources(action) as Json[] });
+      done.push(describeAction(action));
+    }
+    return textResult(`Done: ${done.join(", ")}.`);
+  }
+
   async run(method: string, params: JsonObject): Promise<ToolResult> {
+    const { result, secrets } = await this.filtered(method, params);
+    if (method === "browsingContext.captureScreenshot" && isObject(result) && typeof result.data === "string") {
+      return { content: [{ type: "image", data: result.data, mimeType: "image/png" }] };
+    }
+    const shown = method === "browsingContext.getTree"
+      ? this.annotateTree(result)
+      : method === "script.getRealms"
+      ? this.withoutPrivateRealms(result)
+      : result;
+    return textResult(redact(JSON.stringify(shown ?? null), secrets));
+  }
+
+  // One BiDi command through the filter, with the secrets to redact from it.
+  async filtered(method: string, params: JsonObject): Promise<{ result: unknown; secrets: Set<string> }> {
     const rule = ALLOWED[method];
     if (!rule) {
       throw new Error(`${method || "(no method)"} isn't available. Allowed: ${Object.keys(ALLOWED).join(", ")}`);
@@ -563,15 +719,7 @@ class Endpoint {
       }
     }
 
-    if (method === "browsingContext.captureScreenshot" && isObject(result) && typeof result.data === "string") {
-      return { content: [{ type: "image", data: result.data, mimeType: "image/png" }] };
-    }
-    const shown = method === "browsingContext.getTree"
-      ? this.annotateTree(result)
-      : method === "script.getRealms"
-      ? this.withoutPrivateRealms(result)
-      : result;
-    return textResult(redact(JSON.stringify(shown ?? null), secrets));
+    return { result, secrets };
   }
 
   // Inspects the page, collects its secrets and asks the user when needed.

@@ -28,7 +28,8 @@ export type ChatItem =
   | { kind: "tool"; id: string; title: () => string; status: () => ToolStatus }
   | { kind: "permission"; request: RequestPermissionRequest; answer: (reply: PermissionReply) => void; answered: () => boolean }
   | { kind: "approval"; title: string; detail: string; answer: (allowed: boolean) => void; answered: () => boolean }
-  | { kind: "error"; text: string };
+  | { kind: "error"; text: string }
+  | { kind: "notice"; text: string };
 
 export type ToolStatus = "pending" | "in_progress" | "completed" | "failed";
 
@@ -57,6 +58,7 @@ export interface AgentBrowserModule {
     stop(): void;
   }): AgentEndpoint;
   stopAgentInTab(tab: Element): void;
+  resetAgentHelpers(): Promise<void>;
 }
 
 // The Markdown subset chat answers are rendered with (markdown.tsx).
