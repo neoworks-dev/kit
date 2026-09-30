@@ -10,6 +10,7 @@ import { mountPageActionsMenu } from "./mount.tsx";
 import { insertPageActionsButton, pageActionsButton } from "./page-actions-button.ts";
 import { openPageActions, togglePageActions } from "./page-actions-menu.tsx";
 import { watchGlassTint } from "./glass-tint.ts";
+import { watchWindowControls } from "./window-controls.ts";
 import { toggleWindowTransparency, watchWindowTransparency } from "./window-transparency.ts";
 import frameStyle from "../neoworks-ui/frame.css?inline";
 import glassStyle from "../neoworks-ui/glass.css?inline";
@@ -35,6 +36,7 @@ export default class NeoworksToolbar extends NoraComponentBase {
     onCleanup(() => style.remove());
     onCleanup(watchWindowTransparency());
     onCleanup(watchGlassTint());
+    onCleanup(watchWindowControls());
 
     if (!document.body) {
       console.error("[neoworks-toolbar] Browser chrome is unavailable at init.");
