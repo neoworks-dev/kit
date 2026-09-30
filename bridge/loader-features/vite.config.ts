@@ -17,6 +17,9 @@ export default defineConfig({
   server: {
     port: 5181,
     strictPort: true,
+    // The chrome document is chrome://browser/, so root-relative dev asset
+    // URLs (e.g. Phosphor SVGs referenced from CSS) must name the server.
+    origin: "http://localhost:5181",
     cors: {
       origin: [
         /^https?:\/\/(localhost|127\.0\.0\.1)(?::\d+)?$/,
