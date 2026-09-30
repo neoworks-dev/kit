@@ -1,0 +1,99 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Kit's look for reader view, on top of Firefox's aboutReader.css. Loaded as
+   a user sheet scoped to about:reader (NWReaderStyle.sys.mts), so every
+   declaration needs !important to beat the page's own.
+
+   Only the Light and Dark schemes are restyled; "Auto" resolves to one of
+   them from the page's prefers-color-scheme, which Firefox points at the
+   theme's scheme. Sepia, Gray, Contrast, custom colors and high contrast mode
+   keep Firefox's colors. The tokens are @neoworks-dev/ui's, as in
+   neoworks-ui/glass.css; light-dark() follows the scheme the body class
+   sets. */
+
+body:is(.light, .dark):not(.hcm) {
+  --nw-ink: light-dark(#000, #fff) !important;
+  --nw-info: light-dark(#2563eb, #60a5fa) !important;
+  --nw-ai: light-dark(#7c3aed, #a78bfa) !important;
+  --nw-border: light-dark(#d4d4d8, #29292b) !important;
+  --nw-surface: light-dark(#fff, #1c1c1e) !important;
+  --nw-shadow: light-dark(rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0.45)) !important;
+
+  --main-background: light-dark(#fff, #141416) !important;
+  --main-foreground: light-dark(#09090b, #fafafa) !important;
+  --primary-color: var(--nw-info) !important;
+  --icon-fill: color-mix(in srgb, var(--nw-ink) 72%, transparent) !important;
+  --icon-disabled-fill: color-mix(in srgb, var(--nw-ink) 30%, transparent) !important;
+
+  --toolbar-border: var(--nw-border) !important;
+  --toolbar-button-background-hover: color-mix(in srgb, var(--nw-ink) 7%, transparent) !important;
+  --toolbar-button-foreground-hover: var(--main-foreground) !important;
+  --toolbar-button-background-active: color-mix(in srgb, var(--nw-ink) 13%, transparent) !important;
+  --toolbar-button-foreground-active: var(--main-foreground) !important;
+  --tooltip-background: var(--nw-surface) !important;
+  --tooltip-foreground: var(--main-foreground) !important;
+  --tooltip-border: var(--nw-border) !important;
+
+  --popup-background: var(--nw-surface) !important;
+  --popup-foreground: var(--main-foreground) !important;
+  --popup-border: var(--nw-border) !important;
+  --popup-line: color-mix(in srgb, var(--nw-ink) 8%, transparent) !important;
+  --popup-shadow: var(--nw-shadow) !important;
+  --popup-button-background: color-mix(in srgb, var(--nw-ink) 5%, transparent) !important;
+  --popup-button-foreground: var(--main-foreground) !important;
+  --popup-button-background-hover: var(--toolbar-button-background-hover) !important;
+  --popup-button-background-active: var(--toolbar-button-background-active) !important;
+  --popup-button-border: var(--nw-border) !important;
+
+  --selected-background: color-mix(in srgb, var(--nw-info) 28%, transparent) !important;
+  --link-foreground: var(--nw-info) !important;
+  --link-selected-foreground: var(--main-foreground) !important;
+  --visited-link-foreground: var(--nw-ai) !important;
+
+  -webkit-font-smoothing: antialiased !important;
+}
+
+/* Geist for the Sans-serif typeface, the domain label and the controls; Serif
+   and Monospace stay as chosen. The typeface picker sets --font-family on the
+   root element's style attribute. */
+:root[style*="--font-family: sans-serif;"] {
+  --font-family: "Geist", ui-sans-serif, system-ui, sans-serif !important;
+}
+
+.domain,
+.toolbar,
+.dropdown-popup {
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif !important;
+}
+
+.toolbar {
+  border-radius: 12px !important;
+}
+
+.toolbar-button {
+  border-radius: 8px !important;
+}
+
+.hover-label {
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px var(--popup-shadow) !important;
+}
+
+.dropdown .dropdown-popup {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px var(--popup-shadow) !important;
+}
+
+/* The domain link above the title reads as a quiet label. */
+.domain {
+  color: color-mix(in srgb, var(--main-foreground) 55%, transparent) !important;
+  text-decoration: none !important;
+}
+
+.header > h1 {
+  letter-spacing: -0.02em !important;
+}
+
+a:not(.domain) {
+  text-underline-offset: 0.15em !important;
+}
