@@ -116,14 +116,16 @@ export async function deleteContainer(container: Container): Promise<void> {
   ContextualIdentityService.remove(container.userContextId);
 }
 
-const identityObserver = {
-  observe(): void {
-    setContainers(readContainers());
-    setDefaultContainerIdSignal(readDefaultContainerId());
-  },
-};
-
+// A new observer per call: hot reload can run init again before the old
+// instance is cleaned up, and debug builds abort when the same observer is
+// added twice.
 export function watchContainers(): () => void {
+  const identityObserver = {
+    observe(): void {
+      setContainers(readContainers());
+      setDefaultContainerIdSignal(readDefaultContainerId());
+    },
+  };
   for (const topic of IDENTITY_TOPICS) {
     Services.obs.addObserver(identityObserver, topic);
   }
