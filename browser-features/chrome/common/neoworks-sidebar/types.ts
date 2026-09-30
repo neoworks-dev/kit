@@ -6,7 +6,12 @@ export interface BrowserTabGroup extends XULElement {
   color: string;
   collapsed: boolean;
   tabs: BrowserTab[];
+  // Moves every tab out of the group, which then removes itself.
+  ungroupTabs(): void;
 }
+
+// A top-level row in the tab list: a loose tab or a whole folder.
+export type TabListElement = BrowserTab | BrowserTabGroup;
 
 export interface BrowserTab extends Omit<XULElement, "linkedBrowser"> {
   label: string;
@@ -17,7 +22,7 @@ export interface BrowserTab extends Omit<XULElement, "linkedBrowser"> {
   closing: boolean;
   userContextId: number;
   // Index in gBrowser.tabs.
-  _tPos: number;
+  index: number;
   group: BrowserTabGroup | null;
   linkedBrowser: { currentURI: { spec: string } };
   toggleMuteAudio(): void;
@@ -55,11 +60,18 @@ export interface NeoworksTabbrowser {
   reloadTab(tab: BrowserTab): void;
   duplicateTab(tab: BrowserTab): BrowserTab;
   moveTabTo(tab: BrowserTab, options: { tabIndex: number }): void;
+  moveTabBefore(element: TabListElement, target: TabListElement): void;
+  moveTabAfter(element: TabListElement, target: TabListElement): void;
+  // Move the selected tab one step, entering and leaving folders on the way.
+  moveTabForward(): void;
+  moveTabBackward(): void;
   moveTabToExistingGroup(tab: BrowserTab, group: BrowserTabGroup): void;
+  tabGroups: BrowserTabGroup[];
   addTabGroup(
     tabs: BrowserTab[],
     options: { label: string; insertBefore?: BrowserTab },
   ): BrowserTabGroup;
+  removeTabGroup(group: BrowserTabGroup): Promise<void>;
   ungroupTab(tab: BrowserTab): void;
   replaceTabWithWindow(tab: BrowserTab): void;
   // hideTab is a no-op for pinned and selected tabs.

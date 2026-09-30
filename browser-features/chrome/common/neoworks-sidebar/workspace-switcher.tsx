@@ -6,6 +6,7 @@
 
 import { createSignal, For, Show } from "solid-js";
 import { CONTAINER_COLORS } from "./containers.ts";
+import { focusInputSoon } from "./focus-input.ts";
 import { namedColor } from "./identity-colors.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { attributeFlag } from "./tab-row.tsx";
@@ -46,15 +47,6 @@ function toggleMenu(): void {
     return;
   }
   openMenu();
-}
-
-// solid-xul has no refs; focus inputs by id once they are rendered.
-function focusInputSoon(inputId: string): void {
-  queueMicrotask(() => {
-    const input = document.getElementById(inputId) as HTMLInputElement | null;
-    input?.focus();
-    input?.select();
-  });
 }
 
 function pickWorkspace(workspaceId: string): void {

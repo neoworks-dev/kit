@@ -1,18 +1,25 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { createEffect, For, Match, onCleanup, Show, Switch } from "solid-js";
+import { createEffect, For, Match, onCleanup, Switch } from "solid-js";
 import { createPageBackdrop } from "../neoworks-ui/page-backdrop.ts";
 import { ContainerBar } from "./container-bar.tsx";
-import { namedColor } from "./identity-colors.ts";
+import { FolderRow } from "./folder-row.tsx";
 import { PinnedGrid } from "./pinned-grid.tsx";
 import { sidebarDocked, toggleSidebarDocked } from "./sidebar-docking.ts";
-import { openNewTab, toggleGroupCollapsed } from "./tab-actions.ts";
+import { openNewTab } from "./tab-actions.ts";
+import {
+  allowDrop,
+  dropAtListEnd,
+  isDropTarget,
+  leaveDrop,
+  LIST_END,
+} from "./tab-drag.ts";
 import {
   handleSidebarEnter,
   handleSidebarLeave,
   sidebarVisible,
 } from "./sidebar-visibility.ts";
-import { tabReader, TabRow } from "./tab-row.tsx";
+import { attributeFlag, TabRow } from "./tab-row.tsx";
 import { WorkspaceSwitcher } from "./workspace-switcher.tsx";
 import type {
   BrowserTab,
@@ -23,34 +30,6 @@ import type {
 import glassStyle from "../neoworks-ui/glass.css?inline";
 import iconStyle from "../neoworks-ui/icons.css?inline";
 import sidebarStyle from "./sidebar.css?inline";
-
-function GroupRow(props: { group: BrowserTabGroup; tabState: TabState }) {
-  const group = props.group;
-  const read = tabReader(props.tabState);
-
-  const label = read(() => group.label || "Folder");
-  const collapsed = read(() => group.collapsed);
-  const color = read(() => namedColor(group.color));
-  const tabs = read(() => group.tabs.filter((tab) => !tab.hidden));
-
-  return (
-    <div class="nw-group">
-      <div class="nw-group-header" onClick={() => toggleGroupCollapsed(group)}>
-        <span class="nw-group-chevron" data-collapsed={String(collapsed())}>›</span>
-        <span class="nw-container-dot" style={{ background: color() }} />
-        <span class="nw-tab-label">{label()}</span>
-        <span class="nw-group-count">{tabs().length}</span>
-      </div>
-      <Show when={!collapsed()}>
-        <div class="nw-group-tabs">
-          <For each={tabs()}>
-            {(tab) => <TabRow tab={tab} tabState={props.tabState} />}
-          </For>
-        </div>
-      </Show>
-    </div>
-  );
-}
 
 function tabOfEntry(entry: SidebarEntry): BrowserTab | undefined {
   if (entry.kind === "tab") {
@@ -73,9 +52,22 @@ function EntryRow(props: { entry: SidebarEntry; tabState: TabState }) {
         {(tab) => <TabRow tab={tab()} tabState={props.tabState} />}
       </Match>
       <Match when={groupOfEntry(props.entry)}>
-        {(group) => <GroupRow group={group()} tabState={props.tabState} />}
+        {(group) => <FolderRow group={group()} tabState={props.tabState} />}
       </Match>
     </Switch>
+  );
+}
+
+// Fills the space below the last row; a tab dropped here leaves its folder.
+function ListEndDropZone() {
+  return (
+    <div
+      class="nw-drop-end"
+      data-drop-target={attributeFlag(isDropTarget(LIST_END))}
+      onDragOver={(event: DragEvent) => allowDrop(event, LIST_END)}
+      onDragLeave={() => leaveDrop(LIST_END)}
+      onDrop={dropAtListEnd}
+    />
   );
 }
 
@@ -157,6 +149,7 @@ function SidebarPanel(props: { tabState: TabState }) {
         <For each={props.tabState.entries()}>
           {(entry) => <EntryRow entry={entry} tabState={props.tabState} />}
         </For>
+        <ListEndDropZone />
       </div>
 
       <div class="nw-sidebar-footer">

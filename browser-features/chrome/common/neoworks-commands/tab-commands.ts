@@ -15,9 +15,24 @@ const NEXT = 1;
 const PREVIOUS = -1;
 
 // The sidebar briefly slides in so the new position in the tab list shows.
+function peekSidebar(): void {
+  dispatchEvent(new CustomEvent(SIDEBAR_PEEK_EVENT));
+}
+
 function advanceTab(direction: number): void {
   tabbrowser().tabContainer.advanceSelectedTab(direction, true);
-  dispatchEvent(new CustomEvent(SIDEBAR_PEEK_EVENT));
+  peekSidebar();
+}
+
+// Firefox's moves enter an open folder, step over a collapsed one and leave a
+// folder past its first or last tab.
+function moveCurrentTab(direction: number): void {
+  if (direction === NEXT) {
+    tabbrowser().moveTabForward();
+  } else {
+    tabbrowser().moveTabBackward();
+  }
+  peekSidebar();
 }
 
 function closeCurrentTab(): void {
@@ -44,6 +59,18 @@ export const TAB_COMMANDS: NeoworksCommand[] = [
     title: "Previous Tab",
     listed: true,
     run: () => advanceTab(PREVIOUS),
+  },
+  {
+    id: "tab:move-up",
+    title: "Move Tab Up",
+    listed: true,
+    run: () => moveCurrentTab(PREVIOUS),
+  },
+  {
+    id: "tab:move-down",
+    title: "Move Tab Down",
+    listed: true,
+    run: () => moveCurrentTab(NEXT),
   },
   {
     id: "tab:reload",

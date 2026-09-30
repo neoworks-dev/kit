@@ -7,7 +7,8 @@ import {
 } from "#features-chrome/utils/base.ts";
 import { closeContainerMenu } from "./container-bar.tsx";
 import { watchContainers } from "./containers.ts";
-import { mountSidebar, mountTabContextMenu } from "./mount.tsx";
+import { stopFolderEdit } from "./folder-editing.ts";
+import { mountContextMenus, mountSidebar } from "./mount.tsx";
 import {
   disposeSidebarVisibility,
   peekSidebar,
@@ -40,7 +41,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
     const stopWatchingWorkspaces = watchWorkspaces();
     const stopRoutingNewTabs = routeNewTabsToDefaultContainer();
     mountSidebar(browserBox, tabState);
-    mountTabContextMenu(popupSet, tabState);
+    mountContextMenus(popupSet, tabState);
     addEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
     const unregisterCommands = registerCommands([
       {
@@ -71,6 +72,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
 
     onCleanup(() => {
       unregisterCommands();
+      stopFolderEdit();
       closeWorkspaceMenu();
       stopRoutingNewTabs();
       stopWatchingWorkspaces();

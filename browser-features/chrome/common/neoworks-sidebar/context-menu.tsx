@@ -3,14 +3,17 @@
 import { createSignal, For, Show } from "solid-js";
 import { type Container, containers, NO_CONTAINER } from "./containers.ts";
 import {
-  closeTab,
-  createGroupFromTab,
-  moveTabToContainer,
-  togglePinned,
-} from "./tab-actions.ts";
+  createFolder,
+  DEFAULT_FOLDER_LABEL,
+  moveTabIntoFolder,
+  removeTabFromFolder,
+  visibleFolders,
+} from "./folder-actions.ts";
+import { startFolderEdit } from "./folder-editing.ts";
+import { closeTab, moveTabToContainer, togglePinned } from "./tab-actions.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { tabbrowser } from "./tabbrowser.ts";
-import type { BrowserTab, TabState } from "./types.ts";
+import type { BrowserTab, BrowserTabGroup, TabState } from "./types.ts";
 
 const MENU_ID = "neoworks-sidebar-tab-menu";
 
@@ -23,16 +26,27 @@ interface XULPopup extends XULElement {
     isContextMenu: boolean,
     triggerEvent: Event,
   ): void;
+  openPopup(anchor: Element, position: string): void;
 }
 
-export function openTabContextMenu(event: MouseEvent, tab: BrowserTab): void {
+// Keyboard-opened context menus carry no pointer position; anchor those to
+// the row instead.
+export function openContextMenuAt(menuId: string, event: MouseEvent): void {
   event.preventDefault();
-  const popup = document.getElementById(MENU_ID) as XULPopup | null;
+  const popup = document.getElementById(menuId) as XULPopup | null;
   if (!popup) {
     return;
   }
-  setMenuTab(tab);
+  if (event.screenX === 0 && event.screenY === 0) {
+    popup.openPopup(event.currentTarget as Element, "after_start");
+    return;
+  }
   popup.openPopupAtScreen(event.screenX, event.screenY, true, event);
+}
+
+export function openTabContextMenu(event: MouseEvent, tab: BrowserTab): void {
+  setMenuTab(tab);
+  openContextMenuAt(MENU_ID, event);
 }
 
 function withMenuTab(action: (tab: BrowserTab) => void): () => void {
@@ -91,6 +105,37 @@ function ContainerSubmenu() {
   );
 }
 
+function moveTabToNewFolder(tab: BrowserTab): void {
+  startFolderEdit(createFolder(tab));
+}
+
+function FolderSubmenu(props: { tabState: TabState }) {
+  const otherFolders = (): BrowserTabGroup[] => {
+    props.tabState.revision();
+    const currentFolder = menuTab()?.group;
+    return visibleFolders().filter((group) => group !== currentFolder);
+  };
+
+  return (
+    <xul:menu label="Move to folder">
+      <xul:menupopup>
+        <xul:menuitem label="New folder" onCommand={withMenuTab(moveTabToNewFolder)} />
+        <Show when={otherFolders().length > 0}>
+          <xul:menuseparator />
+        </Show>
+        <For each={otherFolders()}>
+          {(group: BrowserTabGroup) => (
+            <xul:menuitem
+              label={group.label || DEFAULT_FOLDER_LABEL}
+              onCommand={withMenuTab((tab) => moveTabIntoFolder(tab, group))}
+            />
+          )}
+        </For>
+      </xul:menupopup>
+    </xul:menu>
+  );
+}
+
 // Native XUL popup: gets Firefox's menu keyboard navigation, positioning and
 // platform styling for free.
 export function TabContextMenu(props: { tabState: TabState }) {
@@ -127,9 +172,12 @@ export function TabContextMenu(props: { tabState: TabState }) {
         onCommand={withMenuTab((tab) => tab.toggleMuteAudio())}
       />
       <Show when={!menuTab()?.pinned}>
+        <FolderSubmenu tabState={props.tabState} />
+      </Show>
+      <Show when={menuTab()?.group}>
         <xul:menuitem
-          label="Move to new folder"
-          onCommand={withMenuTab(createGroupFromTab)}
+          label="Remove from folder"
+          onCommand={withMenuTab(removeTabFromFolder)}
         />
       </Show>
       <ContainerSubmenu />

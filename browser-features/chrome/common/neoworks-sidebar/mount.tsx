@@ -3,6 +3,7 @@
 import type { ViteHotContext } from "vite/types/hot";
 import { render } from "@nora/solid-xul";
 import { TabContextMenu } from "./context-menu.tsx";
+import { FolderContextMenu } from "./folder-context-menu.tsx";
 import { Sidebar } from "./sidebar.tsx";
 import type { TabState } from "./types.ts";
 
@@ -17,8 +18,15 @@ export function mountSidebar(browserBox: Element, tabState: TabState): void {
   render(() => <Sidebar tabState={tabState} />, browserBox, options);
 }
 
-export function mountTabContextMenu(popupSet: Element, tabState: TabState): void {
-  render(() => <TabContextMenu tabState={tabState} />, popupSet, {
-    hotCtx: import.meta.hot,
-  });
+export function mountContextMenus(popupSet: Element, tabState: TabState): void {
+  render(
+    () => (
+      <>
+        <TabContextMenu tabState={tabState} />
+        <FolderContextMenu tabState={tabState} />
+      </>
+    ),
+    popupSet,
+    { hotCtx: import.meta.hot },
+  );
 }

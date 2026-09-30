@@ -9,7 +9,14 @@ import {
   selectTab,
   togglePinned,
 } from "./tab-actions.ts";
-import { allowTabDrop, dropTabOnto, endTabDrag, startTabDrag } from "./tab-drag.ts";
+import {
+  allowDrop,
+  dropOntoTab,
+  endDrag,
+  isDropTarget,
+  leaveDrop,
+  startTabDrag,
+} from "./tab-drag.ts";
 import type { BrowserTab, TabState } from "./types.ts";
 
 // solid-xul removes attributes set to undefined.
@@ -76,13 +83,15 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
       draggable="true"
       data-selected={attributeFlag(selected())}
       data-unloaded={attributeFlag(unloaded())}
+      data-drop-target={attributeFlag(isDropTarget(tab))}
       onClick={() => selectTab(tab)}
       onAuxClick={(event: MouseEvent) => closeOnMiddleClick(event, tab)}
       onContextMenu={(event: MouseEvent) => openTabContextMenu(event, tab)}
       onDragStart={(event: DragEvent) => startTabDrag(event, tab)}
-      onDragOver={allowTabDrop}
-      onDrop={(event: DragEvent) => dropTabOnto(event, tab)}
-      onDragEnd={endTabDrag}
+      onDragOver={(event: DragEvent) => allowDrop(event, tab)}
+      onDragLeave={() => leaveDrop(tab)}
+      onDrop={(event: DragEvent) => dropOntoTab(event, tab)}
+      onDragEnd={endDrag}
     >
       <Show when={container()}>
         {(color) => <span class="nw-container-dot" style={{ background: color() }} />}

@@ -4,7 +4,14 @@ import { For, Show } from "solid-js";
 import { openTabContextMenu } from "./context-menu.tsx";
 import { containerColor } from "./identity-colors.ts";
 import { closeOnMiddleClick, selectTab } from "./tab-actions.ts";
-import { allowTabDrop, dropTabOnto, endTabDrag, startTabDrag } from "./tab-drag.ts";
+import {
+  allowDrop,
+  dropOntoTab,
+  endDrag,
+  isDropTarget,
+  leaveDrop,
+  startTabDrag,
+} from "./tab-drag.ts";
 import { attributeFlag, Favicon, tabReader } from "./tab-row.tsx";
 import type { BrowserTab, TabState } from "./types.ts";
 
@@ -26,13 +33,15 @@ function PinnedTile(props: { tab: BrowserTab; tabState: TabState }) {
       draggable="true"
       data-selected={attributeFlag(selected())}
       data-unloaded={attributeFlag(unloaded())}
+      data-drop-target={attributeFlag(isDropTarget(tab))}
       onClick={() => selectTab(tab)}
       onAuxClick={(event: MouseEvent) => closeOnMiddleClick(event, tab)}
       onContextMenu={(event: MouseEvent) => openTabContextMenu(event, tab)}
       onDragStart={(event: DragEvent) => startTabDrag(event, tab)}
-      onDragOver={allowTabDrop}
-      onDrop={(event: DragEvent) => dropTabOnto(event, tab)}
-      onDragEnd={endTabDrag}
+      onDragOver={(event: DragEvent) => allowDrop(event, tab)}
+      onDragLeave={() => leaveDrop(tab)}
+      onDrop={(event: DragEvent) => dropOntoTab(event, tab)}
+      onDragEnd={endDrag}
     >
       <Favicon source={favicon()} busy={busy()} />
       <Show when={container()}>
