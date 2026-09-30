@@ -1,0 +1,3 @@
+[submodule "libs/switchboard"]
+	path = libs/switchboard
+	url = https://github.com/neoworks-dev/switchboard.git

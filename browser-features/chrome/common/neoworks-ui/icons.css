@@ -54,6 +54,11 @@
   --nw-icon-app-window: url("@phosphor-icons/core/bold/app-window-bold.svg");
   --nw-icon-push-pin-slash: url("@phosphor-icons/core/bold/push-pin-slash-bold.svg");
   --nw-icon-arrow-square-out: url("@phosphor-icons/core/bold/arrow-square-out-bold.svg");
+  --nw-icon-sparkle: url("@phosphor-icons/core/bold/sparkle-bold.svg");
+  --nw-icon-stop: url("@phosphor-icons/core/bold/stop-bold.svg");
+  --nw-icon-caret-down: url("@phosphor-icons/core/bold/caret-down-bold.svg");
+  --nw-icon-open-ai-logo: url("@phosphor-icons/core/bold/open-ai-logo-bold.svg");
+  --nw-icon-pi: url("@phosphor-icons/core/bold/pi-bold.svg");
 }
 
 .nw-icon {
@@ -245,4 +250,24 @@
 
 .nw-icon[data-icon="arrow-square-out"] {
   mask-image: var(--nw-icon-arrow-square-out);
+}
+
+.nw-icon[data-icon="sparkle"] {
+  mask-image: var(--nw-icon-sparkle);
+}
+
+.nw-icon[data-icon="stop"] {
+  mask-image: var(--nw-icon-stop);
+}
+
+.nw-icon[data-icon="caret-down"] {
+  mask-image: var(--nw-icon-caret-down);
+}
+
+.nw-icon[data-icon="open-ai-logo"] {
+  mask-image: var(--nw-icon-open-ai-logo);
+}
+
+.nw-icon[data-icon="pi"] {
+  mask-image: var(--nw-icon-pi);
 }

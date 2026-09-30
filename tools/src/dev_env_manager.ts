@@ -11,6 +11,9 @@ export type DevEnvProfileOptions = {
   allowBrowserHttpLoader?: boolean;
 };
 
+// The AI sidebar's harness sidecar runs from the switchboard submodule.
+const HARNESS_DIR = path.join(PROJECT_ROOT, "libs", "switchboard");
+
 const CHROME_BASELINE_CSP_PREF =
   'user_pref("security.chrome_baseline_csp.enabled", false);';
 
@@ -34,6 +37,7 @@ user_pref("browser.newtabpage.enabled", true);
 user_pref("floorp.mcp.enabled", true);
 user_pref("browser.sessionstore.resume_from_crash", false);
 user_pref("nora.dev.allow_http_loader", ${allowBrowserHttpLoader});
+user_pref("neoworks.ai.harness.dir", ${JSON.stringify(HARNESS_DIR)});
 ${allowBrowserHttpLoader ? `${CHROME_BASELINE_CSP_PREF}\n` : ""}`;
 }
 

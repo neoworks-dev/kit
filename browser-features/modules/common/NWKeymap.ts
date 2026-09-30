@@ -51,6 +51,7 @@ export const NW_CHROME_COMMAND_IDS = [
   "split:vertical",
   "split:horizontal",
   "split:close",
+  "ai:toggle",
 ] as const;
 
 export type NWPageCommandId = (typeof NW_PAGE_COMMAND_IDS)[number];
@@ -93,6 +94,7 @@ export const NW_COMMAND_TITLES: Record<NWCommandId, string> = {
   "split:vertical": "Split Side by Side",
   "split:horizontal": "Split Stacked",
   "split:close": "Close Split Pane",
+  "ai:toggle": "Toggle AI Sidebar",
 };
 
 export interface NWCommandInvocation {
@@ -176,6 +178,7 @@ export const NW_KEY_BINDINGS: readonly NWKeyBinding[] = [
   { keys: ["Space", "w", "v"], command: "split:vertical" },
   { keys: ["Space", "w", "s"], command: "split:horizontal" },
   { keys: ["Space", "w", "q"], command: "split:close" },
+  { keys: ["Space", "a"], command: "ai:toggle" },
   ...quickmarkBindings("m", "quickmark:set"),
   ...quickmarkBindings("'", "quickmark:jump"),
 ];

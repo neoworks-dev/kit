@@ -95,6 +95,8 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
   const audio = read(() => audioIcon(tab));
   const pinned = read(() => tab.pinned);
   const inSplit = read(() => !!tab.splitview);
+  // Set while the AI agent works in the tab (NWAgentBrowser.sys.mts).
+  const aiControlled = read(() => tab.hasAttribute("nw-ai-controlled"));
 
   return (
     <div
@@ -127,6 +129,9 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
         >
           <span class="nw-icon" data-icon={audio()} />
         </button>
+      </Show>
+      <Show when={aiControlled()}>
+        <span class="nw-icon nw-tab-ai" data-icon="sparkle" title="AI is controlling this tab" />
       </Show>
       <span class="nw-tab-label">{label()}</span>
       {/* Laid over the label's end on hover (sidebar.css). */}
