@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
-// Restyles about:preferences with Kit's dark theme by overriding Firefox's
-// in-content design tokens (tokens-shared.css, tokens-brand.css) with the
-// @neoworks-dev/ui dark tokens.
+// Restyles about:preferences in Kit's style by overriding Firefox's in-content
+// design tokens (tokens-shared.css, tokens-brand.css) with @neoworks-dev/ui's
+// tokens. light-dark() follows the page's color scheme, which Firefox sets
+// from the theme and the website appearance setting.
 
 const STYLE_ID = "kit-preferences-theme";
 
@@ -10,52 +11,52 @@ const STYLE_ID = "kit-preferences-theme";
 // their token definitions.
 const KIT_PREFERENCES_CSS = `
 :root:root {
-  color-scheme: dark !important;
   font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
 
-  --background-color-canvas: #141416;
-  --background-color-box: #1c1c1e;
-  --background-color-box-info: #262628;
-  --card-background-color: #1c1c1e;
-  --card-border-color: #29292b;
+  --background-color-canvas: light-dark(#f4f4f5, #141416);
+  --background-color-box: light-dark(#fff, #1c1c1e);
+  --background-color-box-info: light-dark(#f9f9fa, #262628);
+  --card-background-color: light-dark(#fff, #1c1c1e);
+  --card-border-color: light-dark(#d4d4d8, #29292b);
   --card-border-radius: 12px;
   --card-box-shadow: none;
 
-  --text-color: #fafafa;
-  --text-color-deemphasized: #a1a1aa;
-  --icon-color: #a1a1aa;
-  --link-color: #fafafa;
-  --link-color-hover: #e4e4e7;
-  --link-color-active: #d4d4d8;
+  --text-color: light-dark(#09090b, #fafafa);
+  --text-color-deemphasized: light-dark(#52525b, #a1a1aa);
+  --icon-color: light-dark(#52525b, #a1a1aa);
+  --link-color: light-dark(#09090b, #fafafa);
+  --link-color-hover: light-dark(#3f3f46, #e4e4e7);
+  --link-color-active: light-dark(#52525b, #d4d4d8);
 
-  --border-color: #29292b;
-  --border-color-interactive: #3f3f46;
-  --border-color-deemphasized: rgba(255, 255, 255, 0.06);
+  --border-color: light-dark(#d4d4d8, #29292b);
+  --border-color-interactive: light-dark(#a1a1aa, #3f3f46);
+  --border-color-deemphasized: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.06));
 
-  /* Neoworks' primary action is white on dark. */
-  --color-accent-primary: #fafafa;
-  --color-accent-primary-hover: #e4e4e7;
-  --color-accent-primary-active: #d4d4d8;
-  --color-accent-primary-selected: #fafafa;
-  --button-background-color-primary: #fafafa;
-  --button-background-color-primary-hover: #e4e4e7;
-  --button-background-color-primary-active: #d4d4d8;
-  --button-text-color-primary: #0b0b0d;
-  --button-text-color-primary-hover: #0b0b0d;
-  --button-text-color-primary-active: #0b0b0d;
-  --button-background-color: #262628;
-  --button-background-color-hover: #2e2e31;
-  --button-background-color-active: #3f3f46;
-  --focus-outline-color: rgba(250, 250, 250, 0.55);
+  /* Neoworks' primary action is the text color: white on dark, black on
+     light. */
+  --color-accent-primary: light-dark(#09090b, #fafafa);
+  --color-accent-primary-hover: light-dark(#3f3f46, #e4e4e7);
+  --color-accent-primary-active: light-dark(#52525b, #d4d4d8);
+  --color-accent-primary-selected: light-dark(#09090b, #fafafa);
+  --button-background-color-primary: light-dark(#09090b, #fafafa);
+  --button-background-color-primary-hover: light-dark(#3f3f46, #e4e4e7);
+  --button-background-color-primary-active: light-dark(#52525b, #d4d4d8);
+  --button-text-color-primary: light-dark(#fff, #0b0b0d);
+  --button-text-color-primary-hover: light-dark(#fff, #0b0b0d);
+  --button-text-color-primary-active: light-dark(#fff, #0b0b0d);
+  --button-background-color: light-dark(#f4f4f5, #262628);
+  --button-background-color-hover: light-dark(#e4e4e7, #2e2e31);
+  --button-background-color-active: light-dark(#d4d4d8, #3f3f46);
+  --focus-outline-color: light-dark(rgba(9, 9, 11, 0.5), rgba(250, 250, 250, 0.55));
 
   --border-radius-small: 6px;
   --border-radius-medium: 8px;
   --border-radius-large: 12px;
 
-  --page-nav-button-background-color-hover: rgba(255, 255, 255, 0.07);
-  --page-nav-button-background-color-active: rgba(255, 255, 255, 0.1);
-  --page-nav-button-background-color-selected: #2e2e31;
-  --page-nav-button-text-color-selected: #fafafa;
+  --page-nav-button-background-color-hover: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.07));
+  --page-nav-button-background-color-active: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1));
+  --page-nav-button-background-color-selected: light-dark(#e4e4e7, #2e2e31);
+  --page-nav-button-text-color-selected: light-dark(#09090b, #fafafa);
 }
 
 /* Floorp's support site isn't Kit's. */
@@ -74,7 +75,7 @@ kit-key-bindings {
   justify-content: space-between;
   gap: 16px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-color-deemphasized);
 }
 
 .kit-key-row:last-child {
@@ -90,10 +91,10 @@ kit-key-bindings {
 
 .kit-key {
   padding: 2px 8px;
-  border: 1px solid #3f3f46;
+  border: 1px solid var(--border-color-interactive);
   border-radius: 6px;
-  background: #262628;
-  color: #fafafa;
+  background: var(--button-background-color);
+  color: var(--text-color);
   font-family: "Geist Mono", ui-monospace, monospace;
   font-size: 0.85em;
   white-space: nowrap;

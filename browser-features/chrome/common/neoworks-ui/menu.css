@@ -4,20 +4,45 @@
    menus, the app menu, the extensions and site information panels, and
    Kit's own sidebar menus. Firefox themes them through the --panel-*,
    --menuitem-* and --button-* variables (toolkit menu.css / popup.css,
-   browser panelUI-shared.css), so this mostly sets those. Colors are
-   @neoworks-dev/ui's dark tokens, which aren't scoped to popups. Loaded
-   globally by neoworks-toolbar. */
+   browser panelUI-shared.css), so this mostly sets those. Loaded globally by
+   neoworks-toolbar.
+
+   Colors come from Kit's tokens (glass.css). An add-on theme's popup colors
+   are on :root; Firefox only gives them to arrow panels (menupopups keep
+   the native Menu color), so they are captured here for both. The --nw-popup-*
+   indirection is what lets a popup read the root's value of a variable it
+   redefines. */
+:root {
+  --nw-popup-background: var(--bg-elevated);
+  --nw-popup-text: var(--text);
+  --nw-popup-border: color-mix(in srgb, var(--nw-ink) 10%, transparent);
+}
+
+:root[lwtheme] {
+  --nw-popup-background: var(--panel-background-color);
+  --nw-popup-text: var(--panel-text-color);
+  --nw-popup-border: var(--panel-border-color);
+}
+
 menupopup,
 panel {
-  color-scheme: dark;
-  --panel-background-color: #1c1c1e;
-  --panel-text-color: #fafafa;
-  --panel-border-color: rgba(255, 255, 255, 0.1);
-  --panel-separator-color: rgba(255, 255, 255, 0.08);
-  --panel-box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-  --button-background-color-hover: rgba(255, 255, 255, 0.08);
-  --button-background-color-active: rgba(255, 255, 255, 0.13);
+  --panel-background-color: var(--nw-popup-background);
+  --panel-text-color: var(--nw-popup-text);
+  --panel-border-color: var(--nw-popup-border);
+  --panel-separator-color: color-mix(in srgb, var(--nw-popup-text) 8%, transparent);
+  --panel-box-shadow: 0 12px 32px light-dark(rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0.5));
+  --button-background-color-hover: color-mix(in srgb, var(--nw-popup-text) 8%, transparent);
+  --button-background-color-active: color-mix(in srgb, var(--nw-popup-text) 13%, transparent);
   --panel-menuitem-border-radius: 6px;
+}
+
+/* Firefox sets the popup scheme of a theme on panels only. */
+:root[lwt-popup="light"] menupopup {
+  color-scheme: light;
+}
+
+:root[lwt-popup="dark"] menupopup {
+  color-scheme: dark;
 }
 
 menupopup {
@@ -41,12 +66,12 @@ menupopup :is(menu, menuitem) {
 }
 
 menupopup :is(menu, menuitem)[_moz-menuactive]:not([disabled]) {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #fafafa;
+  background-color: color-mix(in srgb, var(--panel-text-color) 8%, transparent);
+  color: var(--panel-text-color);
 }
 
 menupopup :is(menu, menuitem)[disabled] {
-  color: rgba(255, 255, 255, 0.4);
+  color: color-mix(in srgb, var(--panel-text-color) 40%, transparent);
 }
 
 menupopup > menuseparator {
@@ -56,6 +81,6 @@ menupopup > menuseparator {
 
 /* Destructive items (class="nw-menu-danger"), e.g. "Close tab". */
 menupopup menuitem.nw-menu-danger[_moz-menuactive]:not([disabled]) {
-  background-color: rgba(239, 68, 68, 0.16);
-  color: #ff8a80;
+  background-color: color-mix(in srgb, var(--nw-danger) 16%, transparent);
+  color: var(--nw-danger);
 }

@@ -31,7 +31,7 @@
 
 /* The pane with keyboard focus (the selected tab). */
 #tabbrowser-tabpanels[nw-split] > .split-view-panel.deck-selected > .browserContainer {
-  outline: 2px solid rgba(255, 255, 255, 0.28) !important;
+  outline: 2px solid color-mix(in srgb, var(--nw-ink) 28%, transparent) !important;
   outline-offset: -2px !important;
 }
 
@@ -82,7 +82,7 @@
 }
 
 #neoworks-split-overlay .nw-split-divider:is(:hover, [data-resizing]) .nw-split-divider-line {
-  background: rgba(255, 255, 255, 0.35);
+  background: color-mix(in srgb, var(--nw-ink) 35%, transparent);
 }
 
 /* Always there so it can be found, brighter on hover. */
@@ -95,10 +95,10 @@
   height: 22px;
   flex-shrink: 0;
   padding: 0;
-  border: 1px solid #3f3f46;
+  border: 1px solid var(--border-strong);
   border-radius: 50%;
-  background: #1c1c1e;
-  color: rgba(255, 255, 255, 0.55);
+  background: var(--bg-elevated);
+  color: var(--text-dim);
   cursor: pointer;
   opacity: 0.7;
   transition: opacity 120ms, color 120ms, background-color 120ms;
@@ -109,8 +109,8 @@
 }
 
 #neoworks-split-overlay .nw-split-add:hover {
-  background: #2e2e31;
-  color: #fafafa;
+  background: var(--surface-hover);
+  color: var(--text);
 }
 
 #neoworks-split-overlay .nw-split-add .nw-icon {
@@ -126,18 +126,18 @@
 #neoworks-split-overlay .nw-split-drop-pane {
   position: absolute;
   box-sizing: border-box;
-  border: 1px dashed rgba(255, 255, 255, 0.35);
+  border: 1px dashed color-mix(in srgb, var(--nw-ink) 35%, transparent);
   border-radius: 12px;
-  background: rgba(20, 20, 22, 0.25);
+  background: color-mix(in srgb, var(--nw-frame) 25%, transparent);
   pointer-events: none;
 }
 
 #neoworks-split-overlay .nw-split-drop-choice {
   position: absolute;
   box-sizing: border-box;
-  border: 2px solid rgba(255, 255, 255, 0.7);
+  border: 2px solid color-mix(in srgb, var(--nw-ink) 70%, transparent);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, var(--nw-ink) 16%, transparent);
   backdrop-filter: blur(4px);
   pointer-events: none;
   transition: left 120ms, top 120ms, width 120ms, height 120ms;

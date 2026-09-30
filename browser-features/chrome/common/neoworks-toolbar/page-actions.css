@@ -126,9 +126,9 @@
 }
 
 #neoworks-page-actions .nw-page-actions-connection {
-  color: #f87171;
+  color: var(--nw-danger);
 }
 
 #neoworks-page-actions [data-secure] .nw-page-actions-connection {
-  color: #4ade80;
+  color: var(--nw-success);
 }

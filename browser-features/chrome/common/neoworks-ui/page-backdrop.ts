@@ -9,8 +9,12 @@
 // bright pages). Must exceed the blur's reach: 3 × the 28px radius in
 // glass.css (.nw-glass-backdrop).
 const BLUR_MARGIN_PX = 96;
-// Top bar color; fills parts of the margin that lie outside the page.
-const OUTSIDE_PAGE_COLOR = "#141416";
+// The window frame's color (it follows the theme, neoworks-ui/frame.css);
+// fills parts of the margin that lie outside the page.
+function outsidePageColor(): string {
+  const root = document.documentElement;
+  return (root && getComputedStyle(root)?.backgroundColor) || "transparent";
+}
 
 interface SnapshotWindowGlobal {
   drawSnapshot(rect: DOMRect, scale: number, backgroundColor: string): Promise<ImageBitmap>;
@@ -83,12 +87,13 @@ async function paintBackdrop(panel: HTMLElement, canvas: HTMLCanvasElement): Pro
   }
   const pixelRatio = window.devicePixelRatio;
   const zoom = browser.fullZoom;
+  const outsideColor = outsidePageColor();
   const bitmap = await windowGlobal.drawSnapshot(
     pageRegion(visible, browserRect, zoom),
     pixelRatio * zoom,
-    OUTSIDE_PAGE_COLOR,
+    outsideColor,
   );
-  drawBitmap(canvas, bitmap, area, visible, pixelRatio);
+  drawBitmap(canvas, bitmap, area, visible, pixelRatio, outsideColor);
   bitmap.close();
   placeCanvas(canvas, panel, area);
 }
@@ -99,6 +104,7 @@ function drawBitmap(
   area: DOMRect,
   visible: DOMRect,
   pixelRatio: number,
+  outsideColor: string,
 ): void {
   canvas.width = Math.round(area.width * pixelRatio);
   canvas.height = Math.round(area.height * pixelRatio);
@@ -106,7 +112,7 @@ function drawBitmap(
   if (!context) {
     return;
   }
-  context.fillStyle = OUTSIDE_PAGE_COLOR;
+  context.fillStyle = outsideColor;
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.drawImage(
     bitmap,

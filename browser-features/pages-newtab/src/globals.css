@@ -4,34 +4,65 @@
 /* Kit's Phosphor icon masks, shared with the browser chrome. */
 @import "../../chrome/common/neoworks-ui/icons.css";
 
-/* @neoworks-dev/ui tokens (dark theme), as in the browser chrome
-   (chrome/common/neoworks-ui/glass.css). */
+/* @neoworks-dev/ui tokens, as in the browser chrome
+   (chrome/common/neoworks-ui/glass.css). light-dark() follows the page's
+   color scheme, which Firefox sets from the theme and the website appearance
+   setting. A theme's own new tab colors (--theme-*, lib/theme.ts) replace the
+   base colors and everything else is mixed from them. */
 :root {
+  color-scheme: light dark;
+
+  --bg: var(--theme-background, light-dark(#f4f4f5, #141416));
+  --bg-elevated: var(--theme-card, light-dark(#ffffff, #1c1c1e));
+  --surface: var(--theme-card, light-dark(#ffffff, #1c1c1e));
+  --surface-raised: light-dark(#f9f9fa, #262628);
+  --surface-hover: light-dark(#e4e4e7, #2e2e31);
+  --surface-input: light-dark(#ffffff, #0e0e10);
+
+  --border: light-dark(#d4d4d8, #29292b);
+  --border-strong: light-dark(#a1a1aa, #3f3f46);
+  --border-faint: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.06));
+
+  --text: var(--theme-text, light-dark(#09090b, #fafafa));
+  --text-muted: light-dark(#3f3f46, #a1a1aa);
+  --text-dim: light-dark(#52525b, #71717a);
+  --text-faint: light-dark(#71717a, #52525b);
+
+  --primary: light-dark(#09090b, #fafafa);
+  --primary-hover: light-dark(#3f3f46, #e4e4e7);
+  --primary-fg: light-dark(#ffffff, #0b0b0d);
+
+  --ctx-violet: light-dark(#7c3aed, #a78bfa);
+  --ctx-violet-soft: light-dark(rgba(124, 58, 237, 0.12), rgba(167, 139, 250, 0.14));
+  --ctx-red: light-dark(#dc2626, #f87171);
+}
+
+/* A theme with its own new tab text color: its scheme, and the in-between
+   tones as shares of the text over the background. */
+:root[data-theme-scheme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme-scheme="dark"] {
   color-scheme: dark;
+}
 
-  --bg: #141416;
-  --bg-elevated: #1c1c1e;
-  --surface: #1c1c1e;
-  --surface-raised: #262628;
-  --surface-hover: #2e2e31;
-  --surface-input: #0e0e10;
+:root[data-theme-scheme] {
+  --surface-raised: color-mix(in srgb, var(--text) 8%, var(--bg));
+  --surface-hover: color-mix(in srgb, var(--text) 11%, var(--bg));
+  --surface-input: var(--bg-elevated);
 
-  --border: #29292b;
-  --border-strong: #3f3f46;
-  --border-faint: rgba(255, 255, 255, 0.06);
+  --border: color-mix(in srgb, var(--text) 12%, var(--bg));
+  --border-strong: color-mix(in srgb, var(--text) 30%, var(--bg));
+  --border-faint: color-mix(in srgb, var(--text) 7%, transparent);
 
-  --text: #fafafa;
-  --text-muted: #a1a1aa;
-  --text-dim: #71717a;
-  --text-faint: #52525b;
+  --text-muted: color-mix(in srgb, var(--text) 72%, var(--bg));
+  --text-dim: color-mix(in srgb, var(--text) 52%, var(--bg));
+  --text-faint: color-mix(in srgb, var(--text) 38%, var(--bg));
 
-  --primary: #fafafa;
-  --primary-hover: #e4e4e7;
-  --primary-fg: #0b0b0d;
-
-  --ctx-violet: #a78bfa;
-  --ctx-violet-soft: rgba(167, 139, 250, 0.14);
-  --ctx-red: #f87171;
+  --primary: var(--text);
+  --primary-hover: color-mix(in srgb, var(--text) 85%, var(--bg));
+  --primary-fg: var(--bg);
 }
 
 @theme inline {
@@ -86,8 +117,16 @@ html {
 }
 
 /* While a photo shows behind the page, surfaces turn to tinted glass and the
-   quieter text tones lighten, so both stay legible on a busy photo. */
+   quieter text tones lighten, so both stay legible on a busy photo. The
+   photos are dark or mid-toned (background/photos.ts), so this is dark in
+   every theme. */
 :root[data-backdrop="photo"] {
+  color-scheme: dark;
+  --text: #fafafa;
+  --primary: #fafafa;
+  --primary-hover: #e4e4e7;
+  --primary-fg: #0b0b0d;
+
   --bg-elevated: rgba(28, 28, 30, 0.72);
   --surface: rgba(20, 20, 22, 0.5);
   --surface-raised: rgba(46, 46, 49, 0.72);

@@ -6,17 +6,17 @@
   position: fixed;
   z-index: 6;
   box-sizing: border-box;
-  border: 2px solid #a78bfa;
+  border: 2px solid var(--nw-ai);
   border-radius: 12px;
-  box-shadow: inset 0 0 24px rgba(167, 139, 250, 0.35);
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--nw-ai) 35%, transparent);
   pointer-events: none;
   animation: nw-ai-control-glow 1.6s ease-in-out infinite;
 }
 
 @keyframes nw-ai-control-glow {
   50% {
-    border-color: rgba(167, 139, 250, 0.4);
-    box-shadow: inset 0 0 12px rgba(167, 139, 250, 0.15);
+    border-color: color-mix(in srgb, var(--nw-ai) 40%, transparent);
+    box-shadow: inset 0 0 12px color-mix(in srgb, var(--nw-ai) 15%, transparent);
   }
 }
 
@@ -29,10 +29,10 @@
   height: 32px;
   padding: 0 4px 0 12px;
   transform: translateX(-50%);
-  border: 1px solid rgba(167, 139, 250, 0.45);
+  border: 1px solid color-mix(in srgb, var(--nw-ai) 45%, transparent);
   border-radius: 16px;
   background: var(--bg-elevated);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px var(--nw-shadow);
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 12px;
@@ -43,7 +43,7 @@
 #neoworks-ai-control .nw-ai-control-icon {
   width: 14px;
   height: 14px;
-  color: #a78bfa;
+  color: var(--nw-ai);
   animation: nw-ai-control-pulse 1.6s ease-in-out infinite;
 }
 
