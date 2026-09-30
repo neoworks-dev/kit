@@ -342,6 +342,12 @@ export function browserCommand(options: BrowserLaunchOptions = {}): string[] {
     binaryPath,
     "--profile",
     profilePath,
+    // The runtime's compiled-in window class is "floorp"; desktops group and
+    // label windows by it.
+    "--name",
+    "kit",
+    "--class",
+    "kit",
   ];
   if (marionette) {
     args.push("--marionette", "--remote-allow-system-access");
@@ -350,7 +356,9 @@ export function browserCommand(options: BrowserLaunchOptions = {}): string[] {
     args.push("--no-remote");
   }
   if (options.initialUrl) {
-    args.push("--new-window", options.initialUrl);
+    // Plain URL opens as a tab in the restored session window;
+    // --new-window would add a second window next to it.
+    args.push(options.initialUrl);
   }
   return args;
 }

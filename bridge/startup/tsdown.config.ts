@@ -8,7 +8,6 @@ export default [
     entry: [
       "src/chrome_root.ts",
       "src/about-preferences.ts",
-      "src/about-newtab.ts",
     ],
     outDir: "_dist",
     platform: "browser",

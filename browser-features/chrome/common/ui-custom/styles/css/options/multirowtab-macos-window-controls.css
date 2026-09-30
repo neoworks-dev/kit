@@ -1,9 +1,0 @@
-@media (-moz-platform: macos) {
-    :root[inFullscreen="true"] #floorp-tabbar-window-manage-container > .titlebar-buttonbox {
-        display: none !important;
-    }
-
-    #floorp-tabbar-window-manage-container {
-        margin-block: auto !important;
-    }
-}

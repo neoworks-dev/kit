@@ -2,8 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { isKeyboardShortcutEditableFocusEvent } from "./NRKeyboardShortcutFocusChild.sys.mts";
-import { findScrollableElement } from "./NRMouseGestureScrollUtils.ts";
+import { findScrollableElement, isEditableEvent } from "./NWPageUtils.ts";
 import { NWLinkHintSession } from "./NWLinkHints.ts";
 import {
   isModifierKey,
@@ -121,7 +120,7 @@ export class NWKeysChild extends JSWindowActorChild {
   }
 
   private isTypingContext(event: KeyboardEvent, document: Document): boolean {
-    if (isKeyboardShortcutEditableFocusEvent(event, document)) {
+    if (isEditableEvent(event, document)) {
       return true;
     }
     return event.key === " " && isSpaceActivatedFocus(document);

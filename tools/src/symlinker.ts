@@ -12,7 +12,6 @@ export function run(): void {
       path.join(PATHS.loader_features, "link-features-chrome"),
       PATHS.features_chrome,
     ],
-    [path.join(PATHS.loader_features, "link-i18n"), PATHS.i18n],
     [path.join(PATHS.loader_modules, "link-modules"), PATHS.modules],
   ];
 

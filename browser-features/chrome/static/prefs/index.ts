@@ -3,9 +3,8 @@
 export function initBeforeSessionStoreInit() {
   const prefs = Services.prefs.getDefaultBranch(null as unknown as string);
 
-  //* Currently Noraneko's UA is
-  //* Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Noraneko/134.0
-  //* So override needed
+  //* The runtime's UA carries its app name in place of "Firefox"
+  //* (e.g. Gecko/20100101 Noraneko/134.0), so sites see Firefox instead.
   // https://searchfox.org/mozilla-central/rev/e24277e20c492b4a785b4488af02cca062ec7c2c/netwerk/protocol/http/nsHttpHandler.cpp#905
 
   //https://searchfox.org/mozilla-central/rev/e24277e20c492b4a785b4488af02cca062ec7c2c/remote/cdp/JSONHandler.sys.mjs#60

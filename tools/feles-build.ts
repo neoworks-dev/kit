@@ -2,8 +2,8 @@
 
 import * as Initializer from "./src/initializer.ts";
 import * as Patcher from "./src/patcher.ts";
-import * as CustomAppIcons from "./src/custom_app_icons.ts";
 import * as Pref from "../static/gecko/pref/pref.ts";
+import * as Branding from "../static/gecko/branding/branding.ts";
 import * as Symlinker from "./src/symlinker.ts";
 import * as Update from "./src/update.ts";
 import * as Builder from "./src/builder.ts";
@@ -61,9 +61,9 @@ async function runDev(): Promise<void> {
       ? "release"
       : "debug",
   });
-  CustomAppIcons.run();
   Patcher.run("apply");
   Pref.run();
+  Branding.run();
   Symlinker.run();
 
   const buildid2 = Update.generateUuidV7();
@@ -90,7 +90,7 @@ async function runDev(): Promise<void> {
       // Launch browser; when it exits (or fails to launch), take the dev
       // servers down with it — otherwise they keep listening on their
       // ports and the next run dies with "port already in use".
-      BrowserLauncher.run({ initialUrl: "http://localhost:5183/" }).then(() => {
+      BrowserLauncher.run({}).then(() => {
         logger.info("Browser closed — shutting down dev servers.");
         DevServer.shutdown();
         Deno.exit(0);
@@ -125,9 +125,9 @@ async function runStage(options: { marionette?: boolean } = {}): Promise<void> {
 
   // Initial setup
   await Initializer.run();
-  CustomAppIcons.run();
   Patcher.run("apply");
   Pref.run();
+  Branding.run();
   Symlinker.run();
 
   // Build production assets
@@ -185,9 +185,9 @@ async function runTest(): Promise<void> {
 
   // Initial setup
   await Initializer.run();
-  CustomAppIcons.run();
   Patcher.run("apply");
   Pref.run();
+  Branding.run();
   Symlinker.run();
 
   const buildid2 = Update.generateUuidV7();

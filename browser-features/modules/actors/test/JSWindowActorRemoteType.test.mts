@@ -7,29 +7,7 @@ import {
   type TestCase,
 } from "../../../chrome/test/utils/test_harness.ts";
 
-const EXPECTED_LOOPBACK_ACTORS = [
-  "NRSettings",
-  "NRExperimemmt",
-  "NRPanelSidebar",
-  "NRTabManager",
-  "NRSyncManager",
-  "NRAppConstants",
-  "NRRestartBrowser",
-  "NRWorkspaces",
-  "NRProgressiveWebApp",
-  "NRPwaManager",
-  "NRChromeModal",
-  "NRProfileManager",
-  "NRStartPage",
-  "NRWelcomePage",
-  "NRSearchEngine",
-  "NRWebScraper",
-  "NROSAutomotor",
-  "NRI18n",
-  "NRPluginStore",
-  "NRKeyboardShortcutFocus",
-  "NRMouseGestureScroll",
-];
+const EXPECTED_LOOPBACK_ACTORS = ["NRStartPage"];
 
 interface TestTab {
   linkedBrowser: XULBrowserElement;
@@ -94,17 +72,6 @@ async function testActorsAllowTheirMatchedWebProcess(): Promise<void> {
         `${actorName} should be available in the matched web process`,
       );
     }
-
-    let chromeStoreRejected = false;
-    try {
-      global.getActor("NRChromeWebStore");
-    } catch {
-      chromeStoreRejected = true;
-    }
-    assert(
-      chromeStoreRejected,
-      "NRChromeWebStore should remain unavailable outside its store origins",
-    );
   } finally {
     if (tab !== originalTab) {
       testGBrowser.removeTab(tab);

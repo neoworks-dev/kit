@@ -9,9 +9,6 @@ interface LoaderModule {
   default?: new () => unknown;
 }
 
-import { initI18NForBrowserChrome } from "#i18n/config-browser-chrome.ts";
-import { isWebPanelChildWindow } from "#features-chrome/common/panel-sidebar/utils/web-panel-context.ts";
-
 import { MODULES, MODULES_KEYS } from "./modules.ts";
 import {
   _registerModuleLoadState,
@@ -28,12 +25,11 @@ export default async function initScripts() {
     console.error("[noraneko] Failed to set loader initialized marker:", e);
   }
 
-  // Import required modules and initialize i18n
+  // Import required modules
   ChromeUtils.importESModule("resource://noraneko/modules/BrowserGlue.sys.mjs");
   const { NoranekoConstants } = ChromeUtils.importESModule(
     "resource://noraneko/modules/NoranekoConstants.sys.mjs",
   );
-  initI18NForBrowserChrome();
   console.debug(
     `[noraneko-buildid2]\nuuid: ${NoranekoConstants.buildID2}\ndate: ${
       new Date(
@@ -74,38 +70,18 @@ function setPrefFeatures(all_features_keys: typeof MODULES_KEYS) {
   );
 }
 
-function normalizeModuleName(moduleName: string): string {
-  return moduleName.replace(/^\.\//, "").replace(/\/index\.ts$/, "");
-}
-
-function isPanelSidebarModule(moduleName: string): boolean {
-  return normalizeModuleName(moduleName) === "panel-sidebar";
-}
-
 async function loadEnabledModules(
   enabled_features: typeof MODULES_KEYS,
 ): Promise<LoaderModule[]> {
-  const isWebPanelChild = isWebPanelChildWindow();
-
   const promises = Object.entries(MODULES).flatMap(
     ([categoryKey, categoryValue]) =>
       Object.keys(categoryValue)
-        .filter((moduleName) => {
-          if (
-            !(categoryKey in enabled_features) ||
-            !enabled_features[
-              categoryKey as keyof typeof enabled_features
-            ].includes(moduleName)
-          ) {
-            return false;
-          }
-
-          if (isWebPanelChild) {
-            return categoryKey === "common" && isPanelSidebarModule(moduleName);
-          }
-
-          return true;
-        })
+        .filter((moduleName) =>
+          categoryKey in enabled_features &&
+          enabled_features[
+            categoryKey as keyof typeof enabled_features
+          ].includes(moduleName)
+        )
         .map(async (moduleName): Promise<LoaderModule | null> => {
           try {
             const module = await categoryValue[moduleName]();
@@ -125,8 +101,6 @@ async function loadEnabledModules(
 }
 
 async function initializeModules(modules: LoaderModule[]) {
-  const isWebPanelChild = isWebPanelChildWindow();
-
   for (const module of modules) {
     try {
       await module?.initBeforeSessionStoreInit?.();
@@ -138,10 +112,8 @@ async function initializeModules(modules: LoaderModule[]) {
     }
   }
 
-  if (!isWebPanelChild) {
-    // @ts-expect-error SessionStore type not defined
-    await SessionStore.promiseInitialized;
-  }
+  // @ts-expect-error SessionStore type not defined
+  await SessionStore.promiseInitialized;
 
   for (const module of modules) {
     try {
