@@ -182,6 +182,11 @@ export default defineConfig({
         find: "@nora/solid-xul",
         replacement: r("../../libs/solid-xul/index.ts"),
       },
+      // Switchboard (git submodule): bundle the browser-safe client from source.
+      {
+        find: "@neoworks/harness/client",
+        replacement: r("../../libs/switchboard/src/client/index.ts"),
+      },
       { find: "@std/toml", replacement: "@jsr/std__toml" },
       {
         find: "#features-chrome",

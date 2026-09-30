@@ -396,6 +396,19 @@
   opacity: 1;
 }
 
+/* The AI agent is working in this tab. */
+#neoworks-sidebar .nw-tab-ai {
+  width: 14px;
+  height: 14px;
+  color: #a78bfa;
+  animation: nw-tab-ai-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes nw-tab-ai-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
 
 #neoworks-sidebar .nw-tab-audio {
   width: 22px;

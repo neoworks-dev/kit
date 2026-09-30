@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Window-level rules for the AI sidebar: the page makes room for it on the
+   right (the 360px sidebar + the 8px gap), and the top bar button. */
+:root[nw-ai-open]:not([inDOMFullscreen]) #browser {
+  padding-inline-end: 368px !important;
+}
+
+#neoworks-ai-button > .toolbarbutton-icon {
+  width: calc(16px + 2 * var(--toolbarbutton-inner-padding)) !important;
+  height: calc(16px + 2 * var(--toolbarbutton-inner-padding)) !important;
+  list-style-image: none !important;
+  background-color: transparent !important;
+  background-image: linear-gradient(var(--text-muted), var(--text-muted)) !important;
+  background-clip: content-box !important;
+  mask-image: var(--nw-icon-sparkle);
+  mask-size: 16px;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+#neoworks-ai-button[checked] > .toolbarbutton-icon {
+  background-image: linear-gradient(var(--text), var(--text)) !important;
+}
