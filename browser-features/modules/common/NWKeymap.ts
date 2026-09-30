@@ -45,6 +45,7 @@ export const NW_CHROME_COMMAND_IDS = [
   "workspace:previous",
   "workspace:switch",
   "find:open",
+  "downloads:open",
   "quickmark:set",
   "quickmark:jump",
 ] as const;

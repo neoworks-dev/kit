@@ -1,0 +1,191 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Transparent full-window layer: a click outside the panel closes it. */
+#neoworks-downloads {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  display: none;
+  font-family: var(--font-sans);
+  -moz-window-dragging: no-drag;
+}
+
+#neoworks-downloads[data-open] {
+  display: block;
+}
+
+#neoworks-downloads .nw-downloads-panel {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  /* Keep in sync with PANEL_WIDTH_PX in downloads-panel.tsx. */
+  width: 340px;
+  max-height: 420px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  font-size: 12px;
+}
+
+#neoworks-downloads button {
+  appearance: none;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+#neoworks-downloads button:hover {
+  background: var(--glass-hover);
+}
+
+#neoworks-downloads .nw-downloads-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 6px 14px;
+}
+
+#neoworks-downloads .nw-downloads-title {
+  font-weight: 600;
+}
+
+#neoworks-downloads .nw-downloads-text-button {
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+#neoworks-downloads .nw-downloads-list {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 4px 4px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+#neoworks-downloads .nw-downloads-empty {
+  padding: 18px 10px 22px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+#neoworks-downloads .nw-downloads-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 6px 8px 10px;
+  border-radius: var(--radius-md);
+  transition: background-color var(--dur-fast);
+}
+
+#neoworks-downloads .nw-downloads-row[data-openable]:hover {
+  background: var(--glass-hover);
+}
+
+#neoworks-downloads .nw-downloads-file-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+}
+
+#neoworks-downloads .nw-downloads-row:is([data-state="failed"], [data-state="canceled"]) .nw-downloads-file-icon {
+  color: var(--text-faint);
+}
+
+#neoworks-downloads .nw-downloads-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+#neoworks-downloads :is(.nw-downloads-name, .nw-downloads-status) {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#neoworks-downloads .nw-downloads-name {
+  font-weight: 500;
+}
+
+#neoworks-downloads .nw-downloads-status {
+  color: var(--text-dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+#neoworks-downloads .nw-downloads-row[data-state="failed"] .nw-downloads-status {
+  color: #f87171;
+}
+
+#neoworks-downloads .nw-downloads-progress {
+  height: 3px;
+  margin-top: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#neoworks-downloads .nw-downloads-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #60a5fa;
+  transition: width 200ms linear;
+}
+
+#neoworks-downloads .nw-downloads-row[data-state="paused"] .nw-downloads-progress-fill {
+  background: var(--text-dim);
+}
+
+#neoworks-downloads .nw-downloads-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+#neoworks-downloads .nw-downloads-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+}
+
+#neoworks-downloads .nw-downloads-icon-button:hover {
+  color: var(--text);
+}
+
+#neoworks-downloads .nw-downloads-icon-button .nw-icon {
+  width: 14px;
+  height: 14px;
+}
+
+#neoworks-downloads .nw-downloads-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--glass-divider);
+  color: var(--text-dim);
+  text-align: start;
+}
+
+#neoworks-downloads .nw-downloads-footer .nw-icon {
+  width: 14px;
+  height: 14px;
+}
+
+#neoworks-downloads .nw-downloads-footer-label {
+  color: var(--text);
+}

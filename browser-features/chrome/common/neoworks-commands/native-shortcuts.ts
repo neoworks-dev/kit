@@ -6,10 +6,13 @@
 
 import type { NWCommandInvocation } from "#features-modules/common/NWKeymap.ts";
 
-// Only the Ctrl+T key element uses this command; the new-tab button and menu
-// items use cmd_newNavigatorTab and keep opening a tab.
+// Only the Ctrl+T key element uses cmd_newNavigatorTabNoEvent; the new-tab
+// button and menu items use cmd_newNavigatorTab and keep opening a tab.
+// Tools:Downloads (Ctrl+Shift+Y and the Downloads menu items) opens Kit's
+// downloads panel instead of the Library window.
 const REDIRECTED_COMMANDS: Record<string, NWCommandInvocation> = {
   cmd_newNavigatorTabNoEvent: { command: "spotlight:open" },
+  "Tools:Downloads": { command: "downloads:open" },
 };
 
 export function redirectNativeShortcuts(
