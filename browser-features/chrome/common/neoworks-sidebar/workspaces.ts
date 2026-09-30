@@ -184,22 +184,41 @@ export function switchWorkspaceByNumber(number: string | undefined): void {
   }
 }
 
-export function createWorkspace(name: string): void {
-  const color = CONTAINER_COLORS[workspaces().length % CONTAINER_COLORS.length];
-  const identity = ContextualIdentityService.create(name, WORKSPACE_CONTAINER_ICON, color);
+// Opens new tabs in a container of its own, or pass an existing container
+// (or NO_CONTAINER) to share that instead.
+export function createWorkspace(
+  name: string,
+  icon: string,
+  sharedContainerId: number | null,
+): void {
   const workspace: Workspace = {
     id: crypto.randomUUID(),
     name,
-    color,
-    userContextId: identity.userContextId,
+    color: CONTAINER_COLORS[workspaces().length % CONTAINER_COLORS.length],
+    userContextId: NO_CONTAINER,
+    ownsContainer: sharedContainerId === null,
+    icon,
   };
+  if (sharedContainerId === null) {
+    workspace.userContextId = ContextualIdentityService.create(
+      name,
+      WORKSPACE_CONTAINER_ICON,
+      workspace.color,
+    ).userContextId;
+  } else {
+    workspace.userContextId = sharedContainerId;
+    const shared = ContextualIdentityService.getPublicIdentityFromId(sharedContainerId);
+    if (shared) {
+      workspace.color = shared.color;
+    }
+  }
   saveWorkspaces([...workspaces(), workspace]);
   switchWorkspace(workspace.id);
 }
 
 // Keeps the dedicated container's name and color in sync with the workspace.
 function updateWorkspaceContainer(workspace: Workspace): void {
-  if (workspace.userContextId === NO_CONTAINER) {
+  if (!workspace.ownsContainer || workspace.userContextId === NO_CONTAINER) {
     return;
   }
   const identity = ContextualIdentityService.getPublicIdentityFromId(workspace.userContextId);
@@ -230,7 +249,7 @@ export function updateWorkspace(workspace: Workspace): void {
 }
 
 async function removeWorkspaceContainer(workspace: Workspace): Promise<void> {
-  if (workspace.userContextId === NO_CONTAINER) {
+  if (!workspace.ownsContainer || workspace.userContextId === NO_CONTAINER) {
     return;
   }
   await ContextualIdentityService.closeContainerTabs(workspace.userContextId);
@@ -238,10 +257,14 @@ async function removeWorkspaceContainer(workspace: Workspace): Promise<void> {
 }
 
 function confirmDeletion(workspace: Workspace): boolean {
+  let message = `Delete "${workspace.name}"? Its tabs are closed.`;
+  if (workspace.ownsContainer && workspace.userContextId !== NO_CONTAINER) {
+    message = `Delete "${workspace.name}"? Its tabs are closed and its container's cookies and site data are removed.`;
+  }
   return Services.prompt.confirm(
     window as unknown as mozIDOMWindowProxy,
     "Delete workspace",
-    `Delete "${workspace.name}"? Its tabs are closed and its container's cookies and site data are removed.`,
+    message,
   );
 }
 

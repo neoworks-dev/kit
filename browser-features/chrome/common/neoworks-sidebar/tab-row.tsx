@@ -94,10 +94,9 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
       onDragEnd={endDrag}
     >
       <Show when={container()}>
-        {(color) => <span class="nw-container-dot" style={{ background: color() }} />}
+        {(color) => <span class="nw-tab-container" style={{ background: color() }} />}
       </Show>
       <Favicon source={favicon()} busy={busy()} />
-      <span class="nw-tab-label">{label()}</span>
       <Show when={playing() || muted()}>
         <button
           type="button"
@@ -108,22 +107,26 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
           <span class="nw-icon" data-icon={audio()} />
         </button>
       </Show>
-      <button
-        type="button"
-        class="nw-icon-button nw-tab-action"
-        title="Pin tab"
-        onClick={stopThen(() => togglePinned(tab))}
-      >
-        <span class="nw-icon" data-icon="push-pin" />
-      </button>
-      <button
-        type="button"
-        class="nw-icon-button nw-tab-action"
-        title="Close tab"
-        onClick={stopThen(() => closeTab(tab))}
-      >
-        <span class="nw-icon" data-icon="x" />
-      </button>
+      <span class="nw-tab-label">{label()}</span>
+      {/* Laid over the label's end on hover (sidebar.css). */}
+      <div class="nw-tab-actions">
+        <button
+          type="button"
+          class="nw-icon-button nw-tab-action"
+          title="Pin tab"
+          onClick={stopThen(() => togglePinned(tab))}
+        >
+          <span class="nw-icon" data-icon="push-pin" />
+        </button>
+        <button
+          type="button"
+          class="nw-icon-button nw-tab-action"
+          title="Close tab"
+          onClick={stopThen(() => closeTab(tab))}
+        >
+          <span class="nw-icon" data-icon="x" />
+        </button>
+      </div>
     </div>
   );
 }

@@ -3,8 +3,11 @@
 import { createEffect, For, Match, onCleanup, Switch } from "solid-js";
 import { createPageBackdrop } from "../neoworks-ui/page-backdrop.ts";
 import { ContainerBar } from "./container-bar.tsx";
+import { SidebarDownloadsButton } from "../neoworks-downloads/sidebar-downloads-button.tsx";
 import { FolderRow } from "./folder-row.tsx";
+import { MediaControls } from "./media-controls.tsx";
 import { PinnedGrid } from "./pinned-grid.tsx";
+import { openSidebarContextMenu } from "./sidebar-context-menu.tsx";
 import { sidebarDocked, toggleSidebarDocked } from "./sidebar-docking.ts";
 import { openNewTab } from "./tab-actions.ts";
 import {
@@ -21,6 +24,7 @@ import {
 } from "./sidebar-visibility.ts";
 import { attributeFlag, TabRow } from "./tab-row.tsx";
 import { WorkspaceSwitcher } from "./workspace-switcher.tsx";
+import { activeWorkspace } from "./workspaces.ts";
 import type {
   BrowserTab,
   BrowserTabGroup,
@@ -55,6 +59,17 @@ function EntryRow(props: { entry: SidebarEntry; tabState: TabState }) {
         {(group) => <FolderRow group={group()} tabState={props.tabState} />}
       </Match>
     </Switch>
+  );
+}
+
+function NewTabRow() {
+  return (
+    <div class="nw-tab nw-new-tab" onClick={openNewTab}>
+      <span class="nw-favicon">
+        <span class="nw-icon" data-icon="plus" />
+      </span>
+      <span class="nw-tab-label">New tab</span>
+    </div>
   );
 }
 
@@ -131,6 +146,8 @@ function SidebarPanel(props: { tabState: TabState }) {
     >
       <canvas id={SIDEBAR_BACKDROP_ID} class="nw-glass-backdrop" />
       <div class="nw-header">
+        <span class="nw-workspace-name">{activeWorkspace().name}</span>
+        <ContainerBar />
         <button
           type="button"
           class="nw-icon-button"
@@ -139,22 +156,21 @@ function SidebarPanel(props: { tabState: TabState }) {
         >
           <span class="nw-icon" data-icon="sidebar-simple" />
         </button>
-        <button type="button" class="nw-icon-button" title="New tab" onClick={openNewTab}>
-          <span class="nw-icon" data-icon="plus" />
-        </button>
       </div>
 
-      <div class="nw-scroll">
+      <div class="nw-scroll" onContextMenu={openSidebarContextMenu}>
         <PinnedGrid tabState={props.tabState} />
         <For each={props.tabState.entries()}>
           {(entry) => <EntryRow entry={entry} tabState={props.tabState} />}
         </For>
+        <NewTabRow />
         <ListEndDropZone />
       </div>
 
+      <MediaControls tabState={props.tabState} />
       <div class="nw-sidebar-footer">
+        <SidebarDownloadsButton />
         <WorkspaceSwitcher />
-        <ContainerBar />
       </div>
     </div>
   );

@@ -19,6 +19,7 @@
     "npm:@jsr/std__collections@^1.1.3": "1.2.0",
     "npm:@jsr/std__fs@^1.0.20": "1.0.24",
     "npm:@jsr/std__toml@^1.0.11": "1.0.11",
+    "npm:@phosphor-icons/core@^2.1.1": "2.1.1",
     "npm:@swc/core@^1.15.7": "1.15.40",
     "npm:@tailwindcss/vite@^4.1.18": "4.3.0_vite@7.3.3_@types+node@25.9.1_lightningcss@1.32.0",
     "npm:birpc@4": "4.0.0",
@@ -629,6 +630,9 @@
       "integrity": "sha512-bw24y+/1MHS4QDkons3YyHkPT9uCMoLHHgQhb+mb8NOjTYwub1CZ+K9Ngr8aO5DMrDrkqHwTzlTwFP2vS8Y/ZQ==",
       "os": ["win32"],
       "cpu": ["x64"]
+    },
+    "@phosphor-icons/core@2.1.1": {
+      "integrity": "sha512-v4ARvrip4qBCImOE5rmPUylOEK4iiED9ZyKjcvzuezqMaiRASCHKcRIuvvxL/twvLpkfnEODCOJp5dM4eZilxQ=="
     },
     "@pkgjs/parseargs@0.11.0": {
       "integrity": "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="
@@ -2342,6 +2346,7 @@
           "jsr:@types/gecko@*",
           "npm:@deno/vite-plugin@^1.0.6",
           "npm:@jsr/std__assert@^1.0.16",
+          "npm:@phosphor-icons/core@^2.1.1",
           "npm:es-toolkit@^1.43.0",
           "npm:rolldown-vite@^7.3.0",
           "npm:solid-js@^1.9.10",

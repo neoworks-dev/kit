@@ -3,6 +3,7 @@
   "imports": {
     "@deno/vite-plugin": "npm:@deno/vite-plugin@^1.0.6",
     "@jsr/std__assert": "npm:@jsr/std__assert@^1.0.16",
+    "@phosphor-icons/core": "npm:@phosphor-icons/core@^2.1.1",
     "es-toolkit": "npm:es-toolkit@^1.43.0",
     "solid-js": "npm:solid-js@^1.9.10",
     "unplugin-swc": "npm:unplugin-swc@^1.5.9",

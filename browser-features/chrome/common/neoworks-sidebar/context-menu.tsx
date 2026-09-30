@@ -142,6 +142,7 @@ export function TabContextMenu(props: { tabState: TabState }) {
   return (
     <xul:menupopup
       id={MENU_ID}
+      class="nw-menu"
       onPopupShowing={(event: Event) => {
         if (event.target === event.currentTarget) {
           setSidebarMenuOpen(MENU_ID, true);
@@ -186,7 +187,11 @@ export function TabContextMenu(props: { tabState: TabState }) {
         onCommand={withMenuTab((tab) => tabbrowser().replaceTabWithWindow(tab))}
       />
       <xul:menuseparator />
-      <xul:menuitem label="Close tab" onCommand={withMenuTab(closeTab)} />
+      <xul:menuitem
+        label="Close tab"
+        class="nw-menu-danger"
+        onCommand={withMenuTab(closeTab)}
+      />
     </xul:menupopup>
   );
 }
