@@ -18,13 +18,20 @@ import {
   toggleDownloadsPanel,
 } from "./downloads-panel.tsx";
 import { mountDownloadsPanel } from "./mount.tsx";
+import { SIDEBAR_DOWNLOADS_BUTTON_ID } from "./sidebar-downloads-button.tsx";
 
 // Firefox pops its own downloads panel open on every new download.
 const FIREFOX_AUTO_OPEN_PREF = "browser.download.alwaysOpenPanel";
 
-// Without downloads the button is hidden; the panel then hangs off the top
-// bar's end instead.
+// The sidebar footer's button while the sidebar is docked, else the top
+// bar's (hidden without downloads). Failing both, the panel hangs off the top
+// bar's end.
 function toggleFromCommand(): void {
+  const footerButton = document.getElementById(SIDEBAR_DOWNLOADS_BUTTON_ID);
+  if (footerButton && document.documentElement.hasAttribute("nw-sidebar-docked")) {
+    toggleDownloadsPanel(footerButton);
+    return;
+  }
   const button = downloadsButton();
   if (button && !button.hasAttribute("hidden")) {
     toggleDownloadsPanel(button);

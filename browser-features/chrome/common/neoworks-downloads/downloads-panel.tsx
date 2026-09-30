@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-// Glass popover under the downloads button listing this session's downloads,
+// Glass popover at the downloads button listing this session's downloads,
 // newest first, with the actions that fit each one's state.
 
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
@@ -33,8 +33,10 @@ const PANEL_WIDTH_PX = 340;
 const PANEL_GAP_PX = 6;
 const WINDOW_EDGE_PX = 8;
 
+// Measured from the window's top, or its bottom when opening upward.
 interface PanelPosition {
-  top: number;
+  top?: number;
+  bottom?: number;
   left: number;
 }
 
@@ -49,15 +51,30 @@ const [position, setPosition] = createSignal<PanelPosition>({ top: 0, left: 0 })
 
 export const downloadsPanelOpen = isOpen;
 
-// Right-aligned under the anchor, kept inside the window.
-function positionUnder(anchor: Element): PanelPosition {
+// Right-aligned under a top bar anchor; left-aligned above an anchor in the
+// window's lower half (the sidebar footer). Kept inside the window.
+function positionFor(anchor: Element): PanelPosition {
   const rect = anchor.getBoundingClientRect();
+  if (rect.top > window.innerHeight / 2) {
+    const maxLeft = window.innerWidth - PANEL_WIDTH_PX - WINDOW_EDGE_PX;
+    return {
+      bottom: window.innerHeight - rect.top + PANEL_GAP_PX,
+      left: Math.max(WINDOW_EDGE_PX, Math.min(rect.left, maxLeft)),
+    };
+  }
   const left = Math.max(WINDOW_EDGE_PX, rect.right - PANEL_WIDTH_PX - WINDOW_EDGE_PX);
   return { top: rect.bottom + PANEL_GAP_PX, left };
 }
 
+function pixels(value: number | undefined): string {
+  if (value === undefined) {
+    return "auto";
+  }
+  return `${value}px`;
+}
+
 export function openDownloadsPanel(anchor: Element): void {
-  setPosition(positionUnder(anchor));
+  setPosition(positionFor(anchor));
   clearAttention();
   setIsOpen(true);
 }
@@ -268,7 +285,11 @@ export function DownloadsPanel() {
       <div
         id={PANEL_ID}
         class="nw-downloads-panel nw-glass"
-        style={{ top: `${position().top}px`, left: `${position().left}px` }}
+        style={{
+          top: pixels(position().top),
+          bottom: pixels(position().bottom),
+          left: `${position().left}px`,
+        }}
       >
         <canvas id={BACKDROP_ID} class="nw-glass-backdrop" />
         <PanelHeader />
