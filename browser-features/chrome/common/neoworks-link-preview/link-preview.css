@@ -1,0 +1,148 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Covers the tab panels (link-preview.ts measures them): a dimming scrim that
+   closes the preview when clicked, and the card centered on it. Over the page
+   and split dividers, under the sidebar (z-index 10). */
+#neoworks-link-preview {
+  position: fixed;
+  z-index: 6;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  -moz-window-dragging: no-drag;
+}
+
+#neoworks-link-preview[data-open] {
+  display: flex;
+}
+
+#neoworks-link-preview .nw-link-preview-scrim {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+#neoworks-link-preview .nw-link-preview-card {
+  /* Above the absolutely positioned scrim. */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(1100px, calc(100% - 96px));
+  height: calc(100% - 64px);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  /* Solid like the window frame: glass can't blur web content, so over a
+     bright page it turns grey. */
+  background: var(--bg);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px var(--border-faint);
+  color: var(--text);
+  font-size: 12px;
+}
+
+#neoworks-link-preview .nw-link-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 6px 0 14px;
+}
+
+#neoworks-link-preview .nw-link-preview-titles {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#neoworks-link-preview .nw-link-preview-title,
+#neoworks-link-preview .nw-link-preview-url {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#neoworks-link-preview .nw-link-preview-title {
+  font-weight: 600;
+}
+
+#neoworks-link-preview .nw-link-preview-url {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+#neoworks-link-preview button {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+}
+
+#neoworks-link-preview button:hover {
+  background: var(--glass-hover);
+  color: var(--text);
+}
+
+#neoworks-link-preview .nw-link-preview-open {
+  padding: 0 10px;
+}
+
+#neoworks-link-preview .nw-link-preview-close {
+  justify-content: center;
+  width: 28px;
+}
+
+#neoworks-link-preview .nw-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* A thin bar under the header while the page loads. */
+#neoworks-link-preview .nw-link-preview-progress {
+  height: 2px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  transition: opacity var(--dur-fast);
+}
+
+#neoworks-link-preview .nw-link-preview-card[data-loading] .nw-link-preview-progress {
+  opacity: 1;
+  animation: nw-link-preview-loading 1s linear infinite;
+}
+
+@keyframes nw-link-preview-loading {
+  from {
+    background-position: -40% 0;
+  }
+  to {
+    background-position: 140% 0;
+  }
+}
+
+#neoworks-link-preview .nw-link-preview-frame {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  margin: 0 6px 6px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+#neoworks-link-preview .nw-link-preview-frame > browser {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
