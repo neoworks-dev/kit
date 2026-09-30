@@ -157,9 +157,15 @@
   border-radius: 10px !important;
 }
 
-/* The page actions menu covers bookmarking. The tracking protection shield
-   stays. */
-#star-button-box {
+/* The page actions menu covers bookmarking, reader view, zoom and opening
+   the page as a web app, so their URL bar icons go. The tracking protection
+   shield stays, and so does translations: Firefox anchors its automatic
+   "translate this page?" offer to that icon. */
+#star-button-box,
+#reader-mode-button,
+#taskbar-tabs-button,
+#picture-in-picture-button,
+#urlbar-zoom-button {
   display: none !important;
 }
 
@@ -333,6 +339,14 @@
    itself instead of its icon. */
 #nav-bar toolbarbutton {
   border-radius: var(--radius-md) !important;
+}
+
+/* Buttons stretch to the bar's full height by default, which made their
+   hover plate a tall 32x48 block. Plate = the 28px icon box. */
+#nav-bar toolbarbutton:not(.titlebar-button) {
+  align-self: center !important;
+  padding: 0 !important;
+  margin-inline: 2px !important;
 }
 
 #nav-bar toolbarbutton:not([disabled]):is(:hover, [open]) {

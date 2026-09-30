@@ -51,6 +51,7 @@
   --nw-icon-play: url("@phosphor-icons/core/bold/play-bold.svg");
   --nw-icon-arrow-counter-clockwise: url("@phosphor-icons/core/bold/arrow-counter-clockwise-bold.svg");
   --nw-icon-cube: url("@phosphor-icons/core/bold/cube-bold.svg");
+  --nw-icon-app-window: url("@phosphor-icons/core/bold/app-window-bold.svg");
 }
 
 .nw-icon {
@@ -230,4 +231,8 @@
 
 .nw-icon[data-icon="cube"] {
   mask-image: var(--nw-icon-cube);
+}
+
+.nw-icon[data-icon="app-window"] {
+  mask-image: var(--nw-icon-app-window);
 }

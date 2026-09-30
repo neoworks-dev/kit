@@ -2,6 +2,12 @@
 
 import type { PageActionsWindow, PageBrowser, PageState } from "./types.ts";
 
+const { TaskbarTabs } = ChromeUtils.importESModule(
+  "resource:///modules/taskbartabs/TaskbarTabs.sys.mjs",
+) as {
+  TaskbarTabs: { moveTabIntoTaskbarTab(tab: unknown): Promise<void> };
+};
+
 const READER_URL_PREFIX = "about:reader";
 const SCREENSHOT_REASON = "toolbar_button";
 const PERMISSIONS_TAB = "permTab";
@@ -31,6 +37,14 @@ function isSecure(browser: PageBrowser): boolean {
   return (browser.securityUI.state & secureFlag) !== 0;
 }
 
+// Firefox shows its web app page action only where a page can become one
+// (http(s) pages with the feature enabled); Kit hides the icon but follows
+// the same rule.
+function canOpenAsApp(): boolean {
+  const button = document.getElementById("taskbar-tabs-button");
+  return !!button && !button.hidden;
+}
+
 function zoomPercent(browser: PageBrowser): number {
   return Math.round(chromeWindow().ZoomManager.getZoomForBrowser(browser) * 100);
 }
@@ -46,6 +60,7 @@ export function readPageState(): PageState {
     zoomPercent: zoomPercent(browser),
     readerAvailable: readerActive || browser.isArticle === true,
     readerActive,
+    appAvailable: canOpenAsApp(),
   };
 }
 
@@ -60,6 +75,10 @@ export function bookmarkPage(): Promise<void> {
 // The reader actor resolves the window from the event target's document.
 export function toggleReaderMode(event: Event): void {
   chromeWindow().AboutReaderParent.toggleReaderMode(event);
+}
+
+export function openAsApp(): Promise<void> {
+  return TaskbarTabs.moveTabIntoTaskbarTab(chromeWindow().gBrowser.selectedTab);
 }
 
 export function copyPageUrl(): void {
