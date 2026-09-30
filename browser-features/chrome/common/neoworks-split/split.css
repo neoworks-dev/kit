@@ -1,0 +1,144 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Kit places split panes itself (split-view.ts sets the --nw-pane-*
+   properties); Firefox's two-column flex layout, splitter, per-pane footer
+   and URL bar button are not used. */
+#tabbrowser-tabpanels[nw-split] {
+  background: transparent !important;
+}
+
+:root[nw-split] #tabbrowser-tabbox {
+  background: transparent !important;
+}
+
+#tabbrowser-tabpanels[nw-split] > .split-view-panel.split-view-panel-active {
+  position: absolute !important;
+  left: var(--nw-pane-x) !important;
+  top: var(--nw-pane-y) !important;
+  width: var(--nw-pane-width) !important;
+  height: var(--nw-pane-height) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0 !important;
+  flex: none !important;
+  transition: none !important;
+}
+
+#tabbrowser-tabpanels[nw-split] > .split-view-panel > .browserContainer {
+  border-radius: 12px !important;
+  outline: none !important;
+}
+
+/* The pane with keyboard focus (the selected tab). */
+#tabbrowser-tabpanels[nw-split] > .split-view-panel.deck-selected > .browserContainer {
+  outline: 2px solid rgba(255, 255, 255, 0.28) !important;
+  outline-offset: -2px !important;
+}
+
+#tabbrowser-tabpanels .split-view-splitter,
+#tabbrowser-tabpanels split-view-footer,
+#split-view-button {
+  display: none !important;
+}
+
+#neoworks-split-overlay {
+  position: fixed;
+  inset: 0;
+  /* Over the page, under the sidebar (z-index 10). */
+  z-index: 5;
+  pointer-events: none;
+}
+
+#neoworks-split-overlay .nw-split-divider {
+  position: fixed;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+#neoworks-split-overlay .nw-split-divider[data-direction="row"] {
+  cursor: col-resize;
+}
+
+#neoworks-split-overlay .nw-split-divider[data-direction="column"] {
+  cursor: row-resize;
+}
+
+#neoworks-split-overlay .nw-split-divider-line {
+  position: absolute;
+  border-radius: 1px;
+  background: transparent;
+  transition: background-color 120ms;
+}
+
+#neoworks-split-overlay .nw-split-divider[data-direction="row"] .nw-split-divider-line {
+  inset: 0 3px;
+}
+
+#neoworks-split-overlay .nw-split-divider[data-direction="column"] .nw-split-divider-line {
+  inset: 3px 0;
+}
+
+#neoworks-split-overlay .nw-split-divider:is(:hover, [data-resizing]) .nw-split-divider-line {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Always there so it can be found, brighter on hover. */
+#neoworks-split-overlay .nw-split-add {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid #3f3f46;
+  border-radius: 50%;
+  background: #1c1c1e;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 120ms, color 120ms, background-color 120ms;
+}
+
+#neoworks-split-overlay .nw-split-divider:hover .nw-split-add {
+  opacity: 1;
+}
+
+#neoworks-split-overlay .nw-split-add:hover {
+  background: #2e2e31;
+  color: #fafafa;
+}
+
+#neoworks-split-overlay .nw-split-add .nw-icon {
+  width: 12px;
+  height: 12px;
+}
+
+#neoworks-split-overlay .nw-split-drop-area {
+  position: fixed;
+  pointer-events: auto;
+}
+
+#neoworks-split-overlay .nw-split-drop-pane {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  background: rgba(20, 20, 22, 0.25);
+  pointer-events: none;
+}
+
+#neoworks-split-overlay .nw-split-drop-choice {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  transition: left 120ms, top 120ms, width 120ms, height 120ms;
+}

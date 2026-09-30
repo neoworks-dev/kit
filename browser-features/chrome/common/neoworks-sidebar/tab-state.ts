@@ -4,6 +4,7 @@ import { createSignal } from "solid-js";
 import { isEssential } from "./essentials.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type {
+  BrowserSplitView,
   BrowserTab,
   BrowserTabGroup,
   SidebarEntry,
@@ -27,6 +28,10 @@ const TAB_EVENTS = [
   "TabGroupCollapse",
   "TabGroupExpand",
   "TabGroupUpdate",
+  // Firefox's split views.
+  "SplitViewCreated",
+  "SplitViewRemoved",
+  "SplitViewTabChange",
 ];
 
 // Entry objects are cached so <For> keeps existing rows instead of
@@ -52,11 +57,32 @@ function entryForGroup(group: BrowserTabGroup): SidebarEntry {
   return entry;
 }
 
+const splitEntries = new WeakMap<BrowserSplitView, SidebarEntry>();
+
+function entryForSplit(split: BrowserSplitView): SidebarEntry {
+  let entry = splitEntries.get(split);
+  if (!entry) {
+    entry = { kind: "split", split };
+    splitEntries.set(split, entry);
+  }
+  return entry;
+}
+
+// Split views outside folders show as one boxed entry; inside a folder their
+// tabs stay plain rows.
 function buildEntries(tabs: BrowserTab[]): SidebarEntry[] {
   const entries: SidebarEntry[] = [];
   const seenGroups = new Set<BrowserTabGroup>();
+  const seenSplits = new Set<BrowserSplitView>();
   for (const tab of tabs) {
     if (tab.pinned) {
+      continue;
+    }
+    if (!tab.group && tab.splitview) {
+      if (!seenSplits.has(tab.splitview)) {
+        seenSplits.add(tab.splitview);
+        entries.push(entryForSplit(tab.splitview));
+      }
       continue;
     }
     if (!tab.group) {

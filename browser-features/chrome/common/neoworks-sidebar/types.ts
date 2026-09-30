@@ -10,6 +10,11 @@ export interface BrowserTabGroup extends XULElement {
   ungroupTabs(): void;
 }
 
+// Firefox's <tab-split-view-wrapper>: the tabs shown together in a split view.
+export interface BrowserSplitView extends XULElement {
+  readonly tabs: BrowserTab[];
+}
+
 // A top-level row in the tab list: a loose tab or a whole folder.
 export type TabListElement = BrowserTab | BrowserTabGroup;
 
@@ -24,6 +29,8 @@ export interface BrowserTab extends Omit<XULElement, "linkedBrowser"> {
   // Index in gBrowser.tabs.
   index: number;
   group: BrowserTabGroup | null;
+  // Set while the tab is part of a split view.
+  splitview: BrowserSplitView | null;
   linkedBrowser: {
     currentURI: { spec: string };
     // Null while the tab's browser isn't set up (e.g. an unloaded tab).
@@ -99,7 +106,8 @@ export interface Workspace {
 
 export type SidebarEntry =
   | { kind: "tab"; tab: BrowserTab }
-  | { kind: "group"; group: BrowserTabGroup };
+  | { kind: "group"; group: BrowserTabGroup }
+  | { kind: "split"; split: BrowserSplitView };
 
 export interface TabState {
   essentialTabs: () => BrowserTab[];

@@ -6,6 +6,7 @@ import { SidebarDownloadsButton } from "../neoworks-downloads/sidebar-downloads-
 import { FolderRow } from "./folder-row.tsx";
 import { MediaControls } from "./media-controls.tsx";
 import { PinnedGrid } from "./pinned-grid.tsx";
+import { SplitRow } from "./split-row.tsx";
 import { openSidebarContextMenu } from "./sidebar-context-menu.tsx";
 import { sidebarDocked, toggleSidebarDocked } from "./sidebar-docking.ts";
 import { openNewTab } from "./tab-actions.ts";
@@ -25,6 +26,7 @@ import { attributeFlag, TabRow } from "./tab-row.tsx";
 import { WorkspaceSwitcher } from "./workspace-switcher.tsx";
 import { activeWorkspace } from "./workspaces.ts";
 import type {
+  BrowserSplitView,
   BrowserTab,
   BrowserTabGroup,
   SidebarEntry,
@@ -48,6 +50,13 @@ function groupOfEntry(entry: SidebarEntry): BrowserTabGroup | undefined {
   return undefined;
 }
 
+function splitOfEntry(entry: SidebarEntry): BrowserSplitView | undefined {
+  if (entry.kind === "split") {
+    return entry.split;
+  }
+  return undefined;
+}
+
 function EntryRow(props: { entry: SidebarEntry; tabState: TabState }) {
   return (
     <Switch>
@@ -56,6 +65,9 @@ function EntryRow(props: { entry: SidebarEntry; tabState: TabState }) {
       </Match>
       <Match when={groupOfEntry(props.entry)}>
         {(group) => <FolderRow group={group()} tabState={props.tabState} />}
+      </Match>
+      <Match when={splitOfEntry(props.entry)}>
+        {(split) => <SplitRow split={split()} tabState={props.tabState} />}
       </Match>
     </Switch>
   );

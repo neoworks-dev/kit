@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // The top of the sidebar: Essentials as a 3×3 grid of large tiles (shared by
-// every workspace), the workspace's pinned tabs as a row of small tiles, and
-// a divider before the tab list.
+// every workspace), the workspace's pinned tabs as ordinary tab rows, and a
+// divider before the tab list.
 
 import { For, Show } from "solid-js";
 import { openTabContextMenu } from "./context-menu.tsx";
@@ -22,7 +22,7 @@ import {
   PINNED,
   startTabDrag,
 } from "./tab-drag.ts";
-import { attributeFlag, Favicon, tabIcon, tabReader } from "./tab-row.tsx";
+import { attributeFlag, Favicon, tabIcon, tabReader, TabRow } from "./tab-row.tsx";
 import type { BrowserTab, TabState } from "./types.ts";
 
 type Grid = typeof ESSENTIALS | typeof PINNED;
@@ -137,14 +137,14 @@ function PinnedRow(props: { tabState: TabState }) {
       }
     >
       <div
-        class="nw-pinned-grid"
+        class="nw-pinned-list"
         data-drop-target={attributeFlag(isDropTarget(PINNED))}
         onDragOver={handlers.onDragOver}
         onDragLeave={handlers.onDragLeave}
         onDrop={handlers.onDrop}
       >
         <For each={props.tabState.pinnedTabs()}>
-          {(tab) => <Tile tab={tab} tabState={props.tabState} class="nw-pinned-tile" />}
+          {(tab) => <TabRow tab={tab} tabState={props.tabState} />}
         </For>
       </div>
     </Show>
