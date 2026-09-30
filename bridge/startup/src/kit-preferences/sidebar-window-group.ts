@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // "Sidebar and window": the prefs behind neoworks-sidebar/sidebar-docking.ts,
-// neoworks-toolbar/window-transparency.ts and neoworks-toolbar/glass-tint.ts.
+// neoworks-toolbar/window-transparency.ts, neoworks-toolbar/window-controls.ts
+// and neoworks-toolbar/glass-tint.ts.
 // Open browser windows observe these prefs and update right away.
 
 import type { PreferencesWindow, SettingGroupConfig } from "./types.ts";
 
 const DOCKED_PREF = "neoworks.sidebar.docked";
 const TRANSPARENT_PREF = "neoworks.window.transparent";
+const ALL_CONTROLS_PREF = "neoworks.window.allControls";
 const GLASS_TINT_PREF = "neoworks.glass.tint";
 const DEFAULT_GLASS_TINT = "medium";
 
@@ -54,6 +56,14 @@ const GROUP: SettingGroupConfig = {
       },
     },
     {
+      id: "kitWindowAllControls",
+      control: "moz-toggle",
+      controlAttrs: {
+        label: "Show all window controls",
+        description: "Show minimize and maximize even when your desktop's button layout only lists close.",
+      },
+    },
+    {
       id: "kitGlassTint",
       control: "moz-select",
       controlAttrs: {
@@ -73,12 +83,18 @@ export function registerSidebarWindowGroup(win: PreferencesWindow): void {
   win.Preferences.addAll([
     { id: DOCKED_PREF, type: "bool" },
     { id: TRANSPARENT_PREF, type: "bool" },
+    { id: ALL_CONTROLS_PREF, type: "bool" },
     { id: GLASS_TINT_PREF, type: "string" },
   ]);
   win.Preferences.addSetting({ id: "kitSidebarDocked", pref: DOCKED_PREF, get: booleanOr(true) });
   win.Preferences.addSetting({
     id: "kitWindowTransparent",
     pref: TRANSPARENT_PREF,
+    get: booleanOr(false),
+  });
+  win.Preferences.addSetting({
+    id: "kitWindowAllControls",
+    pref: ALL_CONTROLS_PREF,
     get: booleanOr(false),
   });
   win.Preferences.addSetting({ id: "kitGlassTint", pref: GLASS_TINT_PREF, get: glassTintOrDefault });

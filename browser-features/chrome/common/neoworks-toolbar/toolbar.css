@@ -99,6 +99,14 @@
   mask-position: center;
 }
 
+/* Opt-in (window-controls.ts): minimize and maximize even when the desktop's
+   button layout leaves them out. Maximize and restore still swap. */
+:root[nw-all-window-controls] #nav-bar .titlebar-min,
+:root[nw-all-window-controls]:not([sizemode="maximized"]) #nav-bar .titlebar-max,
+:root[nw-all-window-controls][sizemode="maximized"] #nav-bar .titlebar-restore {
+  display: flex !important;
+}
+
 #nav-bar .titlebar-button.titlebar-close:hover {
   background-color: #ef4444 !important;
   color: #fff;
