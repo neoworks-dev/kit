@@ -162,3 +162,22 @@ export interface PageThumbs {
     canvas: HTMLCanvasElement,
   ): Promise<boolean>;
 }
+
+// A tab in Kit's archive (NWTabArchive.sys.mts).
+export interface ArchivedTab {
+  id: string;
+  title: string;
+  url: string;
+  image: string;
+  archivedAt: number;
+  // SessionStore's tab state, as JSON.
+  state: string;
+}
+
+export interface TabArchiveModule {
+  TAB_ARCHIVE_CHANGED_TOPIC: string;
+  ready(): Promise<void>;
+  archivedTabs(): ArchivedTab[];
+  archive(tabs: ArchivedTab[]): Promise<void>;
+  remove(id: string): Promise<void>;
+}

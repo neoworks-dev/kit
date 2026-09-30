@@ -2,7 +2,7 @@
 
 import type { NWCommandId } from "#features-modules/common/NWKeymap.ts";
 import type { Quickmark } from "../neoworks-commands/quickmarks.ts";
-import type { BrowserTab, Workspace } from "../neoworks-sidebar/types.ts";
+import type { ArchivedTab, BrowserTab, Workspace } from "../neoworks-sidebar/types.ts";
 
 interface ResultText {
   title: string;
@@ -14,6 +14,7 @@ export type UrlResultKind = "navigate" | "suggestion" | "bookmark" | "history";
 export type SpotlightResult =
   | ResultText & { kind: UrlResultKind; url: string }
   | ResultText & { kind: "tab"; tab: BrowserTab }
+  | ResultText & { kind: "archived"; archived: ArchivedTab }
   | ResultText & { kind: "quickmark"; quickmark: Quickmark }
   | ResultText & { kind: "workspace"; workspace: Workspace; shortcut: string }
   | ResultText & { kind: "command"; command: NWCommandId; shortcut: string };

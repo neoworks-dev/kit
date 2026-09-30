@@ -5,6 +5,7 @@ import { createPageBackdrop } from "../neoworks-ui/page-backdrop.ts";
 import { jumpToQuickmark } from "../neoworks-commands/quickmarks.ts";
 import { runCommand } from "../neoworks-commands/registry.ts";
 import { selectTab } from "../neoworks-sidebar/tab-actions.ts";
+import { archivedTabs, reopenArchivedTab } from "../neoworks-sidebar/tab-archive.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
 import { switchWorkspace } from "../neoworks-sidebar/workspaces.ts";
 import { placesResults } from "./places.ts";
@@ -89,7 +90,9 @@ function navigateResults(query: string): SpotlightResult[] {
 }
 
 async function requestPlaces(query: string, generation: number): Promise<void> {
-  const places = await placesResults(query, openTabUrls());
+  // Archived tabs already have their own rows.
+  const excluded = new Set([...openTabUrls(), ...archivedTabs().map((tab) => tab.url)]);
+  const places = await placesResults(query, excluded);
   if (generation !== searchGeneration) {
     return;
   }
@@ -136,6 +139,8 @@ function runResult(result: SpotlightResult | undefined): void {
   switch (result.kind) {
     case "tab":
       return selectTab(result.tab);
+    case "archived":
+      return reopenArchivedTab(result.archived);
     case "command":
       return runCommand({ command: result.command });
     case "quickmark":
