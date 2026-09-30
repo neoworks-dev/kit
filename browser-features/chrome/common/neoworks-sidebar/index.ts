@@ -7,6 +7,7 @@ import {
 } from "#features-chrome/utils/base.ts";
 import { closeContainerMenu } from "./container-bar.tsx";
 import { watchContainers } from "./containers.ts";
+import { watchEssentials } from "./essentials.ts";
 import { stopFolderEdit } from "./folder-editing.ts";
 import { mountContextMenus, mountSidebar } from "./mount.tsx";
 import {
@@ -40,6 +41,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
     const stopWatchingContainers = watchContainers();
     const stopWatchingDocking = watchSidebarDocking();
     const stopWatchingWorkspaces = watchWorkspaces();
+    const stopWatchingEssentials = watchEssentials();
     const stopRoutingNewTabs = routeNewTabsToDefaultContainer();
     mountSidebar(browserBox, tabState);
     flagWorkspaceContainer(tabState);
@@ -61,6 +63,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
       stopFolderEdit();
       closeWorkspaceMenu();
       stopRoutingNewTabs();
+      stopWatchingEssentials();
       stopWatchingWorkspaces();
       stopWatchingDocking();
       removeEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);

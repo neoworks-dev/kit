@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { createSignal } from "solid-js";
+import { isEssential } from "./essentials.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type {
   BrowserTab,
@@ -72,6 +73,7 @@ function buildEntries(tabs: BrowserTab[]): SidebarEntry[] {
 }
 
 export function createTabState(): TabState {
+  const [essentialTabs, setEssentialTabs] = createSignal<BrowserTab[]>([]);
   const [pinnedTabs, setPinnedTabs] = createSignal<BrowserTab[]>([]);
   const [entries, setEntries] = createSignal<SidebarEntry[]>([]);
   const [revision, setRevision] = createSignal(0);
@@ -80,7 +82,9 @@ export function createTabState(): TabState {
   function refresh(): void {
     refreshQueued = false;
     const tabs = tabbrowser().nonHiddenTabs;
-    setPinnedTabs(tabs.filter((tab) => tab.pinned));
+    const pinned = tabs.filter((tab) => tab.pinned);
+    setEssentialTabs(pinned.filter(isEssential));
+    setPinnedTabs(pinned.filter((tab) => !isEssential(tab)));
     setEntries(buildEntries(tabs));
     setRevision((value) => value + 1);
   }
@@ -106,5 +110,5 @@ export function createTabState(): TabState {
     }
   }
 
-  return { pinnedTabs, entries, revision, dispose };
+  return { essentialTabs, pinnedTabs, entries, revision, dispose };
 }

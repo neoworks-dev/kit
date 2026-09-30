@@ -102,6 +102,8 @@ export type SidebarEntry =
   | { kind: "group"; group: BrowserTabGroup };
 
 export interface TabState {
+  essentialTabs: () => BrowserTab[];
+  // Pinned tabs that aren't Essentials.
   pinnedTabs: () => BrowserTab[];
   entries: () => SidebarEntry[];
   // Bumped on every tab event; read it to re-evaluate tab attributes.
