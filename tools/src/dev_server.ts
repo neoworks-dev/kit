@@ -30,35 +30,10 @@ export async function run(writer: any): Promise<void> {
   logger.info("Starting Vite dev servers...");
 
   const servers = [
-    { name: "designs", path: path.join(PROJECT_ROOT, "browser-features/skin") },
     { name: "main", path: path.join(PROJECT_ROOT, "bridge/loader-features") },
-    {
-      name: "modal-child",
-      path: path.join(PROJECT_ROOT, "browser-features/pages-modal-child"),
-    },
     {
       name: "newtab",
       path: path.join(PROJECT_ROOT, "browser-features/pages-newtab"),
-    },
-    {
-      name: "notes",
-      path: path.join(PROJECT_ROOT, "browser-features/pages-notes"),
-    },
-    {
-      name: "settings",
-      path: path.join(PROJECT_ROOT, "browser-features/pages-settings"),
-    },
-    {
-      name: "welcome",
-      path: path.join(PROJECT_ROOT, "browser-features/pages-welcome"),
-    },
-    {
-      name: "profile-manager",
-      path: path.join(PROJECT_ROOT, "browser-features/pages-profile-manager"),
-    },
-    {
-      name: "workflow-progress",
-      path: path.join(PROJECT_ROOT, "browser-features/pages-workflow-progress"),
     },
   ];
 
@@ -198,22 +173,8 @@ export function getPortFor(serverName: string): number {
   switch (serverName) {
     case "main":
       return 5181;
-    case "designs":
-      return 5174;
-    case "modal-child":
-      return 5185;
     case "newtab":
       return 5186;
-    case "notes":
-      return 5188;
-    case "settings":
-      return 5183;
-    case "welcome":
-      return 5187;
-    case "profile-manager":
-      return 5179;
-    case "workflow-progress":
-      return 5192;
     default:
       return DEV_SERVER.default_port;
   }

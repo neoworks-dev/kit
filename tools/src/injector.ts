@@ -105,24 +105,14 @@ export function createManifest(mode: string, dirPath: string) {
   let manifestContent = [
     "content noraneko content/ contentaccessible=yes",
     "content noraneko-startup startup/ contentaccessible=yes",
-    "content noraneko-skin skin/ contentaccessible=yes",
     "resource noraneko resource/ contentaccessible=yes",
-    "content noraneko-pages-aboutdialog pages-aboutDialog/ contentaccessible=yes",
-    "override chrome://browser/content/aboutDialog.xhtml chrome://noraneko-pages-aboutdialog/content/aboutDialog.html",
   ].join("\n");
 
   // if (dev) the pages should be served in vite dev server
   // stage and productions needs static contents
   if (mode !== "dev") {
-    const devEntries = [
-      "content noraneko-newtab pages-newtab/ contentaccessible=yes",
-      "content noraneko-welcome pages-welcome/ contentaccessible=yes",
-      "content noraneko-notes pages-notes/ contentaccessible=yes",
-      "content noraneko-modal-child pages-modal-child/ contentaccessible=yes",
-      "content noraneko-settings pages-settings/ contentaccessible=yes",
-      "content noraneko-profile-manager pages-profile-manager/ contentaccessible=yes",
-    ].join("\n");
-    manifestContent += "\n" + devEntries;
+    manifestContent +=
+      "\ncontent noraneko-newtab pages-newtab/ contentaccessible=yes";
   }
 
   Deno.writeTextFileSync(
@@ -168,15 +158,8 @@ export function run(mode: string, dirName = "noraneko-devdir"): void {
   const mounts: Array<[string, string]> = [
     ["content", "bridge/loader-features/_dist"],
     ["startup", "bridge/startup/_dist"],
-    ["skin", "browser-features/skin"],
     ["resource", "bridge/loader-modules/_dist"],
     ["pages-newtab", "browser-features/pages-newtab/_dist"],
-    ["pages-settings", "browser-features/pages-settings/_dist"],
-    ["pages-welcome", "browser-features/pages-welcome/_dist"],
-    ["pages-notes", "browser-features/pages-notes/_dist"],
-    ["pages-modal-child", "browser-features/pages-modal-child/_dist"],
-    ["pages-profile-manager", "browser-features/pages-profile-manager/_dist"],
-    ["pages-aboutDialog", "browser-features/pages-aboutDialog/_dist"],
   ];
 
   for (const [subdir, target] of mounts) {

@@ -156,10 +156,6 @@ export default defineConfig({
     ignoreOutdatedRequests: true,
     noDiscovery: true,
     include: [
-      // Page tests import React helpers (for example the settings search index).
-      // With discovery disabled, CJS React must be explicitly converted to ESM.
-      "react",
-      "react/jsx-runtime",
       "./node_modules/@nora",
       "solid-js",
       "solid-js/web",
@@ -171,8 +167,6 @@ export default defineConfig({
 
   resolve: {
     dedupe: [
-      "react",
-      "react-dom",
       "solid-js",
       "solid-js/web",
       "solid-js/store",
@@ -181,21 +175,11 @@ export default defineConfig({
     ],
     preserveSymlinks: true,
     alias: [
-      { find: "@nora/skin", replacement: r("../../browser-features/skin") },
       {
         find: "@nora/solid-xul",
         replacement: r("../../libs/solid-xul/index.ts"),
       },
       { find: "@std/toml", replacement: "@jsr/std__toml" },
-      {
-        find: "../../../../../shared",
-        replacement: r("../../../../src/shared"),
-      },
-      { find: "#apps", replacement: r("../../../../apps") },
-      {
-        find: "#i18n",
-        replacement: r("./link-i18n"),
-      },
       {
         find: "#features-chrome",
         replacement: r("./link-features-chrome"),

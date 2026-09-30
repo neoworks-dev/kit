@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-// Minimal ambient types for Gecko/XUL globals used in Floorp chrome code.
+// Minimal ambient types for Gecko/XUL globals used in Kit chrome code.
 // These are intentionally lightweight and only include members we actually use.
 //
 // IMPORTANT: This file has NO `export {}` — it is a SCRIPT file (not a module).
@@ -77,20 +77,6 @@ interface PanelUI {
   showSubView(id: string, anchor?: Element | null): Promise<void>;
 }
 
-interface GFloorpTabColor {
-  setEnable(enabled: boolean): void;
-}
-
-interface GFloorpStatusBar {
-  setShow: (value: boolean) => void;
-}
-
-interface GFloorp {
-  tabColor?: GFloorpTabColor;
-  statusBar?: GFloorpStatusBar;
-  [key: string]: unknown;
-}
-
 interface CustomizableUI {
   TYPE_TOOLBAR: "toolbar";
   AREA_NAVBAR: "nav-bar";
@@ -118,7 +104,6 @@ declare var gBrowser: GBrowser;
 declare var gURLBar: { focused: boolean };
 declare var TabContextMenu: TabContextMenu;
 declare var PanelUI: PanelUI;
-declare var gFloorp: GFloorp;
 declare var CustomizableUI: CustomizableUI;
 
 // user_pref — Firefox preference setter used in user.js files
@@ -135,7 +120,6 @@ declare namespace globalThis {
   var gBrowser: GBrowser;
   var TabContextMenu: TabContextMenu;
   var PanelUI: PanelUI;
-  var gFloorp: GFloorp;
   var CustomizableUI: CustomizableUI;
 
   // Gecko chrome globals used in status reporting and context menus
@@ -189,21 +173,6 @@ declare namespace globalThis {
     reversePosition?: boolean;
   };
 
-  // Floorp-specific chrome globals
-  var gFloorpPageAction: Record<string, unknown>;
-  var gFloorpPrivateContainer: unknown;
-  var gFloorpPanelSidebarCurrentPanel: unknown;
-  var gFloorpPanelSidebar: unknown;
-  var floorpWebPanelWindow: unknown;
-  var floorpWebPanelContentBrowser: XULBrowserElement & {
-    audioMuted?: boolean;
-    fullZoom?: number;
-    reload?: () => void;
-    goBack?: () => void;
-    goForward?: () => void;
-  };
-  var floorpSsbWindow: unknown;
-  var floorpBmsUserAgent: unknown;
   var gMiddleClickNewTabUsesPasteboard: unknown;
 
   // Gecko utility globals
@@ -220,7 +189,6 @@ declare namespace globalThis {
   var readFromClipboard: () => string;
   var openPreferences: (pane?: string) => void;
   var ZoomManager: { zoom: number };
-  var bmsLoadedURI: string;
   var BROWSER_NEW_TAB_URL: string;
   var BrowserAddonUI: { openAddonsMgr(url: string): void };
   var BrowserCommands: { openTab(options?: Record<string, unknown>): void };

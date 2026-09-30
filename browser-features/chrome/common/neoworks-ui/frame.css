@@ -34,9 +34,3 @@
   border-radius: 12px;
   overflow: clip;
 }
-
-/* Floorp's web panel strip right of the page; not part of Kit's layout
-   (see #5). */
-#panel-sidebar-select-box {
-  display: none !important;
-}

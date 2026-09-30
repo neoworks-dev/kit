@@ -32,8 +32,6 @@
   color: var(--text) !important;
 }
 
-/* Two ids so this beats Floorp's `:root:not([lwtheme]) #nav-bar` surface
-   color, which is also !important. */
 #navigator-toolbox #nav-bar {
   --toolbarbutton-inner-padding: 6px;
   --toolbarbutton-outer-padding: 1px;
@@ -159,10 +157,9 @@
   border-radius: 10px !important;
 }
 
-/* The page actions menu covers bookmarking; Floorp's QR code action isn't
-   part of Kit's URL bar. The tracking protection shield stays. */
-#star-button-box,
-#QRCodeGeneratePageAction {
+/* The page actions menu covers bookmarking. The tracking protection shield
+   stays. */
+#star-button-box {
   display: none !important;
 }
 
