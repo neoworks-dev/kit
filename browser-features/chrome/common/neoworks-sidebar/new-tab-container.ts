@@ -25,7 +25,7 @@ const browserWindow = window as unknown as {
   BROWSER_NEW_TAB_URL: string;
 };
 
-function isNewTabPage(uri: string): boolean {
+export function isNewTabPage(uri: string): boolean {
   return uri === browserWindow.BROWSER_NEW_TAB_URL || uri === "about:newtab" ||
     uri === "about:home";
 }
