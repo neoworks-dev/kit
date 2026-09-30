@@ -20,7 +20,7 @@ export function AddWidget(props: {
               <button
                 type="button"
                 onClick={() => props.onAdd(definition)}
-                class="flex items-start gap-3 rounded-lg border border-line bg-surface px-3 py-2.5 text-left transition-colors duration-120 hover:border-line-strong hover:bg-hover"
+                class="nw-glass flex items-start gap-3 rounded-lg border border-line bg-surface px-3 py-2.5 text-left transition-colors duration-120 hover:border-line-strong hover:bg-hover"
               >
                 <span class="mt-0.5 text-dim">
                   <Icon name="plus" size={14} />

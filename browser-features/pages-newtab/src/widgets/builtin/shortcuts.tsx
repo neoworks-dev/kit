@@ -78,7 +78,7 @@ function Shortcuts(props: WidgetProps<ShortcutsSettings>) {
               <a
                 href={shortcut.site.url}
                 title={shortcut.site.url}
-                class="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-sm text-default transition-colors duration-120 hover:border-line-strong hover:bg-hover"
+                class="nw-glass flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-sm text-default transition-colors duration-120 hover:border-line-strong hover:bg-hover"
               >
                 <Favicon url={shortcut.site.url} title={shortcut.site.title} />
                 <span class="truncate font-medium">{shortcut.site.title}</span>

@@ -40,7 +40,7 @@ function Clock(props: WidgetProps<ClockSettings>) {
     });
 
   return (
-    <div class="flex flex-col items-center gap-1 py-2 text-center">
+    <div class="nw-on-photo flex flex-col items-center gap-1 py-2 text-center">
       <span
         class="font-semibold tracking-tight tabular-nums text-default"
         classList={{

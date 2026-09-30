@@ -6,9 +6,12 @@
 
 interface PrefService {
   PREF_STRING: number;
+  PREF_BOOL: number;
   getPrefType(prefName: string): number;
   getStringPref(prefName: string): string;
   setStringPref(prefName: string, value: string): void;
+  getBoolPref(prefName: string): boolean;
+  setBoolPref(prefName: string, value: boolean): void;
 }
 
 declare global {
@@ -27,4 +30,21 @@ export function setStringPref(prefName: string, value: string): void {
   const prefs = globalThis.Services?.prefs;
   if (prefs) prefs.setStringPref(prefName, value);
   else localStorage.setItem(prefName, value);
+}
+
+export function getBoolPref(prefName: string, fallback: boolean): boolean {
+  const prefs = globalThis.Services?.prefs;
+  if (!prefs) {
+    const stored = localStorage.getItem(prefName);
+    return stored === null ? fallback : stored === "true";
+  }
+  return prefs.getPrefType(prefName) === prefs.PREF_BOOL
+    ? prefs.getBoolPref(prefName)
+    : fallback;
+}
+
+export function setBoolPref(prefName: string, value: boolean): void {
+  const prefs = globalThis.Services?.prefs;
+  if (prefs) prefs.setBoolPref(prefName, value);
+  else localStorage.setItem(prefName, String(value));
 }

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
+import { Backdrop } from "./background/Backdrop.tsx";
+import { BackgroundSettingsPanel } from "./background/BackgroundSettingsPanel.tsx";
+import { createBackgroundSettings } from "./background/settings.ts";
 import { AddWidget } from "./components/AddWidget.tsx";
 import { Button, Icon } from "./components/controls.tsx";
 import { WidgetFrame } from "./components/WidgetFrame.tsx";
@@ -16,6 +19,7 @@ import { getWidget, listWidgets } from "./widgets/registry.ts";
 export default function App() {
   const [editing, setEditing] = createSignal(false);
   const { layout, update } = createLayout(editing);
+  const background = createBackgroundSettings();
 
   createEffect(() => {
     if (!editing()) return;
@@ -28,6 +32,7 @@ export default function App() {
 
   return (
     <main class="flex min-h-screen items-center justify-center px-6 py-16">
+      <Backdrop settings={background.settings} />
       <div class="grid w-full max-w-3xl grid-cols-4 gap-x-4 gap-y-6">
         {/* Keyed by id, so a widget keeps its state when its settings change. */}
         <For each={layout().widgets.map((w) => w.id)}>
@@ -59,6 +64,12 @@ export default function App() {
               update((l) =>
                 addWidget(l, definition.type, definition.defaultSize)
               )}
+          />
+        </Show>
+        <Show when={editing()}>
+          <BackgroundSettingsPanel
+            settings={background.settings}
+            onChange={background.update}
           />
         </Show>
         <Show when={!editing() && layout().widgets.length === 0}>
