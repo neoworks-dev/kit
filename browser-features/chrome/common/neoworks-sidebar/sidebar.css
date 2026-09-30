@@ -174,13 +174,13 @@
   object-fit: contain;
 }
 
-/* Pinned tabs: small favicon tiles in a row that wraps as pins grow. */
-#neoworks-sidebar .nw-pinned-grid {
+/* Pinned tabs: normal tab rows, kept above the divider. */
+#neoworks-sidebar .nw-pinned-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
   flex-shrink: 0;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   border-radius: var(--radius-md);
 }
 
@@ -198,7 +198,7 @@
   font-size: 12px;
 }
 
-#neoworks-sidebar :is(.nw-essentials-grid, .nw-pinned-grid)[data-drop-target] {
+#neoworks-sidebar :is(.nw-essentials-grid, .nw-pinned-list)[data-drop-target] {
   box-shadow: 0 0 0 1px var(--border-strong);
 }
 
@@ -206,6 +206,17 @@
   border-style: solid;
   background: var(--glass-hover);
   color: var(--text);
+}
+
+/* A split view's tabs, boxed together. */
+#neoworks-sidebar .nw-split-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 2px;
+  border: 1px solid var(--glass-divider);
+  border-radius: calc(var(--radius-md) + 2px);
 }
 
 /* Separates Essentials and pinned tabs from the tab list. */
@@ -218,25 +229,11 @@
   background: var(--glass-divider);
 }
 
-#neoworks-sidebar .nw-pinned-tile {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  box-sizing: border-box;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.05);
-  transition: background-color var(--dur-fast), border-color var(--dur-fast);
-}
-
-#neoworks-sidebar :is(.nw-pinned-tile, .nw-essential-tile):hover {
+#neoworks-sidebar .nw-essential-tile:hover {
   background: var(--glass-hover);
 }
 
-#neoworks-sidebar :is(.nw-pinned-tile, .nw-essential-tile)[data-selected] {
+#neoworks-sidebar .nw-essential-tile[data-selected] {
   border-color: rgba(255, 255, 255, 0.18);
   background: var(--glass-selected);
 }
@@ -307,7 +304,7 @@
 
 /* Unloaded (discarded) tabs: only the favicon fades, so the list keeps one
    text color. */
-#neoworks-sidebar :is(.nw-tab, .nw-pinned-tile, .nw-essential-tile)[data-unloaded]:not([data-selected]) .nw-favicon {
+#neoworks-sidebar :is(.nw-tab, .nw-essential-tile)[data-unloaded]:not([data-selected]) .nw-favicon {
   opacity: 0.45;
   filter: grayscale(0.7);
 }
@@ -466,7 +463,7 @@
 
 /* Drag and drop: the row under the pointer is where the dragged tab or
    folder lands; below the list, a line marks "out of any folder, at the end". */
-#neoworks-sidebar :is(.nw-tab, .nw-group-header, .nw-pinned-tile, .nw-essential-tile)[data-drop-target] {
+#neoworks-sidebar :is(.nw-tab, .nw-group-header, .nw-essential-tile)[data-drop-target] {
   background: var(--glass-hover);
   box-shadow: inset 0 0 0 1px var(--border-strong);
 }

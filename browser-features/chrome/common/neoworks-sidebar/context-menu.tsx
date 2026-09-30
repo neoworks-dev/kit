@@ -19,6 +19,8 @@ import {
 import { startFolderEdit } from "./folder-editing.ts";
 import { closeTab, moveTabToContainer, togglePinned } from "./tab-actions.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
+import { removeFromSplit } from "../neoworks-split/split-view.ts";
+import type { SplitTab } from "../neoworks-split/types.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type { BrowserTab, BrowserTabGroup, TabState } from "./types.ts";
 
@@ -210,6 +212,12 @@ export function TabContextMenu(props: { tabState: TabState }) {
       />
       <Show when={!menuTab()?.pinned}>
         <FolderSubmenu tabState={props.tabState} />
+      </Show>
+      <Show when={menuTab()?.splitview}>
+        <xul:menuitem
+          label="Remove from split"
+          onCommand={withMenuTab((tab) => removeFromSplit(tab as SplitTab))}
+        />
       </Show>
       <Show when={menuTab()?.group}>
         <xul:menuitem

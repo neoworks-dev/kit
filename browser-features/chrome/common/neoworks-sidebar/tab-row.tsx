@@ -18,6 +18,8 @@ import {
   leaveDrop,
   startTabDrag,
 } from "./tab-drag.ts";
+import { removeFromSplit } from "../neoworks-split/split-view.ts";
+import type { SplitTab } from "../neoworks-split/types.ts";
 import type { BrowserTab, TabState } from "./types.ts";
 
 // solid-xul removes attributes set to undefined.
@@ -90,6 +92,8 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
   const muted = read(() => tab.muted);
   const container = read(() => foreignContainerColor(tab.userContextId));
   const audio = read(() => audioIcon(tab));
+  const pinned = read(() => tab.pinned);
+  const inSplit = read(() => !!tab.splitview);
 
   return (
     <div
@@ -125,13 +129,23 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
       <span class="nw-tab-label">{label()}</span>
       {/* Laid over the label's end on hover (sidebar.css). */}
       <div class="nw-tab-actions">
+        <Show when={inSplit()}>
+          <button
+            type="button"
+            class="nw-icon-button nw-tab-action"
+            title="Remove from split"
+            onClick={stopThen(() => removeFromSplit(tab as SplitTab))}
+          >
+            <span class="nw-icon" data-icon="arrow-square-out" />
+          </button>
+        </Show>
         <button
           type="button"
           class="nw-icon-button nw-tab-action"
-          title="Pin tab"
+          title={pinned() ? "Unpin tab" : "Pin tab"}
           onClick={stopThen(() => togglePinned(tab))}
         >
-          <span class="nw-icon" data-icon="push-pin" />
+          <span class="nw-icon" data-icon={pinned() ? "push-pin-slash" : "push-pin"} />
         </button>
         <button
           type="button"
