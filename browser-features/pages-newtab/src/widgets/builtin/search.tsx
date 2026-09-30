@@ -11,7 +11,7 @@ function SearchLauncher() {
     <button
       type="button"
       onClick={openSpotlight}
-      class="flex w-full items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-left text-sm text-dim transition-colors duration-120 hover:border-line-strong hover:bg-hover hover:text-muted"
+      class="nw-glass flex w-full items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-left text-sm text-dim transition-colors duration-120 hover:border-line-strong hover:bg-hover hover:text-muted"
     >
       <Icon name="magnifying-glass" />
       <span class="flex-1 truncate">Search or enter address</span>

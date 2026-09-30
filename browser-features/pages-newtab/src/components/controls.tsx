@@ -70,7 +70,7 @@ export function Button(
         "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-120 disabled:opacity-50",
         local.variant === "primary"
           ? "bg-action text-action-fg hover:bg-action-hover"
-          : "border border-line bg-surface text-default hover:border-line-strong hover:bg-hover",
+          : "nw-glass border border-line bg-surface text-default hover:border-line-strong hover:bg-hover",
         local.class,
       )}
     />

@@ -145,7 +145,7 @@ export function WidgetFrame(props: {
                 {(settings) => {
                   const Settings = settings();
                   return (
-                    <div class="mt-3 rounded-lg border border-line bg-elevated p-3">
+                    <div class="nw-glass mt-3 rounded-lg border border-line bg-elevated p-3">
                       <Settings {...widgetProps(definition)} />
                     </div>
                   );
