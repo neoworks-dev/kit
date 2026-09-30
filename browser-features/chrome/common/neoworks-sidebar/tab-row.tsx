@@ -2,7 +2,7 @@
 
 import { Show } from "solid-js";
 import { openTabContextMenu } from "./context-menu.tsx";
-import { containerColor } from "./identity-colors.ts";
+import { foreignContainerColor } from "./identity-colors.ts";
 import {
   closeOnMiddleClick,
   closeTab,
@@ -44,7 +44,11 @@ export function tabReader(tabState: TabState) {
 
 export function Favicon(props: { source: string; busy: boolean }) {
   const placeholder = (
-    <span class="nw-favicon-placeholder" data-busy={attributeFlag(props.busy)} />
+    <span
+      class="nw-icon nw-favicon-placeholder"
+      data-icon="globe"
+      data-busy={attributeFlag(props.busy)}
+    />
   );
   return (
     <span class="nw-favicon">
@@ -73,7 +77,7 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
   const unloaded = read(() => tab.hasAttribute("pending"));
   const playing = read(() => tab.hasAttribute("soundplaying"));
   const muted = read(() => tab.muted);
-  const container = read(() => containerColor(tab.userContextId));
+  const container = read(() => foreignContainerColor(tab.userContextId));
   const audio = read(() => audioIcon(tab));
 
   return (

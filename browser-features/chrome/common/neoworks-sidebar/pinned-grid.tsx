@@ -2,7 +2,7 @@
 
 import { For, Show } from "solid-js";
 import { openTabContextMenu } from "./context-menu.tsx";
-import { containerColor } from "./identity-colors.ts";
+import { foreignContainerColor } from "./identity-colors.ts";
 import { closeOnMiddleClick, selectTab } from "./tab-actions.ts";
 import {
   allowDrop,
@@ -24,7 +24,7 @@ function PinnedTile(props: { tab: BrowserTab; tabState: TabState }) {
   const selected = read(() => tab.selected);
   const busy = read(() => tab.hasAttribute("busy"));
   const unloaded = read(() => tab.hasAttribute("pending"));
-  const container = read(() => containerColor(tab.userContextId));
+  const container = read(() => foreignContainerColor(tab.userContextId));
 
   return (
     <div

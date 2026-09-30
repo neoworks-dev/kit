@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
-// Sidebar footer: picks the container new tabs open in, and manages
-// containers (create, rename, recolor, delete).
+// Sidebar header: picks the container new tabs open in, and manages
+// containers (create, rename, recolor, delete). A chip names the container
+// when it isn't the workspace's own; otherwise a quiet icon opens the menu.
 
 import { createSignal, For, Show } from "solid-js";
 import {
@@ -19,6 +20,7 @@ import {
 import { namedColor } from "./identity-colors.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { attributeFlag } from "./tab-row.tsx";
+import { activeWorkspace } from "./workspaces.ts";
 
 const MENU_NAME = "container-menu";
 const NEW_CONTAINER_INPUT_ID = "neoworks-new-container-input";
@@ -267,15 +269,29 @@ export function ContainerBar() {
         <div class="nw-container-dismiss" onClick={closeContainerMenu} />
         <ContainerMenu />
       </Show>
-      <button
-        type="button"
-        class="nw-container-current"
-        title={`Container for new tabs: ${currentContainerName()}`}
-        style={{ "--nw-chip-color": currentContainerColor() }}
-        onClick={toggleMenu}
+      <Show
+        when={defaultContainerId() !== activeWorkspace().userContextId}
+        fallback={
+          <button
+            type="button"
+            class="nw-icon-button"
+            title={`Container for new tabs: ${currentContainerName()} (the workspace's)`}
+            onClick={toggleMenu}
+          >
+            <span class="nw-icon" data-icon="cube" />
+          </button>
+        }
       >
-        {currentContainerLabel()}
-      </button>
+        <button
+          type="button"
+          class="nw-container-current"
+          title={`Container for new tabs: ${currentContainerName()}`}
+          style={{ "--nw-chip-color": currentContainerColor() }}
+          onClick={toggleMenu}
+        >
+          {currentContainerLabel()}
+        </button>
+      </Show>
     </div>
   );
 }

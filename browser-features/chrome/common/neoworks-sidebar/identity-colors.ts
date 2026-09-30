@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { ContextualIdentityService } from "./containers.ts";
+import { activeWorkspace } from "./workspaces.ts";
 
 // Firefox's container and tab group color names, as hex swatches.
 const NAMED_COLORS: Record<string, string> = {
@@ -35,4 +36,14 @@ export function containerColor(userContextId: number): string | null {
     return null;
   }
   return namedColor(identity.color);
+}
+
+// Container color for a tab marker, or null when the tab uses its
+// workspace's own container: then every tab would carry the same marker, so
+// it's only shown for tabs that differ.
+export function foreignContainerColor(userContextId: number): string | null {
+  if (userContextId === activeWorkspace().userContextId) {
+    return null;
+  }
+  return containerColor(userContextId);
 }

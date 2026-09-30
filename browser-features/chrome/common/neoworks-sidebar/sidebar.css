@@ -257,11 +257,11 @@
   border-radius: 3px;
 }
 
+/* Pages without a favicon (new tabs, loading) get a dimmed globe. */
 #neoworks-sidebar .nw-favicon-placeholder {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--text-faint);
+  width: 16px;
+  height: 16px;
+  color: var(--text-dim);
 }
 
 #neoworks-sidebar .nw-favicon-placeholder[data-busy] {
