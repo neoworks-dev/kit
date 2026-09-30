@@ -48,6 +48,9 @@ export const NW_CHROME_COMMAND_IDS = [
   "downloads:open",
   "quickmark:set",
   "quickmark:jump",
+  "split:vertical",
+  "split:horizontal",
+  "split:close",
 ] as const;
 
 export type NWPageCommandId = (typeof NW_PAGE_COMMAND_IDS)[number];
@@ -87,6 +90,9 @@ export const NW_COMMAND_TITLES: Record<NWCommandId, string> = {
   "downloads:open": "Downloads",
   "quickmark:set": "Set Quickmark",
   "quickmark:jump": "Jump to Quickmark",
+  "split:vertical": "Split Side by Side",
+  "split:horizontal": "Split Stacked",
+  "split:close": "Close Split Pane",
 };
 
 export interface NWCommandInvocation {
@@ -165,6 +171,11 @@ export const NW_KEY_BINDINGS: readonly NWKeyBinding[] = [
     timeoutMs: DOUBLE_SPACE_TIMEOUT_MS,
   },
   { keys: ["/"], command: "find:open" },
+  // Space is the leader: Space w … are window (split) commands, as in vim's
+  // C-w.
+  { keys: ["Space", "w", "v"], command: "split:vertical" },
+  { keys: ["Space", "w", "s"], command: "split:horizontal" },
+  { keys: ["Space", "w", "q"], command: "split:close" },
   ...quickmarkBindings("m", "quickmark:set"),
   ...quickmarkBindings("'", "quickmark:jump"),
 ];
@@ -333,9 +344,11 @@ export class NWKeySequenceMatcher {
     return this.candidates([...this.typed, token]).length > 0;
   }
 
+  // The slowest candidate wins: a short double-Space timeout must not cut
+  // off the Space leader sequences.
   pendingTimeoutMs(): number {
     const timeouts = this.candidates(this.typed).map(bindingTimeout);
-    return Math.min(DEFAULT_SEQUENCE_TIMEOUT_MS, ...timeouts);
+    return Math.max(0, ...timeouts);
   }
 
   handle(token: string): NWKeyResult {

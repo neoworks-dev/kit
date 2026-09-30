@@ -113,9 +113,21 @@ function testInvalidFollowUpRestarts(): void {
 function testDoubleSpace(): void {
   const harness = new DispatcherHarness();
   assert(harness.press("Space"), "first Space is swallowed");
-  assertEquals(harness.timerDelayMs, 200, "double Space waits 200ms");
+  assertEquals(harness.timerDelayMs, 2000, "Space waits long enough for leader sequences");
   harness.press("Space");
   assertEquals(harness.lastCommand(), "spotlight:open", "double Space opens spotlight");
+}
+
+function testLeaderSequences(): void {
+  const harness = new DispatcherHarness();
+  harness.press("Space");
+  harness.press("w");
+  harness.press("v");
+  assertEquals(harness.lastCommand(), "split:vertical", "Space w v splits side by side");
+  harness.press("Space");
+  harness.press("w");
+  harness.press("s");
+  assertEquals(harness.lastCommand(), "split:horizontal", "Space w s splits stacked");
 }
 
 function testLoneSpaceIsAbandoned(): void {
@@ -195,6 +207,7 @@ export async function runAllTests(): Promise<void> {
     { name: "pending sequence expires", fn: testSequenceExpires },
     { name: "invalid follow-up key starts a new sequence", fn: testInvalidFollowUpRestarts },
     { name: "double Space opens spotlight", fn: testDoubleSpace },
+    { name: "Space leader sequences", fn: testLeaderSequences },
     { name: "lone Space is handed back", fn: testLoneSpaceIsAbandoned },
     { name: "held keys", fn: testHeldKeys },
     { name: "quickmark bindings carry their letter", fn: testQuickmarkLetters },
