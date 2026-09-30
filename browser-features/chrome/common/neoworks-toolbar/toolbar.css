@@ -21,7 +21,7 @@
   #stop-reload-button,
   #urlbar-container,
   #unified-extensions-button,
-  .webextension-browser-action
+  .unified-extensions-item
 ) {
   display: none !important;
 }
@@ -151,7 +151,7 @@
   margin-inline: auto !important;
 }
 
-#nav-bar .webextension-browser-action,
+#nav-bar .unified-extensions-item,
 #nav-bar #unified-extensions-button {
   order: 10;
 }
