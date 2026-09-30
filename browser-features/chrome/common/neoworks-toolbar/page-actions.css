@@ -19,7 +19,7 @@
   display: flex;
   flex-direction: column;
   /* Keep in sync with PANEL_WIDTH_PX in page-actions-menu.tsx. */
-  width: 280px;
+  width: 320px;
   overflow: hidden;
   border-radius: var(--radius-lg);
   color: var(--text);
@@ -44,7 +44,7 @@
 
 #neoworks-page-actions .nw-page-actions-tools {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 4px;
   padding: 8px;
 }

@@ -11,6 +11,7 @@ export interface PageBrowser {
 export interface PageActionsWindow {
   gBrowser: {
     selectedBrowser: PageBrowser;
+    selectedTab: unknown;
     tabContainer: EventTarget;
   };
   FullZoom: {
@@ -38,4 +39,6 @@ export interface PageState {
   zoomPercent: number;
   readerAvailable: boolean;
   readerActive: boolean;
+  // The page can open in its own web app window.
+  appAvailable: boolean;
 }

@@ -7,6 +7,7 @@ import {
   chromeWindow,
   clearSiteData,
   copyPageUrl,
+  openAsApp,
   openSitePermissions,
   readPageState,
   resetZoom,
@@ -23,7 +24,7 @@ import pageActionsStyle from "./page-actions.css?inline";
 const PANEL_ID = "neoworks-page-actions-panel";
 const BACKDROP_ID = "neoworks-page-actions-backdrop";
 // Keep in sync with the panel width in page-actions.css.
-const PANEL_WIDTH_PX = 280;
+const PANEL_WIDTH_PX = 320;
 const PANEL_GAP_PX = 6;
 const WINDOW_EDGE_PX = 8;
 
@@ -112,6 +113,7 @@ function pageTools(state: PageState): PageTool[] {
       run: toggleReaderMode,
     },
     { icon: "link", label: "Copy link", enabled: true, run: copyPageUrl },
+    { icon: "app-window", label: "Open as app", enabled: state.appAvailable, run: openAsApp },
   ];
 }
 
