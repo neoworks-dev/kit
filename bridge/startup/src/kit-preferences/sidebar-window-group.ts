@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // "Sidebar and window": the prefs behind neoworks-sidebar/sidebar-docking.ts,
-// neoworks-toolbar/window-transparency.ts, neoworks-toolbar/window-controls.ts
-// and neoworks-toolbar/glass-tint.ts.
+// neoworks-sidebar/tab-archive.ts, neoworks-toolbar/window-transparency.ts,
+// neoworks-toolbar/window-controls.ts and neoworks-toolbar/glass-tint.ts.
 // Open browser windows observe these prefs and update right away.
 
 import type { PreferencesWindow, SettingGroupConfig } from "./types.ts";
@@ -12,6 +12,9 @@ const TRANSPARENT_PREF = "neoworks.window.transparent";
 const ALL_CONTROLS_PREF = "neoworks.window.allControls";
 const GLASS_TINT_PREF = "neoworks.glass.tint";
 const DEFAULT_GLASS_TINT = "medium";
+// Hours; 0 is never. Same default as neoworks-sidebar/tab-archive.ts.
+const ARCHIVE_AFTER_PREF = "neoworks.tabs.archiveAfterHours";
+const DEFAULT_ARCHIVE_AFTER_HOURS = 24;
 
 export const SIDEBAR_WINDOW_GROUP_ID = "kitSidebarWindow";
 
@@ -23,6 +26,13 @@ function booleanOr(fallback: boolean): (prefValue: unknown) => boolean {
     }
     return prefValue;
   };
+}
+
+function archiveAfterOrDefault(prefValue: unknown): string {
+  if (typeof prefValue !== "number") {
+    return String(DEFAULT_ARCHIVE_AFTER_HOURS);
+  }
+  return String(prefValue);
 }
 
 function glassTintOrDefault(prefValue: unknown): string {
@@ -46,6 +56,21 @@ const GROUP: SettingGroupConfig = {
         label: "Dock the sidebar",
         description: "Keep the tab sidebar beside the page instead of sliding it in over the page.",
       },
+    },
+    {
+      id: "kitArchiveAfter",
+      control: "moz-select",
+      controlAttrs: {
+        label: "Archive unused tabs",
+        description: "Close tabs you haven't used for a while. Find them again in the spotlight. Pinned tabs and Essentials are never archived.",
+      },
+      options: [
+        { value: "0", controlAttrs: { label: "Never" } },
+        { value: "12", controlAttrs: { label: "After 12 hours" } },
+        { value: "24", controlAttrs: { label: "After 1 day" } },
+        { value: "72", controlAttrs: { label: "After 3 days" } },
+        { value: "168", controlAttrs: { label: "After 7 days" } },
+      ],
     },
     {
       id: "kitWindowTransparent",
@@ -85,6 +110,7 @@ export function registerSidebarWindowGroup(win: PreferencesWindow): void {
     { id: TRANSPARENT_PREF, type: "bool" },
     { id: ALL_CONTROLS_PREF, type: "bool" },
     { id: GLASS_TINT_PREF, type: "string" },
+    { id: ARCHIVE_AFTER_PREF, type: "int" },
   ]);
   win.Preferences.addSetting({ id: "kitSidebarDocked", pref: DOCKED_PREF, get: booleanOr(true) });
   win.Preferences.addSetting({
@@ -96,6 +122,12 @@ export function registerSidebarWindowGroup(win: PreferencesWindow): void {
     id: "kitWindowAllControls",
     pref: ALL_CONTROLS_PREF,
     get: booleanOr(false),
+  });
+  win.Preferences.addSetting({
+    id: "kitArchiveAfter",
+    pref: ARCHIVE_AFTER_PREF,
+    get: archiveAfterOrDefault,
+    set: (value) => Number(value),
   });
   win.Preferences.addSetting({ id: "kitGlassTint", pref: GLASS_TINT_PREF, get: glassTintOrDefault });
   win.SettingGroupManager.registerGroups({ [SIDEBAR_WINDOW_GROUP_ID]: GROUP });

@@ -11,6 +11,7 @@
   --nw-icon-lightning: url("@phosphor-icons/core/bold/lightning-bold.svg");
   --nw-icon-bookmark-simple: url("@phosphor-icons/core/bold/bookmark-simple-bold.svg");
   --nw-icon-clock-counter-clockwise: url("@phosphor-icons/core/bold/clock-counter-clockwise-bold.svg");
+  --nw-icon-archive: url("@phosphor-icons/core/bold/archive-bold.svg");
   --nw-icon-magnifying-glass: url("@phosphor-icons/core/bold/magnifying-glass-bold.svg");
   --nw-icon-arrow-right: url("@phosphor-icons/core/bold/arrow-right-bold.svg");
   --nw-icon-arrow-left: url("@phosphor-icons/core/bold/arrow-left-bold.svg");
@@ -86,6 +87,10 @@
 
 .nw-icon[data-icon="clock-counter-clockwise"] {
   mask-image: var(--nw-icon-clock-counter-clockwise);
+}
+
+.nw-icon[data-icon="archive"] {
+  mask-image: var(--nw-icon-archive);
 }
 
 .nw-icon[data-icon="magnifying-glass"] {

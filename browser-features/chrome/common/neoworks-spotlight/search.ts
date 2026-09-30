@@ -7,6 +7,7 @@ import {
   listedCommands,
   type NeoworksCommand,
 } from "../neoworks-commands/registry.ts";
+import { archivedTabs } from "../neoworks-sidebar/tab-archive.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
 import { activeWorkspaceId, workspaces } from "../neoworks-sidebar/workspaces.ts";
 import { fuzzyScore, rankByScore } from "./fuzzy.ts";
@@ -18,6 +19,7 @@ const uriFixupFlags = Ci.nsIURIFixup as unknown as {
 };
 
 const OPEN_URL_SUBTITLE = "Open";
+const MAX_ARCHIVED_RESULTS = 8;
 const SEARCH_SUBTITLE = "Search the web";
 
 // Firefox's URL fixup decides between "open this URL" and "search for this",
@@ -56,6 +58,15 @@ function tabResults(): SpotlightResult[] {
     title: tab.label,
     subtitle: tab.linkedBrowser.currentURI.spec,
     tab,
+  }));
+}
+
+function archivedResults(): SpotlightResult[] {
+  return archivedTabs().map((archived) => ({
+    kind: "archived",
+    title: archived.title,
+    subtitle: archived.url,
+    archived,
   }));
 }
 
@@ -116,7 +127,8 @@ function commandResults(): SpotlightResult[] {
 }
 
 // Everything that can be listed without I/O: open tabs, workspaces,
-// quickmarks, commands.
+// quickmarks, commands, then archived tabs once there is a query (the
+// archive can hold hundreds).
 export function localResults(query: string): SpotlightResult[] {
   const candidates = [
     ...tabResults(),
@@ -127,7 +139,11 @@ export function localResults(query: string): SpotlightResult[] {
   if (!query) {
     return candidates;
   }
-  return rankByScore(candidates, (result) => resultScore(query, result));
+  const score = (result: SpotlightResult) => resultScore(query, result);
+  return [
+    ...rankByScore(candidates, score),
+    ...rankByScore(archivedResults(), score).slice(0, MAX_ARCHIVED_RESULTS),
+  ];
 }
 
 // Titles match fuzzily; subtitles (mostly long URLs) only as plain substrings,

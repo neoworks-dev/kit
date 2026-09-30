@@ -8,6 +8,7 @@ const SECTION_TITLES: Record<SpotlightResultKind, string> = {
   navigate: "",
   suggestion: "Suggestions",
   tab: "Tabs",
+  archived: "Archived tabs",
   workspace: "Workspaces",
   quickmark: "Quickmarks",
   command: "Commands",
@@ -19,6 +20,7 @@ const KIND_ICONS: Record<SpotlightResultKind, string> = {
   navigate: "arrow-right",
   suggestion: "magnifying-glass",
   tab: "globe",
+  archived: "archive",
   // Workspace rows show their color dot instead.
   workspace: "sidebar-simple",
   quickmark: "bookmark-simple",
@@ -47,6 +49,9 @@ function faviconOf(result: SpotlightResult): string {
   }
   if (result.kind === "history" || result.kind === "bookmark") {
     return "page-icon:" + result.url;
+  }
+  if (result.kind === "archived") {
+    return result.archived.image || "page-icon:" + result.archived.url;
   }
   return "";
 }

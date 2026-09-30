@@ -13,6 +13,7 @@ import { stopFolderEdit } from "./folder-editing.ts";
 import { mountContextMenus, mountSidebar } from "./mount.tsx";
 import { browseInPinnedTabs } from "./pinned-navigation.ts";
 import { watchRecentlyClosed } from "./recently-closed.ts";
+import { watchTabArchive } from "./tab-archive.ts";
 import {
   disposeSidebarVisibility,
   peekSidebar,
@@ -49,6 +50,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
     const stopClosingNewTabs = closeLeftNewTabs();
     const stopBrowsingInPinnedTabs = browseInPinnedTabs();
     const stopWatchingClosedTabs = watchRecentlyClosed();
+    const stopWatchingTabArchive = watchTabArchive();
     mountSidebar(browserBox, tabState);
     flagWorkspaceContainer(tabState);
     mountContextMenus(popupSet, tabState);
@@ -69,6 +71,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
       stopFolderEdit();
       closeWorkspaceMenu();
       stopWatchingClosedTabs();
+      stopWatchingTabArchive();
       stopBrowsingInPinnedTabs();
       stopClosingNewTabs();
       stopRoutingNewTabs();
