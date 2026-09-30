@@ -96,6 +96,25 @@ const JS_WINDOW_ACTORS: {
     safeForUntrustedWebProcess: true,
     allFrames: true,
   },
+  NWLinkPreview: {
+    parent: {
+      esModuleURI: localPathToResourceURI(
+        "../actors/NWLinkPreviewParent.sys.mts",
+      ),
+    },
+    child: {
+      esModuleURI: localPathToResourceURI(
+        "../actors/NWLinkPreviewChild.sys.mts",
+      ),
+      events: {
+        click: { capture: true },
+      },
+    },
+    matches: ["http://*/*", "https://*/*", "file:///*"],
+    remoteTypes: WEB_FILE_AND_ABOUT_REMOTE_TYPES,
+    safeForUntrustedWebProcess: true,
+    allFrames: true,
+  },
 };
 
 ActorManagerParent.addJSWindowActors(JS_WINDOW_ACTORS);
