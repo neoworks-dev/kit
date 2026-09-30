@@ -172,8 +172,10 @@
 }
 
 /* While Marionette drives the browser (the dev build always), Firefox shows a
-   robot icon and red stripes in the URL bar. Kit shows a breathing blue glow
-   around the page and inside the URL field instead. */
+   robot icon and red stripes in the URL bar. Kit makes it unmistakable
+   instead: an amber border around the whole window and a "Remote control"
+   pill before the window buttons. Amber, so it can't be taken for a
+   container or workspace color. */
 #remote-control-box {
   display: none !important;
 }
@@ -182,43 +184,58 @@
   background-image: none !important;
 }
 
-:root[remotecontrol] #tabbrowser-tabbox {
+:root[remotecontrol] > body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  border: 2px solid #f59e0b;
+  pointer-events: none;
+}
+
+/* Pseudo-elements are flex items too: order puts the pill after the
+   extension buttons (order 10) and before the window buttons. ::before is a
+   pulsing dot drawn over the pill's start: 8px gap + 9px inset, and its
+   negative end margin pulls the pill back under it. */
+:root[remotecontrol] #nav-bar::before {
+  content: "";
   position: relative;
+  z-index: 1;
+  order: 15;
+  align-self: center;
+  width: 6px;
+  height: 6px;
+  margin-inline: 17px -15px;
+  border-radius: 50%;
+  background: #fbbf24;
+  animation: nw-remote-control-pulse 1.2s ease-in-out infinite alternate;
 }
 
-:root[remotecontrol] #urlbar .urlbar-background::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow:
-    inset 0 0 0 1px rgba(96, 165, 250, 0.6),
-    inset 0 0 12px rgba(96, 165, 250, 0.45);
-  pointer-events: none;
-  animation: nw-remote-control-breathe 2.4s ease-in-out infinite alternate;
+:root[remotecontrol] #nav-bar::after {
+  content: "Remote control";
+  order: 16;
+  align-self: center;
+  height: 22px;
+  padding: 0 9px 0 20px;
+  border-radius: 11px;
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+  font: 600 11px/22px var(--font-sans);
+  white-space: nowrap;
 }
 
-/* Breathes through opacity rather than box-shadow so the compositor animates
-   it without repainting. Color is --ctx-blue from @neoworks-dev/ui. */
-:root[remotecontrol] #tabbrowser-tabbox::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 100;
-  border-radius: inherit;
-  box-shadow: inset 0 0 28px 2px rgba(96, 165, 250, 0.55);
-  pointer-events: none;
-  animation: nw-remote-control-breathe 2.4s ease-in-out infinite alternate;
-}
-
-@keyframes nw-remote-control-breathe {
+@keyframes nw-remote-control-pulse {
   from {
-    opacity: 0.3;
+    opacity: 0.35;
   }
 
   to {
     opacity: 1;
   }
+}
+
+:root[customtitlebar] #nav-bar > .titlebar-buttonbox-container {
+  order: 20;
 }
 
 /* Firefox's URL formatting already dims everything but the domain. */
@@ -252,6 +269,12 @@
 #userContext-icons.identity-color-pink { --nw-chip-color: #ff4bda; }
 #userContext-icons.identity-color-purple { --nw-chip-color: #af51f5; }
 #userContext-icons.identity-color-gray { --nw-chip-color: #9e9e9e; }
+
+/* Not while the tab uses its workspace's own container: every tab would
+   show the same chip (the sidebar sets the attribute). */
+:root[nw-tab-in-workspace-container] #userContext-icons {
+  display: none !important;
+}
 
 #userContext-label {
   margin: 0 !important;

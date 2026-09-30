@@ -15,6 +15,7 @@ import {
   SIDEBAR_PEEK_EVENT,
 } from "./sidebar-visibility.ts";
 import { createTabState } from "./tab-state.ts";
+import { flagWorkspaceContainer } from "./workspace-container-flag.ts";
 import { toggleSidebarDocked, watchSidebarDocking } from "./sidebar-docking.ts";
 import { registerCommands } from "../neoworks-commands/registry.ts";
 import { closeWorkspaceMenu } from "./workspace-switcher.tsx";
@@ -41,6 +42,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
     const stopWatchingWorkspaces = watchWorkspaces();
     const stopRoutingNewTabs = routeNewTabsToDefaultContainer();
     mountSidebar(browserBox, tabState);
+    flagWorkspaceContainer(tabState);
     mountContextMenus(popupSet, tabState);
     addEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
     const unregisterCommands = registerCommands([
