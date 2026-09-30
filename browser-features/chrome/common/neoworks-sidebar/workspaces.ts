@@ -3,7 +3,7 @@
 // Kit workspaces: named sets of tabs, each with a dedicated container that new
 // tabs open in. A tab belongs to the workspace it was opened in, whatever
 // container it uses; the membership is stored on the tab through SessionStore
-// so it survives restarts. Only the active workspace's tabs are shown,
+// so it survives restarts, and so does each window's active workspace. Only the active workspace's tabs are shown,
 // pinned tabs included: each workspace has its own pinned grid. Essentials
 // (essentials.ts) belong to every workspace.
 
@@ -27,6 +27,7 @@ import {
 
 const ACTIVE_WORKSPACE_PREF = "neoworks.workspaces.active";
 const TAB_WORKSPACE_KEY = "neoworksWorkspaceId";
+const WINDOW_WORKSPACE_KEY = "neoworksActiveWorkspace";
 const WORKSPACE_CONTAINER_ICON = "briefcase";
 // Floorp's own workspaces also hide tabs; Kit's replace them.
 const FLOORP_WORKSPACES_PREF = "floorp.workspaces.enabled";
@@ -34,6 +35,8 @@ const FLOORP_WORKSPACES_PREF = "floorp.workspaces.enabled";
 interface SessionStoreApi {
   getCustomTabValue(tab: BrowserTab, key: string): string;
   setCustomTabValue(tab: BrowserTab, key: string, value: string): void;
+  getCustomWindowValue(window: Window, key: string): string;
+  setCustomWindowValue(window: Window, key: string, value: string): void;
 }
 
 const browserWindow = window as unknown as {
@@ -53,9 +56,33 @@ export function workspaceById(id: string): Workspace | undefined {
   return workspaces().find((workspace) => workspace.id === id);
 }
 
+// SessionStore throws for a window it doesn't track yet, which is the case
+// while Kit starts up.
+function windowWorkspaceId(): string {
+  try {
+    return browserWindow.SessionStore.getCustomWindowValue(window, WINDOW_WORKSPACE_KEY);
+  } catch {
+    return "";
+  }
+}
+
+function saveWindowWorkspaceId(id: string): void {
+  try {
+    browserWindow.SessionStore.setCustomWindowValue(window, WINDOW_WORKSPACE_KEY, id);
+  } catch {
+    // Saved again on the next switch; the pref covers new windows meanwhile.
+  }
+}
+
+// The window's own workspace when SessionStore restored one; new windows
+// open in the one that was active last in any window.
 function readActiveWorkspaceId(): string {
-  const id = Services.prefs.getStringPref(ACTIVE_WORKSPACE_PREF, "");
-  if (workspaceById(id)) {
+  const candidates = [
+    windowWorkspaceId(),
+    Services.prefs.getStringPref(ACTIVE_WORKSPACE_PREF, ""),
+  ];
+  const id = candidates.find((candidate) => workspaceById(candidate));
+  if (id) {
     return id;
   }
   return workspaces()[0].id;
@@ -156,24 +183,20 @@ function openTabIn(workspace: Workspace): BrowserTab {
 }
 
 // Switching back returns to the tab that was selected when the workspace was
-// left.
-const lastSelectedTabs = new Map<string, BrowserTab>();
-
+// left: its most recently used one. SessionStore restores lastAccessed, so
+// this holds across restarts.
 function tabToSelectIn(workspace: Workspace): BrowserTab {
-  const remembered = lastSelectedTabs.get(workspace.id);
-  if (remembered && remembered.isConnected && workspaceIdOf(remembered) === workspace.id) {
-    return remembered;
-  }
   const tabs = workspaceTabs(workspace.id);
-  if (tabs.length > 0) {
-    return tabs[0];
+  if (tabs.length === 0) {
+    return openTabIn(workspace);
   }
-  return openTabIn(workspace);
+  return tabs.reduce((latest, tab) => tab.lastAccessed > latest.lastAccessed ? tab : latest);
 }
 
 function activate(workspace: Workspace): void {
   setActiveWorkspaceId(workspace.id);
   Services.prefs.setStringPref(ACTIVE_WORKSPACE_PREF, workspace.id);
+  saveWindowWorkspaceId(workspace.id);
   setDefaultContainerId(workspace.userContextId);
 }
 
@@ -183,7 +206,6 @@ export function switchWorkspace(workspaceId: string): void {
     return;
   }
   const browser = tabbrowser();
-  lastSelectedTabs.set(activeWorkspaceId(), browser.selectedTab);
   activate(target);
   // Select first: hideTab skips the selected tab.
   browser.selectedTab = tabToSelectIn(target);
@@ -345,6 +367,19 @@ function followSelectedTab(event?: TabSelectEvent): void {
   applyVisibility();
 }
 
+// Session restore brings back the window's workspace after Kit has started
+// with the last active one.
+function restoreWindowWorkspace(): void {
+  const id = windowWorkspaceId();
+  if (workspaceById(id)) {
+    switchWorkspace(id);
+  } else {
+    saveWindowWorkspaceId(activeWorkspaceId());
+  }
+  adoptUnassignedTabs();
+  applyVisibility();
+}
+
 function adoptUnassignedTabs(): void {
   for (const tab of tabbrowser().tabs) {
     if (!browserWindow.SessionStore.getCustomTabValue(tab, TAB_WORKSPACE_KEY)) {
@@ -376,6 +411,7 @@ export function watchWorkspaces(): () => void {
   tabContainer.addEventListener("TabSelect", followSelectedTab);
   // Restored tabs get their stored workspace after TabOpen.
   tabContainer.addEventListener("SSTabRestoring", applyVisibility);
+  globalThis.addEventListener("SSWindowRestored", restoreWindowWorkspace);
 
   adoptUnassignedTabs();
   activate(activeWorkspace());
@@ -387,5 +423,6 @@ export function watchWorkspaces(): () => void {
     tabContainer.removeEventListener("TabOpen", handleTabOpen);
     tabContainer.removeEventListener("TabSelect", followSelectedTab);
     tabContainer.removeEventListener("SSTabRestoring", applyVisibility);
+    globalThis.removeEventListener("SSWindowRestored", restoreWindowWorkspace);
   };
 }

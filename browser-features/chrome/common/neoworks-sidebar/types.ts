@@ -26,6 +26,8 @@ export interface BrowserTab extends Omit<XULElement, "linkedBrowser"> {
   muted: boolean;
   closing: boolean;
   userContextId: number;
+  // When the tab was last selected, in ms; Infinity while it is selected.
+  lastAccessed: number;
   // Index in gBrowser.tabs.
   index: number;
   group: BrowserTabGroup | null;
