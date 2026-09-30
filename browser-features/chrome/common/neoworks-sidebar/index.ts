@@ -7,9 +7,12 @@ import {
 } from "#features-chrome/utils/base.ts";
 import { closeContainerMenu } from "./container-bar.tsx";
 import { watchContainers } from "./containers.ts";
+import { closeLeftNewTabs } from "./empty-tabs.ts";
 import { watchEssentials } from "./essentials.ts";
 import { stopFolderEdit } from "./folder-editing.ts";
 import { mountContextMenus, mountSidebar } from "./mount.tsx";
+import { browseInPinnedTabs } from "./pinned-navigation.ts";
+import { watchRecentlyClosed } from "./recently-closed.ts";
 import {
   disposeSidebarVisibility,
   peekSidebar,
@@ -43,6 +46,9 @@ export default class NeoworksSidebar extends NoraComponentBase {
     const stopWatchingWorkspaces = watchWorkspaces();
     const stopWatchingEssentials = watchEssentials();
     const stopRoutingNewTabs = routeNewTabsToDefaultContainer();
+    const stopClosingNewTabs = closeLeftNewTabs();
+    const stopBrowsingInPinnedTabs = browseInPinnedTabs();
+    const stopWatchingClosedTabs = watchRecentlyClosed();
     mountSidebar(browserBox, tabState);
     flagWorkspaceContainer(tabState);
     mountContextMenus(popupSet, tabState);
@@ -62,6 +68,9 @@ export default class NeoworksSidebar extends NoraComponentBase {
       unregisterCommands();
       stopFolderEdit();
       closeWorkspaceMenu();
+      stopWatchingClosedTabs();
+      stopBrowsingInPinnedTabs();
+      stopClosingNewTabs();
       stopRoutingNewTabs();
       stopWatchingEssentials();
       stopWatchingWorkspaces();

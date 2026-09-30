@@ -6,6 +6,7 @@ import { SidebarDownloadsButton } from "../neoworks-downloads/sidebar-downloads-
 import { FolderRow } from "./folder-row.tsx";
 import { MediaControls } from "./media-controls.tsx";
 import { PinnedGrid } from "./pinned-grid.tsx";
+import { RecentlyClosedList } from "./recently-closed-list.tsx";
 import { SplitRow } from "./split-row.tsx";
 import { openSidebarContextMenu } from "./sidebar-context-menu.tsx";
 import { sidebarDocked, toggleSidebarDocked } from "./sidebar-docking.ts";
@@ -23,8 +24,8 @@ import {
   sidebarVisible,
 } from "./sidebar-visibility.ts";
 import { attributeFlag, TabRow } from "./tab-row.tsx";
+import { TabPreview } from "./tab-preview.tsx";
 import { WorkspaceSwitcher } from "./workspace-switcher.tsx";
-import { activeWorkspace } from "./workspaces.ts";
 import type {
   BrowserSplitView,
   BrowserTab,
@@ -35,6 +36,7 @@ import type {
 import glassStyle from "../neoworks-ui/glass.css?inline";
 import iconStyle from "../neoworks-ui/icons.css?inline";
 import sidebarStyle from "./sidebar.css?inline";
+import tabPreviewStyle from "./tab-preview.css?inline";
 
 function tabOfEntry(entry: SidebarEntry): BrowserTab | undefined {
   if (entry.kind === "tab") {
@@ -120,9 +122,10 @@ function dockToggleTitle(): string {
 export function Sidebar(props: { tabState: TabState }) {
   return (
     <div id="neoworks-sidebar-layer">
-      <style>{glassStyle + iconStyle + sidebarStyle}</style>
+      <style>{glassStyle + iconStyle + sidebarStyle + tabPreviewStyle}</style>
       <div class="nw-reveal-edge" onMouseEnter={handleSidebarEnter} />
       <SidebarPanel tabState={props.tabState} />
+      <TabPreview tabState={props.tabState} />
     </div>
   );
 }
@@ -136,7 +139,6 @@ function SidebarPanel(props: { tabState: TabState }) {
       onMouseLeave={handleSidebarLeave}
     >
       <div class="nw-header">
-        <span class="nw-workspace-name">{activeWorkspace().name}</span>
         <ContainerBar />
         <button
           type="button"
@@ -155,6 +157,7 @@ function SidebarPanel(props: { tabState: TabState }) {
         </For>
         <NewTabRow />
         <ListEndDropZone />
+        <RecentlyClosedList />
       </div>
 
       <MediaControls tabState={props.tabState} />

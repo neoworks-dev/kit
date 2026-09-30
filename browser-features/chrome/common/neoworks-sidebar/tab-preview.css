@@ -1,0 +1,67 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* The hover preview card, placed by tab-preview.tsx. It never takes the
+   pointer, so it can't steal hover from the row under it. */
+#neoworks-tab-preview {
+  position: absolute;
+  display: none;
+  flex-direction: column;
+  width: 280px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 1px var(--border), 0 12px 32px rgba(0, 0, 0, 0.5);
+  color: var(--text);
+  font-family: var(--font-sans);
+  pointer-events: none;
+}
+
+#neoworks-tab-preview[data-visible] {
+  display: flex;
+}
+
+.nw-tab-preview-thumbnail {
+  height: 140px;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-faint);
+}
+
+.nw-tab-preview-thumbnail[data-hidden] {
+  display: none;
+}
+
+.nw-tab-preview-thumbnail canvas {
+  display: block;
+  width: 280px;
+  height: 140px;
+}
+
+.nw-tab-preview-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px 9px;
+}
+
+.nw-tab-preview-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.nw-tab-preview-url {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.nw-tab-preview-host {
+  color: var(--text-dim);
+}
