@@ -1,21 +1,29 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
-/* Native XUL context menus in Kit's style: add class="nw-menu" to a
-   <menupopup>; its submenus follow. Firefox themes menus through the
-   --panel-* and --menuitem-* variables (toolkit menu.css / popup.css), so
-   most of this sets those. Colors are @neoworks-dev/ui's dark tokens, which
-   aren't scoped to the popup set. */
-menupopup.nw-menu,
-menupopup.nw-menu menupopup {
+/* Every native menu and panel in the browser window in Kit's style: context
+   menus, the app menu, the extensions and site information panels, and
+   Kit's own sidebar menus. Firefox themes them through the --panel-*,
+   --menuitem-* and --button-* variables (toolkit menu.css / popup.css,
+   browser panelUI-shared.css), so this mostly sets those. Colors are
+   @neoworks-dev/ui's dark tokens, which aren't scoped to popups. Loaded
+   globally by neoworks-toolbar. */
+menupopup,
+panel {
   color-scheme: dark;
   --panel-background-color: #1c1c1e;
   --panel-text-color: #fafafa;
   --panel-border-color: rgba(255, 255, 255, 0.1);
+  --panel-separator-color: rgba(255, 255, 255, 0.08);
+  --panel-box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --button-background-color-hover: rgba(255, 255, 255, 0.08);
+  --button-background-color-active: rgba(255, 255, 255, 0.13);
+  --panel-menuitem-border-radius: 6px;
+}
+
+menupopup {
   --panel-border-radius: 10px;
   --panel-padding: 4px;
   --panel-padding-block: 4px;
-  --panel-separator-color: rgba(255, 255, 255, 0.08);
-  --panel-box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   --menuitem-border-radius: 6px;
   --menuitem-padding-block: 6px;
   --menuitem-padding-inline: 10px;
@@ -23,26 +31,31 @@ menupopup.nw-menu menupopup {
   font: 13px "Geist", ui-sans-serif, system-ui, sans-serif;
 }
 
-menupopup.nw-menu :is(menu, menuitem) {
+panel {
+  --panel-border-radius: 12px;
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+}
+
+menupopup :is(menu, menuitem) {
   min-width: 180px;
 }
 
-menupopup.nw-menu :is(menu, menuitem)[_moz-menuactive]:not([disabled]) {
+menupopup :is(menu, menuitem)[_moz-menuactive]:not([disabled]) {
   background-color: rgba(255, 255, 255, 0.08);
   color: #fafafa;
 }
 
-menupopup.nw-menu :is(menu, menuitem)[disabled] {
+menupopup :is(menu, menuitem)[disabled] {
   color: rgba(255, 255, 255, 0.4);
 }
 
-menupopup.nw-menu menuseparator {
+menupopup > menuseparator {
   padding-block: 4px;
   padding-inline: 6px;
 }
 
 /* Destructive items (class="nw-menu-danger"), e.g. "Close tab". */
-menupopup.nw-menu menuitem.nw-menu-danger[_moz-menuactive]:not([disabled]) {
+menupopup menuitem.nw-menu-danger[_moz-menuactive]:not([disabled]) {
   background-color: rgba(239, 68, 68, 0.16);
   color: #ff8a80;
 }

@@ -28,7 +28,6 @@ export function SidebarContextMenu() {
   return (
     <xul:menupopup
       id={MENU_ID}
-      class="nw-menu"
       onPopupShowing={(event: Event) => {
         if (event.target === event.currentTarget) {
           setSidebarMenuOpen(MENU_ID, true);

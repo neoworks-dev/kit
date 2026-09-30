@@ -14,6 +14,7 @@ import { toggleWindowTransparency, watchWindowTransparency } from "./window-tran
 import frameStyle from "../neoworks-ui/frame.css?inline";
 import glassStyle from "../neoworks-ui/glass.css?inline";
 import iconStyle from "../neoworks-ui/icons.css?inline";
+import menuStyle from "../neoworks-ui/menu.css?inline";
 import toolbarStyle from "./toolbar.css?inline";
 
 function openPageActionsFromCommand(): void {
@@ -29,7 +30,7 @@ export default class NeoworksToolbar extends NoraComponentBase {
   init(): void {
     const style = document.createElement("style");
     style.id = "neoworks-toolbar-style";
-    style.textContent = frameStyle + glassStyle + iconStyle + toolbarStyle;
+    style.textContent = frameStyle + glassStyle + iconStyle + menuStyle + toolbarStyle;
     document.head.append(style);
     onCleanup(() => style.remove());
     onCleanup(watchWindowTransparency());
