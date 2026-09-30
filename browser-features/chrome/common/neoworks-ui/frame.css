@@ -9,18 +9,25 @@
    The id beats Firefox's `#main-window { background-color: windowframe
    !important }`. */
 :root#main-window {
-  /* Kit's chrome is dark-only. Firefox derives browser.theme.toolbar-theme
-     from the active theme at startup, so force the scheme here instead;
-     light-dark() and system colors in Firefox's own widgets follow it. */
-  color-scheme: dark !important;
-  /* --bg from @neoworks-dev/ui; the tokens aren't scoped to the root. */
-  background: #141416 !important;
+  /* --bg follows the active theme (glass.css). */
+  background: var(--bg) !important;
 }
 
-/* Dark enough that white text stays readable over bright wallpapers. The
-   alpha follows Kit's glass tint setting (neoworks-toolbar/glass-tint.ts). */
+/* An add-on theme's header image and additional backgrounds. Firefox paints
+   them on <body> or the toolbox, which Kit keeps transparent, so the frame
+   paints them instead; --toolbox-background-* already combine them
+   (browser-shared.css). */
+:root#main-window[lwtheme] {
+  background-image: var(--toolbox-background-image) !important;
+  background-repeat: var(--toolbox-background-repeat) !important;
+  background-position: var(--toolbox-background-position) !important;
+  background-size: var(--toolbox-background-size) !important;
+}
+
+/* Dark enough that text stays readable over bright wallpapers. The alpha
+   follows Kit's glass tint setting (neoworks-toolbar/glass-tint.ts). */
 :root#main-window[nw-window-transparent] {
-  background: rgba(22, 22, 26, var(--nw-window-tint, 0.6)) !important;
+  background-color: color-mix(in srgb, var(--nw-tint) calc(var(--nw-window-tint, 0.6) * 100%), transparent) !important;
 }
 
 /* Firefox paints its toolbox color on <body>, a lighter gray than --bg that

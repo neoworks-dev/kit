@@ -71,7 +71,8 @@ function createBrowser(userContextId: number): PreviewBrowser {
   browser.setAttribute("contextmenu", "contentAreaContextMenu");
   browser.setAttribute("autocompletepopup", "PopupAutoComplete");
   // A <browser>'s color-scheme sets its page's prefers-color-scheme. Kit's
-  // chrome is dark; tab browsers follow Firefox's website appearance setting.
+  // chrome follows the theme; tab browsers follow Firefox's website
+  // appearance setting.
   browser.style.colorScheme = getComputedStyle(tabbrowser().selectedBrowser).colorScheme;
   return browser;
 }

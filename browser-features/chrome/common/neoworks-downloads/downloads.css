@@ -124,7 +124,7 @@
 }
 
 #neoworks-downloads .nw-downloads-row[data-state="failed"] .nw-downloads-status {
-  color: #f87171;
+  color: var(--nw-danger);
 }
 
 #neoworks-downloads .nw-downloads-progress {
@@ -132,13 +132,13 @@
   margin-top: 2px;
   overflow: hidden;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.12);
+  background: color-mix(in srgb, var(--nw-ink) 12%, transparent);
 }
 
 #neoworks-downloads .nw-downloads-progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: #60a5fa;
+  background: var(--nw-info);
   transition: width 200ms linear;
 }
 

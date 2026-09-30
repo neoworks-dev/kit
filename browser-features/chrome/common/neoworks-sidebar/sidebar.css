@@ -45,7 +45,7 @@
   padding: 0 8px 8px 8px;
   overflow: hidden;
   background: var(--bg);
-  box-shadow: 1px 0 0 var(--border-faint), 8px 0 32px rgba(0, 0, 0, 0.45);
+  box-shadow: 1px 0 0 var(--border-faint), 8px 0 32px var(--nw-shadow);
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 12px;
@@ -62,7 +62,7 @@
 /* A see-through window (neoworks-ui/frame.css) shows the desktop behind the
    frame; the collapsed sidebar blurs the page instead. */
 :root[nw-window-transparent] #neoworks-sidebar {
-  background: rgba(22, 22, 26, 0.88);
+  background: color-mix(in srgb, var(--nw-tint) 88%, transparent);
   backdrop-filter: blur(30px) saturate(160%);
 }
 
@@ -152,7 +152,7 @@
   box-sizing: border-box;
   border: 1px solid transparent;
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--nw-ink) 6%, transparent);
   transition: background-color var(--dur-fast), border-color var(--dur-fast);
 }
 
@@ -225,7 +225,7 @@
 }
 
 #neoworks-sidebar .nw-essential-tile[data-selected] {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: color-mix(in srgb, var(--nw-ink) 18%, transparent);
   background: var(--glass-selected);
 }
 
@@ -266,7 +266,7 @@
 
 #neoworks-sidebar .nw-tab[data-selected] {
   background: var(--glass-selected);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 2px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.3));
 }
 
 /* The tab's container as a short bar on the row's left edge, like the pinned
@@ -400,7 +400,7 @@
 #neoworks-sidebar .nw-tab-ai {
   width: 14px;
   height: 14px;
-  color: #a78bfa;
+  color: var(--nw-ai);
   animation: nw-tab-ai-pulse 1.6s ease-in-out infinite;
 }
 
@@ -551,12 +551,12 @@
   padding: 4px;
   border: 1px solid var(--glass-divider);
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--nw-ink) 3%, transparent);
   transition: background-color var(--dur-fast);
 }
 
 #neoworks-sidebar .nw-media:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--nw-ink) 6%, transparent);
 }
 
 #neoworks-sidebar .nw-media-info {
@@ -659,8 +659,8 @@
 #neoworks-sidebar .nw-footer-button[data-downloading] {
   background-image: linear-gradient(
     90deg,
-    #60a5fa var(--nw-download-progress, 0%),
-    rgba(255, 255, 255, 0.16) var(--nw-download-progress, 0%)
+    var(--nw-info) var(--nw-download-progress, 0%),
+    color-mix(in srgb, var(--nw-ink) 16%, transparent) var(--nw-download-progress, 0%)
   );
   background-size: 16px 2px;
   background-position: center bottom 3px;
@@ -668,7 +668,7 @@
 }
 
 #neoworks-sidebar .nw-footer-button[data-attention] {
-  background-image: radial-gradient(circle, #60a5fa 3px, transparent 3.5px);
+  background-image: radial-gradient(circle, var(--nw-info) 3px, transparent 3.5px);
   background-size: 8px 8px;
   background-position: right 3px top 3px;
   background-repeat: no-repeat;
@@ -756,7 +756,7 @@
   padding: 4px;
   overflow-y: auto;
   border-radius: var(--radius-lg);
-  background-color: rgba(30, 30, 34, 0.85);
+  background-color: color-mix(in srgb, var(--bg-elevated) 85%, transparent);
 }
 
 /* The container menu hangs below the header instead. */
@@ -806,7 +806,7 @@
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   outline: none;
-  background: rgba(0, 0, 0, 0.25);
+  background: light-dark(rgba(255, 255, 255, 0.6), rgba(0, 0, 0, 0.25));
   color: var(--text);
   font: inherit;
 }
@@ -827,7 +827,7 @@
 }
 
 #neoworks-sidebar .nw-container-delete:hover {
-  color: #ff613d;
+  color: var(--nw-danger);
 }
 
 #neoworks-sidebar .nw-container-swatches {
@@ -845,7 +845,7 @@
 }
 
 #neoworks-sidebar .nw-container-swatch[data-selected] {
-  box-shadow: 0 0 0 2px rgba(22, 22, 26, 0.9), 0 0 0 3.5px var(--text);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nw-tint) 90%, transparent), 0 0 0 3.5px var(--text);
 }
 
 #neoworks-sidebar .nw-icon-picker {

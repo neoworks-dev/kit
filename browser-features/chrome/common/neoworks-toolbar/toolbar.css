@@ -39,12 +39,6 @@
   --toolbarbutton-hover-background: var(--glass-hover);
   --toolbarbutton-active-background: var(--glass-selected);
   --toolbarbutton-icon-fill: var(--text-muted);
-  --toolbar-field-background-color: rgba(255, 255, 255, 0.05);
-  --toolbar-field-border-color: var(--border-faint);
-  --toolbar-field-color: var(--text);
-  --toolbar-field-focus-background-color: var(--bg-elevated);
-  --toolbar-field-focus-border-color: var(--border-strong);
-  --toolbar-field-focus-color: var(--text);
 
   /* 48px puts the controls' center at y=24, level with the docked sidebar's
      header buttons (neoworks-sidebar/sidebar.css). */
@@ -53,6 +47,16 @@
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
+}
+
+/* An add-on theme brings its own URL field colors. */
+:root:not([lwtheme]) #navigator-toolbox #nav-bar {
+  --toolbar-field-background-color: color-mix(in srgb, var(--nw-ink) 5%, transparent);
+  --toolbar-field-border-color: var(--border-faint);
+  --toolbar-field-color: var(--text);
+  --toolbar-field-focus-background-color: var(--bg-elevated);
+  --toolbar-field-focus-border-color: var(--border-strong);
+  --toolbar-field-focus-color: var(--text);
 }
 
 #nav-bar-customization-target {
@@ -203,7 +207,7 @@
   position: fixed;
   inset: 0;
   z-index: 2147483647;
-  border: 2px solid #f59e0b;
+  border: 2px solid var(--nw-warning);
   pointer-events: none;
 }
 
@@ -221,7 +225,7 @@
   height: 6px;
   margin-inline: 17px -15px;
   border-radius: 50%;
-  background: #fbbf24;
+  background: var(--nw-warning);
   animation: nw-remote-control-pulse 1.2s ease-in-out infinite alternate;
 }
 
@@ -232,8 +236,8 @@
   height: 22px;
   padding: 0 9px 0 20px;
   border-radius: 11px;
-  background: rgba(245, 158, 11, 0.16);
-  color: #fbbf24;
+  background: color-mix(in srgb, var(--nw-warning) 16%, transparent);
+  color: var(--nw-warning);
   font: 600 11px/22px var(--font-sans);
   white-space: nowrap;
 }
@@ -404,8 +408,8 @@
 #neoworks-downloads-button[nw-downloading] {
   background-image: linear-gradient(
     90deg,
-    #60a5fa var(--nw-download-progress, 0%),
-    rgba(255, 255, 255, 0.16) var(--nw-download-progress, 0%)
+    var(--nw-info) var(--nw-download-progress, 0%),
+    color-mix(in srgb, var(--nw-ink) 16%, transparent) var(--nw-download-progress, 0%)
   ) !important;
   background-size: 16px 2px !important;
   background-position: center bottom 3px !important;
@@ -414,7 +418,7 @@
 
 /* A download finished while the panel was closed. */
 #neoworks-downloads-button[nw-attention]:not([nw-downloading]) {
-  background-image: radial-gradient(circle, #60a5fa 3px, transparent 3.5px) !important;
+  background-image: radial-gradient(circle, var(--nw-info) 3px, transparent 3.5px) !important;
   background-size: 8px 8px !important;
   background-position: right 3px top 3px !important;
   background-repeat: no-repeat !important;

@@ -145,7 +145,7 @@
 }
 
 #neoworks-ai .nw-ai-assistant a {
-  color: #93c5fd;
+  color: light-dark(#2563eb, #93c5fd);
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
@@ -185,15 +185,15 @@
 }
 
 #neoworks-ai .nw-ai-tool[data-status="in_progress"] .nw-ai-tool-dot {
-  background: #fbbf24;
+  background: var(--nw-warning);
 }
 
 #neoworks-ai .nw-ai-tool[data-status="completed"] .nw-ai-tool-dot {
-  background: #34d399;
+  background: var(--nw-success);
 }
 
 #neoworks-ai .nw-ai-tool[data-status="failed"] .nw-ai-tool-dot {
-  background: #f87171;
+  background: var(--nw-danger);
 }
 
 #neoworks-ai .nw-ai-permission {
@@ -238,14 +238,14 @@
 }
 
 #neoworks-ai .nw-ai-button-primary:hover {
-  background: #fff;
+  background: color-mix(in srgb, var(--text) 88%, var(--bg));
 }
 
 #neoworks-ai .nw-ai-error {
   padding: 8px 10px;
   border-radius: var(--radius-md);
-  background: rgba(248, 113, 113, 0.12);
-  color: #fca5a5;
+  background: color-mix(in srgb, var(--nw-danger) 12%, transparent);
+  color: light-dark(#b91c1c, #fca5a5);
   font-size: 12px;
   overflow-wrap: anywhere;
 }
@@ -401,7 +401,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface-raised);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 32px var(--nw-shadow);
   scrollbar-width: thin;
 }
 
