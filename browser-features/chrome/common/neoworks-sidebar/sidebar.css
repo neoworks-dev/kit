@@ -1,42 +1,15 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
-/* Floating: 8px inside the page pane, which is itself inset 8px from the
-   window (neoworks-ui/frame.css). */
-#neoworks-sidebar {
-  position: absolute;
-  top: 8px;
-  bottom: 16px;
-  left: 16px;
-  display: flex;
-  flex-direction: column;
-  width: 240px;
-  box-sizing: border-box;
-  overflow: hidden;
-  /* Matches the page pane (neoworks-ui/frame.css). */
-  border-radius: 12px;
-  color: var(--text);
-  font-family: var(--font-sans);
-  font-size: 12px;
-  user-select: none;
-  pointer-events: auto;
-  transform: translateX(calc(-100% - 24px));
-  transition: transform 220ms cubic-bezier(0.2, 0, 0, 1);
-}
-
-#neoworks-sidebar[data-visible] {
-  transform: none;
-}
-
-/* Overlay host: #browser is the content area below the top bar. */
-#browser {
-  position: relative;
-}
-
+/* The sidebar has one look in both modes: tabs straight on the window
+   frame. Docked, it takes a column left of the top bar and the page.
+   Collapsed, the page gets the full width and the sidebar slides in over it
+   from the window's left edge, on the frame color so it reads the same. */
 #neoworks-sidebar-layer {
-  position: absolute;
+  position: fixed;
   top: 0;
   bottom: 0;
   left: 0;
+  /* Above the top bar, which the header covers. */
   z-index: 10;
   pointer-events: none;
 }
@@ -48,6 +21,40 @@
   left: 0;
   width: 8px;
   pointer-events: auto;
+}
+
+/* 8px frame + 240px of tabs + the 8px gap to the page. */
+#neoworks-sidebar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: 256px;
+  box-sizing: border-box;
+  padding: 8px 8px 8px 8px;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: 1px 0 0 var(--border-faint), 8px 0 32px rgba(0, 0, 0, 0.45);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  user-select: none;
+  pointer-events: auto;
+  transform: translateX(calc(-100% - 40px));
+  transition: transform 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+#neoworks-sidebar[data-visible] {
+  transform: none;
+}
+
+/* A see-through window (neoworks-ui/frame.css) shows the desktop behind the
+   frame; the collapsed sidebar blurs the page instead. */
+:root[nw-window-transparent] #neoworks-sidebar {
+  background: rgba(22, 22, 26, 0.88);
+  backdrop-filter: blur(30px) saturate(160%);
 }
 
 /* The active workspace's name, the container chip, then the dock toggle,
@@ -83,15 +90,11 @@
   height: 16px;
 }
 
-/* Docked: a full-height panel left of the top bar and the page. The top bar
-   and #browser make room for it: 8px frame + 240px sidebar, and their own
-   8px gap follows. DOM fullscreen (video) gives the page the whole window. */
+/* Docked: the top bar and #browser make room: 8px frame + 240px sidebar,
+   and their own 8px gap follows. DOM fullscreen (video) gives the page the
+   whole window. */
 :root[nw-sidebar-docked]:not([inDOMFullscreen]) :is(#navigator-toolbox, #browser) {
   padding-inline-start: 248px !important;
-}
-
-:root[nw-sidebar-docked] #neoworks-sidebar-layer {
-  position: fixed;
 }
 
 :root[nw-sidebar-docked][inDOMFullscreen] #neoworks-sidebar-layer,
@@ -100,23 +103,12 @@
 }
 
 :root[nw-sidebar-docked] #neoworks-sidebar {
-  top: 8px;
-  bottom: 8px;
-  left: 8px;
+  width: 248px;
+  padding-right: 0;
+  background: none;
+  backdrop-filter: none;
   box-shadow: none;
   transition: none;
-}
-
-/* Docked, it has no surface of its own: tabs sit straight on the window
-   frame, like the top bar. */
-:root[nw-sidebar-docked] #neoworks-sidebar {
-  backdrop-filter: none;
-}
-
-:root[nw-sidebar-docked] #neoworks-sidebar::before,
-:root[nw-sidebar-docked] #neoworks-sidebar::after,
-:root[nw-sidebar-docked] #neoworks-sidebar .nw-glass-backdrop {
-  display: none;
 }
 
 /* The docked header takes the titlebar's place beside the top bar. */
@@ -142,7 +134,8 @@
 /* Essentials: up to nine large tiles, three per row. */
 #neoworks-sidebar .nw-essentials-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* minmax(0, …): plain 1fr grows with a wide favicon, so tiles differed. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   flex-shrink: 0;
   margin-bottom: 6px;
@@ -155,6 +148,7 @@
   align-items: center;
   justify-content: center;
   height: 44px;
+  min-width: 0;
   box-sizing: border-box;
   border: 1px solid transparent;
   border-radius: var(--radius-lg);
@@ -165,7 +159,10 @@
 #neoworks-sidebar .nw-essential-tile .nw-favicon,
 #neoworks-sidebar .nw-essential-tile .nw-favicon img {
   width: 20px;
+  min-width: 20px;
+  max-width: 20px;
   height: 20px;
+  object-fit: contain;
 }
 
 /* Pinned tabs: small favicon tiles in a row that wraps as pins grow. */
