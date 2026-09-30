@@ -23,6 +23,9 @@
   background: rgba(22, 22, 26, var(--nw-window-tint, 0.6)) !important;
 }
 
+/* Firefox paints its toolbox color on <body>, a lighter gray than --bg that
+   would cover the frame. */
+:root#main-window > body,
 #navigator-toolbox,
 #browser {
   background: transparent !important;
