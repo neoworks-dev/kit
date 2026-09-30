@@ -14,6 +14,7 @@ export interface BrowserTab extends Omit<XULElement, "linkedBrowser"> {
   pinned: boolean;
   selected: boolean;
   muted: boolean;
+  closing: boolean;
   userContextId: number;
   // Index in gBrowser.tabs.
   _tPos: number;
@@ -42,6 +43,7 @@ export interface NeoworksTabbrowser {
   selectedBrowser: SelectedBrowser;
   tabContainer: EventTarget & {
     advanceSelectedTab(direction: number, wrap: boolean): void;
+    _invalidateCachedVisibleTabs(): void;
   };
   addTrustedTab(
     url: string,
@@ -60,7 +62,7 @@ export interface NeoworksTabbrowser {
   ): BrowserTabGroup;
   ungroupTab(tab: BrowserTab): void;
   replaceTabWithWindow(tab: BrowserTab): void;
-  // No-ops for pinned tabs and, for hideTab, the selected tab.
+  // hideTab is a no-op for pinned and selected tabs.
   hideTab(tab: BrowserTab): void;
   showTab(tab: BrowserTab): void;
 }

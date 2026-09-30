@@ -3,8 +3,8 @@
 // Kit workspaces: named sets of tabs, each with a dedicated container that new
 // tabs open in. A tab belongs to the workspace it was opened in, whatever
 // container it uses; the membership is stored on the tab through SessionStore
-// so it survives restarts. Only the active workspace's tabs are shown. Pinned
-// tabs are shared across workspaces for now (#11).
+// so it survives restarts. Only the active workspace's tabs are shown,
+// pinned tabs included: each workspace has its own pinned grid.
 
 import { createSignal } from "solid-js";
 import {
@@ -94,22 +94,36 @@ function assignTab(tab: BrowserTab, workspaceId: string): void {
 }
 
 function workspaceTabs(workspaceId: string): BrowserTab[] {
-  return tabbrowser().tabs.filter(
-    (tab) => !tab.pinned && workspaceIdOf(tab) === workspaceId,
-  );
+  return tabbrowser().tabs.filter((tab) => workspaceIdOf(tab) === workspaceId);
+}
+
+// gBrowser.hideTab skips pinned tabs, so mirror what it does for them.
+// SessionStore restores hidden pinned tabs the same way.
+function hidePinnedTab(tab: BrowserTab): void {
+  if (tab.hidden || tab.selected || tab.closing) {
+    return;
+  }
+  tab.setAttribute("hidden", "true");
+  tabbrowser().tabContainer._invalidateCachedVisibleTabs();
+  tab.dispatchEvent(new Event("TabHide", { bubbles: true }));
+}
+
+function hideTab(tab: BrowserTab): void {
+  if (tab.pinned) {
+    hidePinnedTab(tab);
+    return;
+  }
+  tabbrowser().hideTab(tab);
 }
 
 function applyVisibility(): void {
   const browser = tabbrowser();
   for (const tab of browser.tabs) {
-    if (tab.pinned) {
-      continue;
-    }
     if (workspaceIdOf(tab) === activeWorkspaceId()) {
       browser.showTab(tab);
       continue;
     }
-    browser.hideTab(tab);
+    hideTab(tab);
   }
 }
 
@@ -258,7 +272,7 @@ function handleTabOpen(event: Event): void {
 }
 
 interface TabSelectEvent extends Event {
-  detail?: { previousTab?: BrowserTab & { closing?: boolean } };
+  detail?: { previousTab?: BrowserTab };
 }
 
 // Closing a workspace's last tab makes Firefox select a tab from another
@@ -266,7 +280,7 @@ interface TabSelectEvent extends Event {
 // workspace on a fresh tab instead.
 function leftByClosingLastTab(event: TabSelectEvent): boolean {
   const previousTab = event.detail?.previousTab;
-  if (!previousTab || !previousTab.closing || previousTab.pinned) {
+  if (!previousTab || !previousTab.closing) {
     return false;
   }
   return workspaceIdOf(previousTab) === activeWorkspaceId();
@@ -275,11 +289,7 @@ function leftByClosingLastTab(event: TabSelectEvent): boolean {
 // Selecting a hidden tab (e.g. from the spotlight) moves to its workspace.
 function followSelectedTab(event?: TabSelectEvent): void {
   const browser = tabbrowser();
-  const tab = browser.selectedTab;
-  if (tab.pinned) {
-    return;
-  }
-  const workspace = workspaceById(workspaceIdOf(tab));
+  const workspace = workspaceById(workspaceIdOf(browser.selectedTab));
   if (!workspace || workspace.id === activeWorkspaceId()) {
     return;
   }
