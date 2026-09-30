@@ -1,41 +1,91 @@
-import { useState } from "react";
-import { Background } from "./components/Background/index.tsx";
-import { BackgroundProvider } from "./contexts/BackgroundContext.tsx";
-import { ComponentsProvider } from "./contexts/ComponentsContext.tsx";
-import { Settings } from "./components/Settings/index.tsx";
-import { SettingsButton } from "./components/SettingsButton/index.tsx";
-import { DefaultLayout } from "./components/DefaultLayout.tsx";
-import { FirefoxNewTabLayout } from "./components/FirefoxNewTabLayout.tsx";
-import "./globals.css";
-import { useComponents } from "./contexts/ComponentsContext.tsx";
+// SPDX-License-Identifier: MPL-2.0
 
-function NewTabContent() {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const { components } = useComponents();
-
-  return (
-    <>
-      <Background />
-      <div className="relative w-full min-h-screen">
-        {components.firefoxLayout ? <FirefoxNewTabLayout /> : <DefaultLayout />}
-        <div className="fixed bottom-4 right-4">
-          <SettingsButton onClick={() => setIsSettingsOpen(true)} />
-          <Settings
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-          />
-        </div>
-      </div>
-    </>
-  );
-}
+import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
+import { AddWidget } from "./components/AddWidget.tsx";
+import { Button, Icon } from "./components/controls.tsx";
+import { WidgetFrame } from "./components/WidgetFrame.tsx";
+import { createLayout } from "./layout/createLayout.ts";
+import {
+  addWidget,
+  moveWidget,
+  removeWidget,
+  updateWidget,
+} from "./layout/store.ts";
+import { getWidget, listWidgets } from "./widgets/registry.ts";
 
 export default function App() {
+  const [editing, setEditing] = createSignal(false);
+  const { layout, update } = createLayout(editing);
+
+  createEffect(() => {
+    if (!editing()) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setEditing(false);
+    };
+    addEventListener("keydown", onKey);
+    onCleanup(() => removeEventListener("keydown", onKey));
+  });
+
   return (
-    <ComponentsProvider>
-      <BackgroundProvider>
-        <NewTabContent />
-      </BackgroundProvider>
-    </ComponentsProvider>
+    <main class="flex min-h-screen items-center justify-center px-6 py-16">
+      <div class="grid w-full max-w-3xl grid-cols-4 gap-x-4 gap-y-6">
+        {/* Keyed by id, so a widget keeps its state when its settings change. */}
+        <For each={layout().widgets.map((w) => w.id)}>
+          {(id, index) => {
+            const instance = () => layout().widgets.find((w) => w.id === id);
+            return (
+              <Show when={instance()}>
+                {(current) => (
+                  <WidgetFrame
+                    instance={current()}
+                    definition={getWidget(current().type)}
+                    editing={editing()}
+                    isFirst={index() === 0}
+                    isLast={index() === layout().widgets.length - 1}
+                    onChange={(patch) =>
+                      update((l) => updateWidget(l, id, patch))}
+                    onMove={(offset) => update((l) => moveWidget(l, id, offset))}
+                    onRemove={() => update((l) => removeWidget(l, id))}
+                  />
+                )}
+              </Show>
+            );
+          }}
+        </For>
+        <Show when={editing()}>
+          <AddWidget
+            definitions={listWidgets()}
+            onAdd={(definition) =>
+              update((l) =>
+                addWidget(l, definition.type, definition.defaultSize)
+              )}
+          />
+        </Show>
+        <Show when={!editing() && layout().widgets.length === 0}>
+          <p class="col-span-4 text-center text-sm text-dim">
+            Nothing here. Customize to add widgets.
+          </p>
+        </Show>
+      </div>
+      <div class="fixed right-4 bottom-4">
+        <Show
+          when={editing()}
+          fallback={
+            <Button
+              onClick={() => setEditing(true)}
+              class="border-transparent bg-transparent text-dim hover:text-default"
+            >
+              <Icon name="sliders" size={14} />
+              Customize
+            </Button>
+          }
+        >
+          <Button variant="primary" onClick={() => setEditing(false)}>
+            <Icon name="check" size={14} />
+            Done
+          </Button>
+        </Show>
+      </div>
+    </main>
   );
 }

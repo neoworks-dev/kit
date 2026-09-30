@@ -1,8 +1,8 @@
+import path from "node:path";
 import process from "node:process";
 import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react-swc";
-import tsconfigPaths from "vite-tsconfig-paths";
+import solid from "vite-plugin-solid";
 import { genJarmnPlugin } from "../../libs/vite-plugin-gen-jarmn/plugin.ts";
 import { disableCspInDevPlugin } from "../../libs/vite-plugin-disable-csp/plugin.ts";
 
@@ -16,15 +16,20 @@ export default defineConfig(({ command }) => {
     },
     plugins: [
       tailwindcss(),
-      react({
-        jsxImportSource: "react",
+      // See src/lib/renderer.ts for why this isn't Solid's DOM output.
+      solid({
+        solid: { generate: "universal", moduleName: "@newtab/renderer" },
       }),
-      tsconfigPaths(),
       genJarmnPlugin("content-newtab", "noraneko-newtab", "content"),
       disableCspInDevPlugin(command === "serve"),
     ],
-    optimizeDeps: {
-      include: ["react", "react-dom", "react/jsx-runtime"],
+    resolve: {
+      alias: {
+        "@newtab/renderer": path.resolve(
+          import.meta.dirname!,
+          "src/lib/renderer.ts",
+        ),
+      },
     },
     server: {
       hmr: {

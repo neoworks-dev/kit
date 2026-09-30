@@ -1,17 +1,10 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "@/globals.css";
-import App from "@/App.tsx";
-import { ThemeProvider } from "@/components/theme-provider.tsx";
-// i18n initialization: ensure initialized before rendering
-import { I18nProvider } from "@/lib/i18n/I18nProvider.tsx";
+// SPDX-License-Identifier: MPL-2.0
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <ThemeProvider>
-      <I18nProvider>
-        <App />
-      </I18nProvider>
-    </ThemeProvider>
-  </StrictMode>,
-);
+import { render } from "./lib/renderer.ts";
+import "./globals.css";
+import App from "./App.tsx";
+import { registerBuiltinWidgets } from "./widgets/builtin/index.ts";
+
+registerBuiltinWidgets();
+
+render(() => <App /> as Node, document.getElementById("root")!);

@@ -4,8 +4,7 @@
       "vite/client"
     ],
     "jsx": "react-jsx",
-    "jsxImportSource": "react",
-    "jsxImportSourceTypes": "@types/react",
+    "jsxImportSource": "solid-js",
     "lib": [
       "dom",
       "dom.asynciterable",
@@ -13,7 +12,6 @@
     ]
   },
   "imports": {
-    "@/": "./src/",
-    "@nora/ui-components": "../../libs/shared/ui-components/src/index.ts"
+    "@/": "./src/"
   }
 }
