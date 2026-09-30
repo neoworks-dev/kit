@@ -1,17 +1,25 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
 /* The sidebar has one look in both modes: tabs straight on the window
-   frame. Docked, it takes a column left of the top bar and the page.
-   Collapsed, the page gets the full width and the sidebar slides in over it
-   from the window's left edge, on the frame color so it reads the same. */
+   frame. Docked, it takes a full-height column left of the top bar and the
+   page. Collapsed, it lives below the top bar: the page gets the full width
+   and the sidebar slides in over its left side on hover, on the frame color
+   so it reads the same. */
+#browser {
+  position: relative;
+}
+
 #neoworks-sidebar-layer {
-  position: fixed;
+  position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
-  /* Above the top bar, which the header covers. */
   z-index: 10;
   pointer-events: none;
+}
+
+:root[nw-sidebar-docked] #neoworks-sidebar-layer {
+  position: fixed;
 }
 
 #neoworks-sidebar-layer .nw-reveal-edge {
@@ -23,7 +31,8 @@
   pointer-events: auto;
 }
 
-/* 8px frame + 240px of tabs + the 8px gap to the page. */
+/* 8px frame + 240px of tabs + the 8px gap to the page. Collapsed, the
+   header's top padding lines it up with the page's top edge. */
 #neoworks-sidebar {
   position: absolute;
   top: 0;
@@ -33,7 +42,7 @@
   flex-direction: column;
   width: 256px;
   box-sizing: border-box;
-  padding: 8px 8px 8px 8px;
+  padding: 0 8px 8px 8px;
   overflow: hidden;
   background: var(--bg);
   box-shadow: 1px 0 0 var(--border-faint), 8px 0 32px rgba(0, 0, 0, 0.45);
@@ -104,7 +113,7 @@
 
 :root[nw-sidebar-docked] #neoworks-sidebar {
   width: 248px;
-  padding-right: 0;
+  padding: 8px 0 8px 8px;
   background: none;
   backdrop-filter: none;
   box-shadow: none;
