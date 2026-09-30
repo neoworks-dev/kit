@@ -7,7 +7,6 @@ import { FolderContextMenu } from "./folder-context-menu.tsx";
 import { SidebarContextMenu } from "./sidebar-context-menu.tsx";
 import { Sidebar } from "./sidebar.tsx";
 import type { TabState } from "./types.ts";
-import menuStyle from "../neoworks-ui/menu.css?inline";
 
 // Inserted as the first child of #browser so it sits left of the tab panels.
 export function mountSidebar(browserBox: Element, tabState: TabState): void {
@@ -24,7 +23,6 @@ export function mountContextMenus(popupSet: Element, tabState: TabState): void {
   render(
     () => (
       <>
-        <style>{menuStyle}</style>
         <TabContextMenu tabState={tabState} />
         <FolderContextMenu tabState={tabState} />
         <SidebarContextMenu />
