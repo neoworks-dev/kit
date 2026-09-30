@@ -250,6 +250,12 @@
   overflow-wrap: anywhere;
 }
 
+#neoworks-ai .nw-ai-notice {
+  align-self: center;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
 #neoworks-ai .nw-ai-empty {
   display: flex;
   flex: 1;

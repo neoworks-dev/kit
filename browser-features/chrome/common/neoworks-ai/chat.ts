@@ -98,13 +98,21 @@ function addTool(id: string, title: string, status: ToolStatus): void {
   addItem({ kind: "tool", id, title: toolTitle, status: toolStatus });
 }
 
-// A `bidi` call shows as its command, e.g. "browsingContext.navigate".
+// Kit's browser tools show as what they do: a `bidi` call as its command
+// ("browsingContext.navigate"), a helper as its call ("helper: snapshot").
 function toolTitle(title: string | null | undefined, rawInput: unknown): string | undefined {
-  if (typeof rawInput === "object" && rawInput !== null && "method" in rawInput) {
-    const method = (rawInput as { method: unknown }).method;
-    if (typeof method === "string" && method) {
-      return method;
-    }
+  const input = typeof rawInput === "object" && rawInput !== null ? rawInput as Record<string, unknown> : {};
+  if (typeof input.method === "string" && input.method) {
+    return input.method;
+  }
+  if (title?.endsWith("helpers_source")) {
+    return "Read browser helpers";
+  }
+  if (title?.endsWith("helpers_edit")) {
+    return "Edit browser helpers";
+  }
+  if (typeof input.name === "string" && input.name) {
+    return `helper: ${input.name}`;
   }
   return title ?? undefined;
 }
@@ -311,6 +319,17 @@ export async function send(text: string): Promise<void> {
   } finally {
     endpoint?.release();
     setRunning(false);
+  }
+}
+
+// Puts the agent's helpers file (#53) back to the one Kit ships.
+export async function resetHelpers(): Promise<void> {
+  try {
+    await agentBrowser().resetAgentHelpers();
+    addItem({ kind: "notice", text: "Browser helpers reset to Kit's defaults." });
+  } catch (error) {
+    console.error("[neoworks-ai] Couldn't reset the helpers:", error);
+    addItem({ kind: "error", text: errorText(error) });
   }
 }
 
