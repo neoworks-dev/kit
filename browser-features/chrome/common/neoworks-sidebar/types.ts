@@ -33,11 +33,20 @@ export interface BrowserTab extends Omit<XULElement, "linkedBrowser"> {
   splitview: BrowserSplitView | null;
   linkedBrowser: {
     currentURI: { spec: string };
+    canGoBack: boolean;
+    canGoForward: boolean;
     // Null while the tab's browser isn't set up (e.g. an unloaded tab).
-    browsingContext: { mediaController: MediaController } | null;
+    browsingContext: {
+      mediaController: MediaController;
+      // Firefox's "app tab" flag for pinned tabs (pinned-navigation.ts).
+      isAppTab: boolean;
+    } | null;
   };
   toggleMuteAudio(): void;
 }
+
+// TabSelect's detail names the tab that was selected before.
+export type TabSelectEvent = CustomEvent<{ previousTab?: BrowserTab }>;
 
 export interface WindowActor {
   sendAsyncMessage(name: string, data?: unknown): void;
@@ -67,7 +76,10 @@ export interface NeoworksTabbrowser {
   ): BrowserTab;
   pinTab(tab: BrowserTab): void;
   unpinTab(tab: BrowserTab): void;
-  removeTab(tab: BrowserTab, options?: { animate?: boolean }): void;
+  removeTab(
+    tab: BrowserTab,
+    options?: { animate?: boolean; skipSessionStore?: boolean },
+  ): void;
   reloadTab(tab: BrowserTab): void;
   duplicateTab(tab: BrowserTab): BrowserTab;
   moveTabTo(tab: BrowserTab, options: { tabIndex: number }): void;
@@ -119,8 +131,32 @@ export interface TabState {
   dispose: () => void;
 }
 
+// A tab in SessionStore's list of recently closed tabs.
+export interface ClosedTab {
+  closedId: number;
+  title: string;
+  url: string;
+  image: string;
+}
+
 // The tab whose media the sidebar's player controls.
 export interface MediaSession {
   tab: BrowserTab;
   controller: MediaController;
+}
+
+// The row the hover preview card is shown for.
+export interface TabPreviewTarget {
+  tab: BrowserTab;
+  anchor: Element;
+}
+
+// Firefox's PageThumbs, as exposed on the browser window.
+export interface PageThumbs {
+  // Draws the visible part of the page into `canvas`; false if the page
+  // couldn't be captured (e.g. its browser went away).
+  captureTabPreviewThumbnail(
+    browser: BrowserTab["linkedBrowser"],
+    canvas: HTMLCanvasElement,
+  ): Promise<boolean>;
 }

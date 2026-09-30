@@ -23,6 +23,7 @@ import {
   startTabDrag,
 } from "./tab-drag.ts";
 import { attributeFlag, Favicon, tabIcon, tabReader, TabRow } from "./tab-row.tsx";
+import { hoverTab, unhoverTab } from "./tab-preview.ts";
 import type { BrowserTab, TabState } from "./types.ts";
 
 type Grid = typeof ESSENTIALS | typeof PINNED;
@@ -31,7 +32,6 @@ function Tile(props: { tab: BrowserTab; tabState: TabState; class: string }) {
   const tab = props.tab;
   const read = tabReader(props.tabState);
 
-  const label = read(() => tab.label || "New Tab");
   const favicon = read(() => tabIcon(tab));
   const selected = read(() => tab.selected);
   const busy = read(() => tab.hasAttribute("busy"));
@@ -41,7 +41,6 @@ function Tile(props: { tab: BrowserTab; tabState: TabState; class: string }) {
   return (
     <div
       class={props.class}
-      title={label()}
       draggable="true"
       data-selected={attributeFlag(selected())}
       data-unloaded={attributeFlag(unloaded())}
@@ -54,6 +53,8 @@ function Tile(props: { tab: BrowserTab; tabState: TabState; class: string }) {
       onDragLeave={() => leaveDrop(tab)}
       onDrop={(event: DragEvent) => dropOntoTab(event, tab)}
       onDragEnd={endDrag}
+      onMouseEnter={(event: MouseEvent) => hoverTab(tab, event.currentTarget as Element)}
+      onMouseLeave={unhoverTab}
     >
       <Favicon source={favicon()} busy={busy()} />
       <Show when={container()}>

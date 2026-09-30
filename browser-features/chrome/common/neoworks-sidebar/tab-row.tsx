@@ -20,6 +20,7 @@ import {
 } from "./tab-drag.ts";
 import { removeFromSplit } from "../neoworks-split/split-view.ts";
 import type { SplitTab } from "../neoworks-split/types.ts";
+import { hoverTab, unhoverTab } from "./tab-preview.ts";
 import type { BrowserTab, TabState } from "./types.ts";
 
 // solid-xul removes attributes set to undefined.
@@ -98,7 +99,6 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
   return (
     <div
       class="nw-tab"
-      title={label()}
       draggable="true"
       data-selected={attributeFlag(selected())}
       data-unloaded={attributeFlag(unloaded())}
@@ -111,6 +111,8 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
       onDragLeave={() => leaveDrop(tab)}
       onDrop={(event: DragEvent) => dropOntoTab(event, tab)}
       onDragEnd={endDrag}
+      onMouseEnter={(event: MouseEvent) => hoverTab(tab, event.currentTarget as Element)}
+      onMouseLeave={unhoverTab}
     >
       <Show when={container()}>
         {(color) => <span class="nw-tab-container" style={{ background: color() }} />}

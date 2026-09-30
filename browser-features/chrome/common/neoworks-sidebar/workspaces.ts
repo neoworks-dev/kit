@@ -92,6 +92,15 @@ function workspaceIdOf(tab: BrowserTab): string {
   return activeWorkspaceId();
 }
 
+// For closed tabs: SessionStore keeps a tab's custom values in its extData.
+export function isInActiveWorkspace(extData: Record<string, string> | undefined): boolean {
+  const stored = extData?.[TAB_WORKSPACE_KEY];
+  if (!stored || !workspaceById(stored)) {
+    return true;
+  }
+  return stored === activeWorkspaceId();
+}
+
 function assignTab(tab: BrowserTab, workspaceId: string): void {
   browserWindow.SessionStore.setCustomTabValue(tab, TAB_WORKSPACE_KEY, workspaceId);
 }

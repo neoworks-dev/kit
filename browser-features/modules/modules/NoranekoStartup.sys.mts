@@ -16,6 +16,38 @@ for (
   Services.prefs.lockPref(pref);
 }
 
+// Firefox opens a load into a pinned tab in a new tab when it would change
+// the tab's host (bookmarks, the search bar). Kit's pinned tabs and
+// Essentials browse like any other tab; neoworks-sidebar/pinned-navigation.ts
+// does the same for links clicked in the page.
+function browseInPinnedTabs(): void {
+  const { URILoadingHelper } = ChromeUtils.importESModule(
+    "resource:///modules/URILoadingHelper.sys.mjs",
+  ) as {
+    URILoadingHelper: {
+      openLinkIn(
+        window: Window,
+        url: string,
+        where: string,
+        params?: Record<string, unknown>,
+      ): unknown;
+    };
+  };
+  const openLinkIn = URILoadingHelper.openLinkIn;
+  URILoadingHelper.openLinkIn = function (window, url, where, params) {
+    return openLinkIn.call(this, window, url, where, {
+      ...params,
+      allowPinnedTabHostChange: true,
+    });
+  };
+}
+
+try {
+  browseInPinnedTabs();
+} catch (error) {
+  console.error("[NoranekoStartup] Couldn't let pinned tabs change host:", error);
+}
+
 /**
  * Get nsIComponentRegistrar from Components.manager via QueryInterface.
  * Components.manager needs explicit QI to access registerFactory.

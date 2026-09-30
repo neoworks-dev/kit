@@ -72,20 +72,11 @@
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   /* Docked, 8px sidebar inset + 2px + half the 28px buttons = y 24, the top
      bar's center line. */
   padding: 2px 4px 6px 16px;
-}
-
-#neoworks-sidebar .nw-workspace-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--text-dim);
-  font-weight: 500;
 }
 
 #neoworks-sidebar .nw-header .nw-icon-button {
@@ -405,6 +396,7 @@
   opacity: 1;
 }
 
+
 #neoworks-sidebar .nw-tab-audio {
   width: 22px;
   height: 22px;
@@ -475,6 +467,55 @@
 
 #neoworks-sidebar .nw-drop-end[data-drop-target] {
   box-shadow: inset 0 2px 0 var(--border-strong);
+}
+
+/* Recently closed (recently-closed-list.tsx), under the tab list. */
+#neoworks-sidebar .nw-recently-closed {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--glass-divider);
+}
+
+#neoworks-sidebar .nw-recently-closed-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-md);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: default;
+}
+
+#neoworks-sidebar .nw-recently-closed-header:hover {
+  color: var(--text);
+}
+
+#neoworks-sidebar .nw-recently-closed-caret {
+  width: 10px;
+  height: 10px;
+  transform: rotate(90deg);
+  transition: transform var(--dur-fast);
+}
+
+#neoworks-sidebar .nw-recently-closed[data-collapsed] .nw-recently-closed-caret {
+  transform: none;
+}
+
+#neoworks-sidebar .nw-closed-tab {
+  color: var(--text-dim);
+}
+
+#neoworks-sidebar .nw-closed-tab:hover {
+  color: var(--text);
+}
+
+#neoworks-sidebar .nw-closed-tab .nw-tab-label {
+  font-weight: 400;
 }
 
 #neoworks-sidebar .nw-group-tabs {
