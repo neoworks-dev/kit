@@ -72,7 +72,8 @@
   border-radius: inherit;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02) 40%),
-    rgba(22, 22, 26, 0.68);
+    /* --nw-glass-tint: Kit's glass tint setting (neoworks-toolbar/glass-tint.ts). */
+    rgba(22, 22, 26, var(--nw-glass-tint, 0.68));
   pointer-events: none;
 }
 

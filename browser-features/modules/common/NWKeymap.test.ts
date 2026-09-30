@@ -13,6 +13,7 @@ import {
   keyToken,
   type NWKeyBinding,
   NWKeyDispatcher,
+  summarizeBindings,
 } from "./NWKeymap.ts";
 
 function keyEvent(key: string, modifiers: Partial<KeyboardEvent> = {}): KeyboardEvent {
@@ -169,6 +170,23 @@ function testUnboundKeysPassThrough(): void {
   assert(!harness.press("q"), "unbound keys reach the page");
 }
 
+function summaryKeys(command: string): string {
+  const summary = summarizeBindings().find((entry) => entry.command === command);
+  if (!summary) {
+    return "";
+  }
+  return summary.keys.join(", ");
+}
+
+function testBindingSummary(): void {
+  assertEquals(summaryKeys("tab:next"), "J, g t", "all sequences of a command");
+  assertEquals(summaryKeys("quickmark:set"), "m a–z", "quickmark letters collapse");
+  assertEquals(summaryKeys("workspace:switch"), "g 1–9", "workspace numbers collapse");
+  assertEquals(summaryKeys("spotlight:open"), "o, Space Space", "named keys");
+  const commands = summarizeBindings().map((entry) => entry.command);
+  assertEquals(new Set(commands).size, commands.length, "one entry per command");
+}
+
 export async function runAllTests(): Promise<void> {
   const tests: TestCase[] = [
     { name: "keyToken normalizes keys and modifiers", fn: testKeyTokens },
@@ -183,6 +201,7 @@ export async function runAllTests(): Promise<void> {
     { name: "workspace sequences under g", fn: testWorkspaceSequences },
     { name: "binding letters", fn: testBindingLetters },
     { name: "unbound keys pass through", fn: testUnboundKeysPassThrough },
+    { name: "binding summary for the key reference", fn: testBindingSummary },
   ];
   await runTests("NWKeymap.test.ts", tests);
 }

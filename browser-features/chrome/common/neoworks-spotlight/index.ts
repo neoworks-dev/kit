@@ -19,7 +19,7 @@ export default class NeoworksSpotlight extends NoraComponentBase {
     mountSpotlight(document.body);
 
     const unregister = registerCommands([
-      { id: "spotlight:open", title: "Open Spotlight", listed: false, run: openSpotlight },
+      { id: "spotlight:open", listed: false, run: openSpotlight },
     ]);
     onCleanup(unregister);
   }

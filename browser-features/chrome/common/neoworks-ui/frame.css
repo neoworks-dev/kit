@@ -17,9 +17,10 @@
   background: #141416 !important;
 }
 
-/* Dark enough that white text stays readable over bright wallpapers. */
+/* Dark enough that white text stays readable over bright wallpapers. The
+   alpha follows Kit's glass tint setting (neoworks-toolbar/glass-tint.ts). */
 :root#main-window[nw-window-transparent] {
-  background: rgba(22, 22, 26, 0.6) !important;
+  background: rgba(22, 22, 26, var(--nw-window-tint, 0.6)) !important;
 }
 
 #navigator-toolbox,

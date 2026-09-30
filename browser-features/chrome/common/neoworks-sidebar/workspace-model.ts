@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // Browser-independent workspace logic, kept apart from workspaces.ts so it
-// can be tested without touching tabs or prefs.
+// can be tested without touching tabs or prefs. Kit's settings pane
+// (bridge/startup/src/kit-preferences) shares it.
 
 import type { Workspace } from "./types.ts";
+
+export const WORKSPACES_PREF = "neoworks.workspaces";
+
+// Used until the first workspace is created; keeps tabs without a container
+// (userContextId 0).
+export const DEFAULT_WORKSPACE: Workspace = {
+  id: "default",
+  name: "Default",
+  color: "blue",
+  userContextId: 0,
+};
 
 function isWorkspace(value: unknown): value is Workspace {
   if (typeof value !== "object" || value === null) {
@@ -29,6 +41,20 @@ export function parseWorkspaces(json: string, fallback: Workspace[]): Workspace[
     return fallback;
   }
   return stored;
+}
+
+// The list with one workspace opening new tabs in another container.
+export function withWorkspaceContainer(
+  workspaces: Workspace[],
+  workspaceId: string,
+  userContextId: number,
+): Workspace[] {
+  return workspaces.map((workspace) => {
+    if (workspace.id !== workspaceId) {
+      return workspace;
+    }
+    return { ...workspace, userContextId };
+  });
 }
 
 // Workspaces are numbered from 1 in list order, as in `g1`.

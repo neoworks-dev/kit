@@ -28,17 +28,17 @@ function runInSelectedPage(command: NWPageCommandId): void {
   }
 }
 
-function pageCommand(id: NWPageCommandId, title: string, listed: boolean): NeoworksCommand {
-  return { id, title, listed, run: () => runInSelectedPage(id) };
+function pageCommand(id: NWPageCommandId, listed: boolean): NeoworksCommand {
+  return { id, listed, run: () => runInSelectedPage(id) };
 }
 
 export const PAGE_COMMANDS: NeoworksCommand[] = [
-  pageCommand("page:scroll-down", "Scroll Down", false),
-  pageCommand("page:scroll-up", "Scroll Up", false),
-  pageCommand("page:scroll-half-page-down", "Scroll Half a Page Down", false),
-  pageCommand("page:scroll-half-page-up", "Scroll Half a Page Up", false),
-  pageCommand("page:scroll-top", "Scroll to Top", true),
-  pageCommand("page:scroll-bottom", "Scroll to Bottom", true),
-  pageCommand("hints:open", "Follow Link", true),
-  pageCommand("hints:open-background", "Open Link in Background Tab", true),
+  pageCommand("page:scroll-down", false),
+  pageCommand("page:scroll-up", false),
+  pageCommand("page:scroll-half-page-down", false),
+  pageCommand("page:scroll-half-page-up", false),
+  pageCommand("page:scroll-top", true),
+  pageCommand("page:scroll-bottom", true),
+  pageCommand("hints:open", true),
+  pageCommand("hints:open-background", true),
 ];

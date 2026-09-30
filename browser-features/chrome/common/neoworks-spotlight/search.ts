@@ -2,7 +2,11 @@
 
 import { bindingsForCommand, describeKeys } from "#features-modules/common/NWKeymap.ts";
 import { readQuickmarks } from "../neoworks-commands/quickmarks.ts";
-import { listedCommands, type NeoworksCommand } from "../neoworks-commands/registry.ts";
+import {
+  commandTitle,
+  listedCommands,
+  type NeoworksCommand,
+} from "../neoworks-commands/registry.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
 import { activeWorkspaceId, workspaces } from "../neoworks-sidebar/workspaces.ts";
 import { fuzzyScore, rankByScore } from "./fuzzy.ts";
@@ -104,7 +108,7 @@ function commandShortcut(command: NeoworksCommand): string {
 function commandResults(): SpotlightResult[] {
   return listedCommands().map((command) => ({
     kind: "command",
-    title: command.title,
+    title: commandTitle(command.id),
     subtitle: "",
     command: command.id,
     shortcut: commandShortcut(command),

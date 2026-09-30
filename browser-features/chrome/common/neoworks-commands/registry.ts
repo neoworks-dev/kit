@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import type { NWCommandId, NWCommandInvocation } from "#features-modules/common/NWKeymap.ts";
+import {
+  NW_COMMAND_TITLES,
+  type NWCommandId,
+  type NWCommandInvocation,
+} from "#features-modules/common/NWKeymap.ts";
 
+// Titles live in NW_COMMAND_TITLES, shared with the settings page.
 export interface NeoworksCommand {
   id: NWCommandId;
-  title: string;
   // Listed commands show up in the spotlight; the rest need an argument.
   listed: boolean;
   run(invocation: NWCommandInvocation): void;
@@ -44,9 +48,5 @@ export function listedCommands(): NeoworksCommand[] {
 }
 
 export function commandTitle(id: NWCommandId): string {
-  const command = commands.get(id);
-  if (!command) {
-    return id;
-  }
-  return command.title;
+  return NW_COMMAND_TITLES[id];
 }

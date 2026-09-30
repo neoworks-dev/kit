@@ -55,7 +55,6 @@ const JS_WINDOW_ACTORS: {
         "../actors/NRAboutPreferencesChild.sys.mts",
       ),
       events: {
-        DOMContentLoaded: {},
         DOMDocElementInserted: {},
       },
     },

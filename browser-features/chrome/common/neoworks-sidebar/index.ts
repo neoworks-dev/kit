@@ -44,27 +44,11 @@ export default class NeoworksSidebar extends NoraComponentBase {
     mountContextMenus(popupSet, tabState);
     addEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
     const unregisterCommands = registerCommands([
-      {
-        id: "sidebar:toggle-docked",
-        title: "Toggle Sidebar Docking",
-        listed: true,
-        run: toggleSidebarDocked,
-      },
-      {
-        id: "workspace:next",
-        title: "Next Workspace",
-        listed: true,
-        run: () => switchWorkspaceBy(1),
-      },
-      {
-        id: "workspace:previous",
-        title: "Previous Workspace",
-        listed: true,
-        run: () => switchWorkspaceBy(-1),
-      },
+      { id: "sidebar:toggle-docked", listed: true, run: toggleSidebarDocked },
+      { id: "workspace:next", listed: true, run: () => switchWorkspaceBy(1) },
+      { id: "workspace:previous", listed: true, run: () => switchWorkspaceBy(-1) },
       {
         id: "workspace:switch",
-        title: "Switch Workspace",
         listed: false,
         run: (invocation) => switchWorkspaceByNumber(invocation.letter),
       },

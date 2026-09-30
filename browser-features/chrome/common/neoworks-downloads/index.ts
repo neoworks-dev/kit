@@ -50,12 +50,7 @@ export default class NeoworksDownloads extends NoraComponentBase {
     createEffect(syncDownloadsButton);
 
     const unregister = registerCommands([
-      {
-        id: "downloads:open",
-        title: "Downloads",
-        listed: true,
-        run: toggleFromCommand,
-      },
+      { id: "downloads:open", listed: true, run: toggleFromCommand },
     ]);
     onCleanup(() => {
       unregister();

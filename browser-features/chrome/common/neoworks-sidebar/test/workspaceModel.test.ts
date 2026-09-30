@@ -7,7 +7,12 @@ import {
   type TestCase,
 } from "../../../test/utils/test_harness.ts";
 import type { Workspace } from "../types.ts";
-import { cycleIndex, parseWorkspaces, workspaceAtNumber } from "../workspace-model.ts";
+import {
+  cycleIndex,
+  parseWorkspaces,
+  withWorkspaceContainer,
+  workspaceAtNumber,
+} from "../workspace-model.ts";
 
 const FALLBACK: Workspace[] = [
   { id: "default", name: "Default", color: "blue", userContextId: 0 },
@@ -54,8 +59,20 @@ function testWorkspaceAtNumber(): void {
   assertEquals(workspaceAtNumber(list, "0"), undefined, "0 is not a workspace number");
 }
 
+function testWithWorkspaceContainer(): void {
+  const list: Workspace[] = [
+    FALLBACK[0],
+    { id: "work", name: "Work", color: "green", userContextId: 7 },
+  ];
+  const updated = withWorkspaceContainer(list, "work", 3);
+  assertEquals(updated[1].userContextId, 3, "the named workspace gets the container");
+  assertEquals(updated[0], list[0], "other workspaces stay untouched");
+  assertEquals(list[1].userContextId, 7, "the input list is not mutated");
+}
+
 export async function runAllTests(): Promise<void> {
   const tests: TestCase[] = [
+    { name: "withWorkspaceContainer changes one workspace", fn: testWithWorkspaceContainer },
     { name: "workspaceAtNumber counts from 1", fn: testWorkspaceAtNumber },
     { name: "valid list is parsed", fn: testValidListIsParsed },
     { name: "malformed JSON falls back", fn: testMalformedJsonFallsBack },

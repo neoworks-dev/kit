@@ -54,6 +54,41 @@ export type NWPageCommandId = (typeof NW_PAGE_COMMAND_IDS)[number];
 export type NWChromeCommandId = (typeof NW_CHROME_COMMAND_IDS)[number];
 export type NWCommandId = NWPageCommandId | NWChromeCommandId;
 
+// Shown in the spotlight, the which-key popup and the settings key list.
+export const NW_COMMAND_TITLES: Record<NWCommandId, string> = {
+  "page:scroll-down": "Scroll Down",
+  "page:scroll-up": "Scroll Up",
+  "page:scroll-half-page-down": "Scroll Half a Page Down",
+  "page:scroll-half-page-up": "Scroll Half a Page Up",
+  "page:scroll-top": "Scroll to Top",
+  "page:scroll-bottom": "Scroll to Bottom",
+  "hints:open": "Follow Link",
+  "hints:open-background": "Open Link in Background Tab",
+  "tab:new": "New Tab",
+  "tab:close": "Close Tab",
+  "tab:next": "Next Tab",
+  "tab:previous": "Previous Tab",
+  "tab:reload": "Reload Tab",
+  "tab:duplicate": "Duplicate Tab",
+  "tab:toggle-pin": "Pin / Unpin Tab",
+  "tab:reopen-closed": "Reopen Closed Tab",
+  "tab:move-up": "Move Tab Up",
+  "tab:move-down": "Move Tab Down",
+  "navigation:back": "Back",
+  "navigation:forward": "Forward",
+  "spotlight:open": "Open Spotlight",
+  "page-actions:open": "Page Actions",
+  "sidebar:toggle-docked": "Toggle Sidebar Docking",
+  "window:toggle-transparent": "Toggle Transparent Window",
+  "workspace:next": "Next Workspace",
+  "workspace:previous": "Previous Workspace",
+  "workspace:switch": "Switch Workspace",
+  "find:open": "Find in Page",
+  "downloads:open": "Downloads",
+  "quickmark:set": "Set Quickmark",
+  "quickmark:jump": "Jump to Quickmark",
+};
+
 export interface NWCommandInvocation {
   command: NWCommandId;
   // The key that picked the argument: a quickmark letter or a workspace number.
@@ -213,6 +248,56 @@ function bindingTimeout(binding: NWKeyBinding): number {
 
 export function describeKeys(keys: string[]): string {
   return keys.join(" ");
+}
+
+export interface NWBindingSummary {
+  command: NWCommandId;
+  // Every key sequence for the command, e.g. ["J", "g t"] or ["m a–z"].
+  keys: string[];
+}
+
+function argumentRange(
+  bindings: readonly NWKeyBinding[],
+  command: NWCommandId,
+  prefix: string,
+): string {
+  const letters = bindings
+    .filter((binding) =>
+      binding.command === command && binding.letter &&
+      describeKeys(binding.keys.slice(0, -1)) === prefix
+    )
+    .map((binding) => binding.letter);
+  return `${prefix} ${letters[0]}–${letters[letters.length - 1]}`;
+}
+
+function bindingDescription(
+  bindings: readonly NWKeyBinding[],
+  binding: NWKeyBinding,
+): string {
+  if (!binding.letter) {
+    return describeKeys(binding.keys);
+  }
+  return argumentRange(bindings, binding.command, describeKeys(binding.keys.slice(0, -1)));
+}
+
+// One entry per command in binding order, for a readable key reference.
+// Argument families collapse: "m a" … "m z" become "m a–z".
+export function summarizeBindings(
+  bindings: readonly NWKeyBinding[] = NW_KEY_BINDINGS,
+): NWBindingSummary[] {
+  const summaries = new Map<NWCommandId, NWBindingSummary>();
+  for (const binding of bindings) {
+    let summary = summaries.get(binding.command);
+    if (!summary) {
+      summary = { command: binding.command, keys: [] };
+      summaries.set(binding.command, summary);
+    }
+    const description = bindingDescription(bindings, binding);
+    if (!summary.keys.includes(description)) {
+      summary.keys.push(description);
+    }
+  }
+  return Array.from(summaries.values());
 }
 
 export function bindingsForCommand(command: NWCommandId): NWKeyBinding[] {

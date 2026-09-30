@@ -15,22 +15,19 @@ import {
 } from "./containers.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type { BrowserTab, Workspace } from "./types.ts";
-import { cycleIndex, parseWorkspaces, workspaceAtNumber } from "./workspace-model.ts";
+import {
+  cycleIndex,
+  DEFAULT_WORKSPACE,
+  parseWorkspaces,
+  workspaceAtNumber,
+  WORKSPACES_PREF,
+} from "./workspace-model.ts";
 
-const WORKSPACES_PREF = "neoworks.workspaces";
 const ACTIVE_WORKSPACE_PREF = "neoworks.workspaces.active";
 const TAB_WORKSPACE_KEY = "neoworksWorkspaceId";
 const WORKSPACE_CONTAINER_ICON = "briefcase";
 // Floorp's own workspaces also hide tabs; Kit's replace them.
 const FLOORP_WORKSPACES_PREF = "floorp.workspaces.enabled";
-
-// Used until the first workspace is created; keeps tabs without a container.
-const DEFAULT_WORKSPACE: Workspace = {
-  id: "default",
-  name: "Default",
-  color: "blue",
-  userContextId: NO_CONTAINER,
-};
 
 interface SessionStoreApi {
   getCustomTabValue(tab: BrowserTab, key: string): string;
@@ -310,13 +307,17 @@ function adoptUnassignedTabs(): void {
   }
 }
 
-// Other windows edit the same list; the active workspace stays per window.
+// Other windows and Kit's settings pane edit the same list; the active
+// workspace stays per window. The settings pane can change which container
+// the active workspace opens new tabs in.
 const workspacesObserver = {
   observe(): void {
     setWorkspaces(readWorkspaces());
     if (!workspaceById(activeWorkspaceId())) {
       switchWorkspace(workspaces()[0].id);
+      return;
     }
+    setDefaultContainerId(activeWorkspace().userContextId);
   },
 };
 

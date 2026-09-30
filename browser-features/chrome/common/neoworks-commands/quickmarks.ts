@@ -80,6 +80,6 @@ function jumpToLetter(invocation: NWCommandInvocation): void {
 }
 
 export const QUICKMARK_COMMANDS: NeoworksCommand[] = [
-  { id: "quickmark:set", title: "Set Quickmark", listed: false, run: setQuickmark },
-  { id: "quickmark:jump", title: "Jump to Quickmark", listed: false, run: jumpToLetter },
+  { id: "quickmark:set", listed: false, run: setQuickmark },
+  { id: "quickmark:jump", listed: false, run: jumpToLetter },
 ];
