@@ -3,6 +3,7 @@
 import { Show } from "solid-js";
 import { openTabContextMenu } from "./context-menu.tsx";
 import { foreignContainerColor } from "./identity-colors.ts";
+import { isNewTabPage } from "./new-tab-container.ts";
 import {
   closeOnMiddleClick,
   closeTab,
@@ -59,6 +60,16 @@ export function Favicon(props: { source: string; busy: boolean }) {
   );
 }
 
+// Kit's own new tab page has no favicon; it shows Kit's logo instead.
+const KIT_LOGO = "chrome://branding/content/icon32.png";
+
+export function tabIcon(tab: BrowserTab): string {
+  if (isNewTabPage(tab.linkedBrowser.currentURI?.spec ?? "")) {
+    return KIT_LOGO;
+  }
+  return tab.image;
+}
+
 function audioIcon(tab: BrowserTab): string {
   if (tab.muted) {
     return "speaker-slash";
@@ -71,7 +82,7 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
   const read = tabReader(props.tabState);
 
   const label = read(() => tab.label || "New Tab");
-  const favicon = read(() => tab.image);
+  const favicon = read(() => tabIcon(tab));
   const selected = read(() => tab.selected);
   const busy = read(() => tab.hasAttribute("busy"));
   const unloaded = read(() => tab.hasAttribute("pending"));

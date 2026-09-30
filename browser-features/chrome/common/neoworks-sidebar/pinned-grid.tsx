@@ -12,7 +12,7 @@ import {
   leaveDrop,
   startTabDrag,
 } from "./tab-drag.ts";
-import { attributeFlag, Favicon, tabReader } from "./tab-row.tsx";
+import { attributeFlag, Favicon, tabIcon, tabReader } from "./tab-row.tsx";
 import type { BrowserTab, TabState } from "./types.ts";
 
 function PinnedTile(props: { tab: BrowserTab; tabState: TabState }) {
@@ -20,7 +20,7 @@ function PinnedTile(props: { tab: BrowserTab; tabState: TabState }) {
   const read = tabReader(props.tabState);
 
   const label = read(() => tab.label || "New Tab");
-  const favicon = read(() => tab.image);
+  const favicon = read(() => tabIcon(tab));
   const selected = read(() => tab.selected);
   const busy = read(() => tab.hasAttribute("busy"));
   const unloaded = read(() => tab.hasAttribute("pending"));
