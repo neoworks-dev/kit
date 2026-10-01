@@ -1,0 +1,86 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* "This site" in the page actions menu (neoworks-toolbar). */
+#neoworks-page-actions .nw-site-style-heading {
+  display: block;
+  padding: 6px 10px 2px;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#neoworks-page-actions .nw-site-style-value {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+#neoworks-page-actions .nw-site-style-switch {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--glass-selected);
+  transition: background var(--dur-fast);
+}
+
+#neoworks-page-actions .nw-site-style-switch[data-checked] {
+  background: var(--text);
+}
+
+#neoworks-page-actions .nw-site-style-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  transition: transform var(--dur-fast);
+}
+
+#neoworks-page-actions .nw-site-style-switch[data-checked] .nw-site-style-switch-thumb {
+  transform: translateX(12px);
+  background: var(--bg);
+}
+
+#neoworks-page-actions .nw-site-style-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  background: var(--glass-hover);
+  color: var(--text);
+  font-size: 11px;
+}
+
+#neoworks-page-actions .nw-site-style-chip .nw-icon {
+  width: 10px;
+  height: 10px;
+  color: var(--text-dim);
+}
+
+#neoworks-page-actions .nw-site-style-css {
+  box-sizing: border-box;
+  width: calc(100% - 12px);
+  height: 140px;
+  margin: 2px 6px 6px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--glass-hover);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+#neoworks-page-actions .nw-site-style-css:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}

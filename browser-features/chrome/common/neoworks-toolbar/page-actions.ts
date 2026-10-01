@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import { siteOf } from "#features-modules/common/NWSiteSettings.ts";
 import type { PageActionsWindow, PageBrowser, PageState } from "./types.ts";
 
 const { TaskbarTabs } = ChromeUtils.importESModule(
@@ -56,6 +57,7 @@ export function readPageState(): PageState {
   return {
     url,
     host: hostOf(browser),
+    site: siteOf(browser.currentURI),
     secure: isSecure(browser),
     zoomPercent: zoomPercent(browser),
     readerAvailable: readerActive || browser.isArticle === true,

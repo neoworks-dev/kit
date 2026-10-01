@@ -2,6 +2,7 @@
 
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 import { createPageBackdrop } from "../neoworks-ui/page-backdrop.ts";
+import { SiteStyleSection } from "../neoworks-site-style/site-section.tsx";
 import {
   bookmarkPage,
   chromeWindow,
@@ -20,6 +21,7 @@ import type { PageState } from "./types.ts";
 import glassStyle from "../neoworks-ui/glass.css?inline";
 import iconStyle from "../neoworks-ui/icons.css?inline";
 import pageActionsStyle from "./page-actions.css?inline";
+import siteStyleStyle from "../neoworks-site-style/site-section.css?inline";
 
 const PANEL_ID = "neoworks-page-actions-panel";
 const BACKDROP_ID = "neoworks-page-actions-backdrop";
@@ -232,6 +234,15 @@ function PanelContent(props: { state: PageState }) {
     <>
       <ToolGrid state={props.state} />
       <ZoomRow state={props.state} />
+      <Show when={props.state.site}>
+        {(site) => (
+          <SiteStyleSection
+            site={site()}
+            zoomPercent={props.state.zoomPercent}
+            onZoomChange={refreshPageState}
+          />
+        )}
+      </Show>
       <Show when={props.state.host !== ""}>
         <SiteSection state={props.state} />
       </Show>
@@ -276,7 +287,7 @@ export function PageActionsMenu() {
         }
       }}
     >
-      <style>{glassStyle + iconStyle + pageActionsStyle}</style>
+      <style>{glassStyle + iconStyle + pageActionsStyle + siteStyleStyle}</style>
       <div
         id={PANEL_ID}
         class="nw-page-actions-panel nw-glass"

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 export interface PageBrowser {
-  currentURI: { spec: string; host: string };
+  currentURI: nsIURI;
   // Set by the AboutReader actor once Readability judged the page readable.
   isArticle?: boolean;
   securityUI: { state: number } | null;
@@ -35,6 +35,8 @@ export interface PageState {
   url: string;
   // Empty for pages without a host (about:, file:), which have no site data.
   host: string;
+  // The site (eTLD+1) for per-site settings; null outside http(s) pages.
+  site: string | null;
   secure: boolean;
   zoomPercent: number;
   readerAvailable: boolean;
