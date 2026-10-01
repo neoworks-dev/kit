@@ -134,6 +134,28 @@ function ApprovalRow(props: { item: Extract<ChatItem, { kind: "approval" }> }) {
   );
 }
 
+// One line; a click shows the whole title, the call's input and its result.
+function ToolRow(props: { item: Extract<ChatItem, { kind: "tool" }> }) {
+  const [open, setOpen] = createSignal(false);
+  return (
+    <div class="nw-ai-tool" data-status={props.item.status()} data-open={flag(open())}>
+      <button type="button" class="nw-ai-tool-header" onClick={() => setOpen(!open())}>
+        <span class="nw-ai-tool-dot" />
+        <span class="nw-ai-tool-title">{props.item.title()}</span>
+        <span class="nw-icon nw-ai-tool-chevron" data-icon="caret-right" />
+      </button>
+      <Show when={open()}>
+        <Show when={props.item.input()}>
+          <pre class="nw-ai-tool-detail">{props.item.input()}</pre>
+        </Show>
+        <Show when={props.item.output()}>
+          <pre class="nw-ai-tool-detail">{props.item.output()}</pre>
+        </Show>
+      </Show>
+    </div>
+  );
+}
+
 function ItemRow(props: { item: ChatItem }): JSX.Element {
   const item = props.item;
   switch (item.kind) {
@@ -148,12 +170,7 @@ function ItemRow(props: { item: ChatItem }): JSX.Element {
     case "thought":
       return <div class="nw-ai-thought">{item.text()}</div>;
     case "tool":
-      return (
-        <div class="nw-ai-tool" data-status={item.status()}>
-          <span class="nw-ai-tool-dot" />
-          <span class="nw-ai-tool-title">{item.title()}</span>
-        </div>
-      );
+      return <ToolRow item={item} />;
     case "permission":
       return <PermissionRow item={item} />;
     case "approval":

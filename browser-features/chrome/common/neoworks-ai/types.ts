@@ -25,7 +25,7 @@ export type ChatItem =
   | { kind: "user"; text: string }
   | { kind: "assistant"; text: () => string; append: (chunk: string) => void }
   | { kind: "thought"; text: () => string; append: (chunk: string) => void }
-  | { kind: "tool"; id: string; title: () => string; status: () => ToolStatus }
+  | { kind: "tool"; id: string; title: () => string; status: () => ToolStatus; input: () => string; output: () => string }
   | { kind: "permission"; request: RequestPermissionRequest; answer: (reply: PermissionReply) => void; answered: () => boolean }
   | { kind: "approval"; title: string; detail: string; answer: (allowed: boolean) => void; answered: () => boolean }
   | { kind: "error"; text: string }

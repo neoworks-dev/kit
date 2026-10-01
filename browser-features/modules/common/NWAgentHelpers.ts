@@ -62,6 +62,21 @@ function snapshot(limit = 200) {
   ].filter(Boolean).join("\\n");
 }
 
+// The text of the page, or of the first element matching \`selector\`, from
+// \`offset\` on: for reading articles, comments and results.
+function read(selector = "", offset = 0, length = 20000) {
+  const root = selector ? document.querySelector(selector) : document.querySelector("main, [role=main], article") ?? document.body;
+  if (!root) {
+    throw new Error("Nothing matches " + selector);
+  }
+  const text = root.innerText.replace(/\\n{3,}/g, "\\n\\n").trim();
+  const part = text.slice(offset, offset + length);
+  return offset + part.length < text.length
+    ? part + "\\n(" + (text.length - offset - part.length) + " more characters: read(" +
+      JSON.stringify(selector) + ", " + (offset + part.length) + "))"
+    : part;
+}
+
 // The middle of element \`index\` from the last snapshot, scrolled into view.
 function center(index) {
   const el = globalThis.kitElements?.[index];
