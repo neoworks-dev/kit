@@ -1,0 +1,86 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Bookmarks toolbar: on the window frame like the top bar, its items quiet
+   pills that light up on hover, folders with Phosphor icons. The inline
+   padding lines the first item up with the page's left edge. */
+#PersonalToolbar {
+  --toolbarbutton-hover-background: var(--glass-hover);
+  --toolbarbutton-active-background: var(--glass-selected);
+
+  min-height: 0 !important;
+  padding: 0 8px 6px !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  font-family: var(--font-sans);
+}
+
+#PersonalToolbar toolbarbutton {
+  align-items: center !important;
+  justify-content: center;
+  margin: 0 1px !important;
+  padding: 0 8px !important;
+  height: 26px;
+  border-radius: var(--radius-md) !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
+}
+
+#PersonalToolbar toolbarbutton:not([disabled]):is(:hover, [open]) {
+  background: var(--glass-hover) !important;
+  color: var(--text) !important;
+}
+
+#PersonalToolbar toolbarbutton:not([disabled]):hover:active {
+  background: var(--glass-selected) !important;
+}
+
+#PersonalToolbar .toolbarbutton-text {
+  margin: 0 !important;
+  font: 500 12px var(--font-sans) !important;
+}
+
+#PersonalToolbar .toolbarbutton-icon {
+  width: 14px !important;
+  height: 14px !important;
+  margin-inline-end: 6px !important;
+  padding: 0 !important;
+  border-radius: 3px;
+}
+
+/* Folders and Firefox's own buttons get Phosphor icons in the text color. */
+#PersonalToolbar :is(.bookmark-item[container], #PlacesChevron, #import-button) > .toolbarbutton-icon {
+  list-style-image: none !important;
+  background-color: currentColor !important;
+  mask-size: 14px;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+#PersonalToolbar .bookmark-item[container] > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-folder);
+}
+
+#PersonalToolbar .bookmark-item[container][open] > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-folder-open);
+}
+
+#PersonalToolbar #PlacesChevron > .toolbarbutton-icon {
+  margin-inline-end: 0 !important;
+  mask-image: var(--nw-icon-caret-double-right);
+}
+
+#PersonalToolbar #import-button > .toolbarbutton-icon {
+  mask-image: var(--nw-icon-download-simple);
+}
+
+/* The empty-toolbar hint and drop marker in Kit's colors. */
+#personal-toolbar-empty-description {
+  color: var(--text-dim) !important;
+  font: 12px var(--font-sans) !important;
+}
+
+#PlacesToolbarDropIndicator {
+  background: var(--text-muted) !important;
+}
