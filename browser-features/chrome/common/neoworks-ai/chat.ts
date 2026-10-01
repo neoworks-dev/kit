@@ -4,8 +4,8 @@
 // (NWHarness.sys.mts), keeps one session per chat and turns the session's ACP
 // updates into chat items.
 //
-// Sessions run with no system prompt, no built-in tools and none of the
-// harness's own config or extras. The agent's one tool is Kit's `bidi` MCP
+// Sessions run with Kit's own system prompt (system-prompt.ts), no built-in
+// tools and none of the harness's own config or extras. The agent's one tool is Kit's `bidi` MCP
 // endpoint (NWAgentBrowser.sys.mts), which asks the user itself when an action
 // needs it, so the harness doesn't ask again for each call.
 
@@ -31,6 +31,7 @@ import type {
   ModelInfo,
   ToolStatus,
 } from "./types.ts";
+import { SYSTEM_PROMPT } from "./system-prompt.ts";
 
 const HARNESS_PREF = "neoworks.ai.harness";
 const MODEL_PREF_PREFIX = "neoworks.ai.model.";
@@ -89,13 +90,46 @@ function appendText(kind: "assistant" | "thought", chunk: string): void {
   addItem(item);
 }
 
-const toolUpdaters = new Map<string, { setTitle(title: string): void; setStatus(status: ToolStatus): void }>();
+interface ToolUpdater {
+  setTitle(title: string): void;
+  setStatus(status: ToolStatus): void;
+  setInput(input: string): void;
+  setOutput(output: string): void;
+}
 
-function addTool(id: string, title: string, status: ToolStatus): void {
+const toolUpdaters = new Map<string, ToolUpdater>();
+
+function addTool(id: string, title: string, status: ToolStatus, input: string): void {
   const [toolTitle, setTitle] = createSignal(title);
   const [toolStatus, setStatus] = createSignal(status);
-  toolUpdaters.set(id, { setTitle, setStatus });
-  addItem({ kind: "tool", id, title: toolTitle, status: toolStatus });
+  const [toolInput, setInput] = createSignal(input);
+  const [toolOutput, setOutput] = createSignal("");
+  toolUpdaters.set(id, { setTitle, setStatus, setInput, setOutput });
+  addItem({ kind: "tool", id, title: toolTitle, status: toolStatus, input: toolInput, output: toolOutput });
+}
+
+// What the tool was called with, for the expanded row: the local model's
+// goal as it is, anything else as JSON.
+function toolInputText(rawInput: unknown): string {
+  if (typeof rawInput !== "object" || rawInput === null || Object.keys(rawInput).length === 0) {
+    return "";
+  }
+  const input = rawInput as Record<string, unknown>;
+  if (typeof input.goal === "string") {
+    return input.goal;
+  }
+  return JSON.stringify(input, null, 2);
+}
+
+// The text the tool returned; images are left out.
+function toolOutputText(content: unknown): string {
+  if (!Array.isArray(content)) {
+    return "";
+  }
+  return content.flatMap((entry: unknown) => {
+    const block = (entry as { content?: { type?: string; text?: unknown } }).content;
+    return block?.type === "text" && typeof block.text === "string" ? [block.text] : [];
+  }).join("\n\n");
 }
 
 // Kit's browser tools show as what they do: a `bidi` call as its command
@@ -110,6 +144,11 @@ function toolTitle(title: string | null | undefined, rawInput: unknown): string 
   }
   if (title?.endsWith("helpers_edit")) {
     return "Edit browser helpers";
+  }
+  if (title?.endsWith("autopilot") && typeof input.goal === "string") {
+    return typeof input.text === "string"
+      ? `Local model: type ${JSON.stringify(input.text)}, then ${input.goal}`
+      : `Local model: ${input.goal}`;
   }
   if (typeof input.name === "string" && input.name) {
     return `helper: ${input.name}`;
@@ -128,7 +167,12 @@ function handleUpdate(update: SessionUpdate): void {
       return;
     }
     case "tool_call":
-      addTool(update.toolCallId, toolTitle(update.title, update.rawInput) ?? "Tool", update.status ?? "pending");
+      addTool(
+        update.toolCallId,
+        toolTitle(update.title, update.rawInput) ?? "Tool",
+        update.status ?? "pending",
+        toolInputText(update.rawInput),
+      );
       return;
     case "tool_call_update": {
       const updater = toolUpdaters.get(update.toolCallId);
@@ -138,6 +182,14 @@ function handleUpdate(update: SessionUpdate): void {
       }
       if (update.status) {
         updater?.setStatus(update.status);
+      }
+      const input = toolInputText(update.rawInput);
+      if (input) {
+        updater?.setInput(input);
+      }
+      const output = toolOutputText(update.content);
+      if (output) {
+        updater?.setOutput(output);
       }
       return;
     }
@@ -286,7 +338,7 @@ async function currentSession(): Promise<HarnessSession> {
       headers: [{ name: "Authorization", value: `Bearer ${endpoint.token}` }],
     }],
     options: {
-      systemPrompt: { replace: "" },
+      systemPrompt: { replace: SYSTEM_PROMPT },
       tools: "none",
       isolation: "full",
       disable: "all",

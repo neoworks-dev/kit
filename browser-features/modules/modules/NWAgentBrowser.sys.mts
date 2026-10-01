@@ -2,7 +2,9 @@
 
 // The AI agent's hands: an MCP endpoint on 127.0.0.1 whose `bidi` tool sends
 // WebDriver BiDi commands to Kit through a filter (#52), and whose `helper`
-// tools run the agent-editable helpers.js through the same filter (#53).
+// tools run the agent-editable helpers.js through the same filter (#53). The
+// `autopilot` tool hands small tasks to the local decider model (#54,
+// NWDecider.sys.mts), which acts through the same filter too.
 //
 // BiDi runs in-process: Kit keeps one WebDriverSession of its own, without
 // the Remote Agent's WebSocket server or a remote debugging port. The MCP
@@ -39,6 +41,19 @@ import {
   inputSources,
   isHelperName,
 } from "../common/NWAgentHelpers.ts";
+import {
+  buildRequest,
+  type HistoryEntry,
+  LOCATE_NODE,
+  type PageSnapshot,
+  SELECT_OPTION,
+  SNAPSHOT_PAGE,
+  type SnapshotAction,
+} from "../common/NWDeciderRequest.ts";
+
+const { setTimeout, clearTimeout } = ChromeUtils.importESModule(
+  "resource://gre/modules/Timer.sys.mjs",
+) as { setTimeout: typeof globalThis.setTimeout; clearTimeout: typeof globalThis.clearTimeout };
 
 interface HttpRequest {
   method: string;
@@ -196,6 +211,57 @@ const HELPER_TOOLS: JsonObject[] = [
     },
   },
 ];
+
+const AUTOPILOT_TOOL: JsonObject = {
+  name: "autopilot",
+  description: [
+    "Hand a small, concrete task on the page that's already open in a tab to Kit's local decider model:",
+    "fast, free, and it runs on the user's machine. It only works inside that page: it clicks links and",
+    "buttons, picks dropdown options and scrolls, step by step, and it follows wherever those clicks lead.",
+    "It can't open a URL or another site, search the web, open or switch tabs, or go back.",
+    "So get the tab to the right page first (browsingContext.navigate), then describe what to do there,",
+    "e.g. \"open the comments of the top story\", not \"go to Hacker News and open the top story's comments\".",
+    "It can't come up with text: when a field needs some, it stops and names the field. Then call autopilot",
+    "again with the same goal and `text`, the exact value for that field; Kit types it and the local model",
+    "carries on. Don't type it yourself. It also stops when it thinks the task is done or blocked, or after",
+    "max_steps. Its report lists every step; check the page before you trust a DONE.",
+  ].join(" "),
+  inputSchema: {
+    type: "object",
+    properties: {
+      goal: {
+        type: "string",
+        description:
+          "What to do on the current page, with every detail it needs (names, dates, filters). Not which site to open.",
+      },
+      context: { type: "string", description: "The tab's context id. Leave it out for the tab the user is looking at." },
+      text: {
+        type: "string",
+        description: "Only after autopilot asked for text: the exact value for the field it named, from the goal.",
+      },
+      max_steps: { type: "number", description: "Most actions to take before handing back (default 12)." },
+    },
+    required: ["goal"],
+  },
+};
+
+const AUTOPILOT_STEPS = 12;
+// The page as the decider was trained on it: jev's browser viewport and
+// screenshots. The viewport also sets how much text and how many elements
+// a snapshot holds, so the tab is laid out at this size while autopilot runs.
+const DECIDER_VIEWPORT = { width: 1120, height: 780 };
+const DECIDER_SCREENSHOT = { type: "image/jpeg", quality: 0.72 };
+const SETTLE_MS = 700;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function decider(): typeof import("./NWDecider.sys.mts") {
+  return ChromeUtils.importESModule("resource://noraneko/modules/NWDecider.sys.mjs") as typeof import(
+    "./NWDecider.sys.mts"
+  );
+}
 
 async function readHelpers(): Promise<string> {
   try {
@@ -453,6 +519,11 @@ class Endpoint {
   readonly token: string;
   readonly options: AgentEndpointOptions;
   readonly controlled = new Map<TabElement, XULBrowserElement>();
+  // The decider's action history per tab and goal, so a second autopilot call
+  // (after the LLM typed something) continues where it stopped.
+  // Per tab and goal: the steps so far (the decider's history) and the field
+  // it's waiting for text for.
+  readonly autopilotRuns = new Map<string, { history: HistoryEntry[]; field: SnapshotAction | null }>();
 
   control(context: BrowsingContext): void {
     const found = tabOf(context);
@@ -558,10 +629,10 @@ class Endpoint {
       case "ping":
         return ok({});
       case "tools/list":
-        return ok({ tools: [BIDI_TOOL, ...HELPER_TOOLS] });
+        return ok({ tools: this.tools() });
       case "tools/call": {
         const name = String(params.name);
-        if (![BIDI_TOOL, ...HELPER_TOOLS].some((tool) => tool.name === name)) {
+        if (!this.tools().some((tool) => tool.name === name)) {
           return { jsonrpc: "2.0", id, error: { code: -32602, message: `Unknown tool: ${name}` } };
         }
         const args = isObject(params.arguments) ? params.arguments : {};
@@ -581,6 +652,8 @@ class Endpoint {
           return textResult(await readHelpers());
         case "helpers_edit":
           return await this.editHelpers(args);
+        case "autopilot":
+          return await this.autopilot(args);
         default: {
           const method = typeof args.method === "string" ? args.method : "";
           const params = isObject(args.params) ? { ...args.params } : {};
@@ -593,6 +666,222 @@ class Endpoint {
       }
       return textResult(errorText(error), true);
     }
+  }
+
+  // autopilot only shows up once a decider model is set.
+  tools(): JsonObject[] {
+    return decider().deciderModel() ? [BIDI_TOOL, ...HELPER_TOOLS, AUTOPILOT_TOOL] : [BIDI_TOOL, ...HELPER_TOOLS];
+  }
+
+  // A function from NWDeciderRequest.ts in the page, through the filter; its
+  // JSON result parsed.
+  async pageCall(context: string, functionDeclaration: string, args: Json[]): Promise<unknown> {
+    const { result } = await this.filtered("script.callFunction", {
+      functionDeclaration,
+      target: { context },
+      arguments: args.map((value) =>
+        typeof value === "number" ? { type: "number", value } : { type: "string", value: String(value) }
+      ),
+      awaitPromise: false,
+    });
+    if (!isObject(result) || result.type !== "success" || !isObject(result.result)) {
+      const details = isObject(result) && isObject(result.exceptionDetails) ? result.exceptionDetails.text : "";
+      throw new Error(`The page couldn't be read: ${String(details)}`);
+    }
+    return JSON.parse(String(result.result.value));
+  }
+
+  async snapshot(context: string): Promise<PageSnapshot> {
+    const page = await this.pageCall(context, SNAPSHOT_PAGE, []) as PageSnapshot | null;
+    if (!page) {
+      throw new Error("The page has no body yet.");
+    }
+    return page;
+  }
+
+  async screenshot(context: string): Promise<string> {
+    const { result } = await this.filtered("browsingContext.captureScreenshot", { context, format: DECIDER_SCREENSHOT });
+    if (!isObject(result) || typeof result.data !== "string") {
+      throw new Error("Kit couldn't take a screenshot.");
+    }
+    return result.data;
+  }
+
+  // Performs one decided action; false when its element is gone.
+  async act(context: string, operation: string, action: SnapshotAction, page: PageSnapshot): Promise<boolean> {
+    switch (operation) {
+      case "CLICK": {
+        const point = await this.pageCall(context, LOCATE_NODE, [action.node ?? 0]) as { x: number; y: number } | null;
+        if (!point) {
+          return false;
+        }
+        await this.filtered("input.performActions", { context, actions: inputSources({ kit: "click", ...point }) as Json[] });
+        return true;
+      }
+      case "SELECT":
+        return await this.pageCall(context, SELECT_OPTION, [action.node ?? 0, action.value ?? ""]) === true;
+      case "SCROLL_DOWN":
+      case "SCROLL_UP": {
+        const scroll = { kit: "scroll" as const, x: page.w / 2, y: page.h / 2, dx: 0, dy: action.delta ?? 560 };
+        await this.filtered("input.performActions", { context, actions: inputSources(scroll) as Json[] });
+        return true;
+      }
+      default:
+        // WAIT
+        await sleep(1000);
+        return true;
+    }
+  }
+
+  // jev's fill: click the field, select what's in it, type over it. False
+  // when the field is gone.
+  async fill(context: string, field: SnapshotAction, text: string): Promise<boolean> {
+    const point = await this.pageCall(context, LOCATE_NODE, [field.node ?? 0]) as { x: number; y: number } | null;
+    if (!point) {
+      return false;
+    }
+    const modifier = Services.appinfo.OS === "Darwin" ? "\uE03D" : "\uE009";
+    const selectAll = [
+      { type: "keyDown", value: modifier },
+      { type: "keyDown", value: "a" },
+      { type: "keyUp", value: "a" },
+      { type: "keyUp", value: modifier },
+    ];
+    const [typed] = inputSources({ kit: "type", text }) as { actions: object[] }[];
+    await this.filtered("input.performActions", { context, actions: inputSources({ kit: "click", ...point }) as Json[] });
+    await this.filtered("input.performActions", {
+      context,
+      actions: [{ type: "key", id: "kit-keyboard", actions: [...selectAll, ...typed.actions] }] as Json[],
+    });
+    return true;
+  }
+
+  // The decider's loop (jev agent.py): observe, decide, act on its top
+  // choice, until DONE, BLOCKED or the step budget. Text is the one thing it
+  // can't produce: it hands back for a field's value, and the next call types
+  // that in and carries on.
+  async autopilot(args: JsonObject): Promise<ToolResult> {
+    const goal = typeof args.goal === "string" ? args.goal.trim() : "";
+    if (!goal) {
+      throw new Error("Give autopilot a `goal`.");
+    }
+    const context = typeof args.context === "string" && args.context ? args.context : this.activeContext();
+    const maxSteps = typeof args.max_steps === "number" && args.max_steps > 0 ? Math.min(args.max_steps, 40) : AUTOPILOT_STEPS;
+    const text = typeof args.text === "string" ? args.text : null;
+    const key = `${context}\n${goal}`;
+    const state = this.autopilotRuns.get(key) ?? { history: [], field: null };
+    this.autopilotRuns.set(key, state);
+    if (text !== null && !state.field) {
+      throw new Error("Autopilot isn't waiting for text for this goal; call it without `text`.");
+    }
+    const steps: string[] = [];
+    await bidi().execute("browsingContext", "setViewport", { context, viewport: DECIDER_VIEWPORT, devicePixelRatio: 1 });
+    let run: { page: PageSnapshot; outcome: string | null };
+    try {
+      if (state.field && text !== null) {
+        await this.typeField(context, state, text, steps);
+      }
+      state.field = null;
+      run = await this.autopilotSteps(context, goal, maxSteps, state, steps);
+    } finally {
+      await bidi().execute("browsingContext", "setViewport", { context, viewport: null, devicePixelRatio: null })
+        .catch((error: unknown) => console.error("[NWAgentBrowser] Couldn't restore the viewport:", error));
+    }
+    return textResult([
+      run.outcome ?? `Stopped after ${maxSteps} steps; call again to continue.`,
+      "",
+      ...steps.map((line, i) => `${i + 1}. ${line}`),
+      "",
+      `Now on: ${run.page.title} (${run.page.url})`,
+    ].join("\n"));
+  }
+
+  // Types the text the LLM gave for the field autopilot asked about.
+  async typeField(
+    context: string,
+    state: { history: HistoryEntry[]; field: SnapshotAction | null },
+    text: string,
+    steps: string[],
+  ): Promise<void> {
+    const field = state.field;
+    if (!field) {
+      return;
+    }
+    const before = await this.snapshot(context);
+    if (!await this.fill(context, field, text)) {
+      steps.push(`type ${JSON.stringify(text)} into “${field.label}”: the field was gone`);
+      return;
+    }
+    await sleep(SETTLE_MS);
+    const changed = (await this.snapshot(context)).fingerprint !== before.fingerprint;
+    state.history.push({ action: field.label, kind: "fill", text, page_changed: changed });
+    steps.push(`type ${JSON.stringify(text)} into “${field.label}”`);
+  }
+
+  // The decide-and-act loop: the page it ended on, and why it stopped before
+  // the step budget.
+  async autopilotSteps(
+    context: string,
+    goal: string,
+    maxSteps: number,
+    state: { history: HistoryEntry[]; field: SnapshotAction | null },
+    steps: string[],
+  ): Promise<{ page: PageSnapshot; outcome: string | null }> {
+    const history = state.history;
+    let page = await this.snapshot(context);
+    let outcome: string | null = null;
+    for (let step = 0; step < maxSteps; step++) {
+      const { request, space } = buildRequest(page, goal, history);
+      const { answers, ms } = await decider().decide(request, await this.screenshot(context));
+      const operation = answers.operation;
+      const targetQuestion = `${operation.choice.toLowerCase()}_target`;
+      const target = answers[targetQuestion];
+      // Like jev, it acts on the top choice whatever the confidence.
+      const confidence = operation.confidence;
+      const action = target
+        ? space.targets[operation.choice]?.[target.choice]
+        : space.controls[operation.choice];
+      const label = action?.label ?? operation.choice;
+      const note = `${(confidence * 100).toFixed(0)}%` +
+        (target ? `, element ${(target.confidence * 100).toFixed(0)}%` : "") + `, ${ms} ms`;
+
+      if (operation.choice === "DONE" || operation.choice === "BLOCKED") {
+        steps.push(`${operation.choice} (${note})`);
+        outcome = operation.choice === "DONE"
+          ? "The decider thinks the task is done. Check the page."
+          : "The decider is blocked: nothing it can do makes progress.";
+        break;
+      }
+      if (!action) {
+        // A target outside the page's action space: observe and decide again.
+        steps.push(`${operation.choice.toLowerCase()}: no such element (${note})`);
+        page = await this.snapshot(context);
+        continue;
+      }
+      if (operation.choice === "TYPE_TEXT") {
+        state.field = action;
+        const now = action.current_value ?? action.value;
+        steps.push(`needs text for “${label}” (${note})`);
+        outcome = `The local model needs text for the field “${label}”${now ? ` (now ${JSON.stringify(now)})` : ""}. ` +
+          "Call autopilot again with the same goal and `text`: exactly what goes in that field. Kit types it and " +
+          "the local model carries on.";
+        break;
+      }
+
+      const acted = await this.act(context, operation.choice, action, page);
+      if (!acted) {
+        steps.push(`${operation.choice.toLowerCase()} “${label}”: the element was gone`);
+        page = await this.snapshot(context);
+        continue;
+      }
+      await sleep(operation.choice === "WAIT" ? 0 : SETTLE_MS);
+      const next = await this.snapshot(context);
+      const changed = next.fingerprint !== page.fingerprint;
+      history.push({ action: label, kind: action.kind, text: null, page_changed: changed });
+      steps.push(`${operation.choice.toLowerCase()} “${label}” (${note})${changed ? "" : ", no change"}`);
+      page = next;
+    }
+    return { page, outcome };
   }
 
   async editHelpers(args: JsonObject): Promise<ToolResult> {

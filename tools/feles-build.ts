@@ -4,6 +4,7 @@ import * as Initializer from "./src/initializer.ts";
 import * as Patcher from "./src/patcher.ts";
 import * as Pref from "../static/gecko/pref/pref.ts";
 import * as Branding from "../static/gecko/branding/branding.ts";
+import * as OnnxRuntime from "../static/gecko/onnxruntime/onnxruntime.ts";
 import * as Symlinker from "./src/symlinker.ts";
 import * as Update from "./src/update.ts";
 import * as Builder from "./src/builder.ts";
@@ -64,6 +65,7 @@ async function runDev(): Promise<void> {
   Patcher.run("apply");
   Pref.run();
   Branding.run();
+  await OnnxRuntime.run();
   Symlinker.run();
 
   const buildid2 = Update.generateUuidV7();
@@ -128,6 +130,7 @@ async function runStage(options: { marionette?: boolean } = {}): Promise<void> {
   Patcher.run("apply");
   Pref.run();
   Branding.run();
+  await OnnxRuntime.run();
   Symlinker.run();
 
   // Build production assets
@@ -188,6 +191,7 @@ async function runTest(): Promise<void> {
   Patcher.run("apply");
   Pref.run();
   Branding.run();
+  await OnnxRuntime.run();
   Symlinker.run();
 
   const buildid2 = Update.generateUuidV7();
