@@ -83,7 +83,12 @@ for size in 16 32 48 64 128; do
   mkdir -p "$ICONS/\${size}x\${size}/apps"
   cp "$KIT_DIR/icons/icon\${size}.png" "$ICONS/\${size}x\${size}/apps/kit.png"
 done
-sed "s|@KIT_DIR@|$KIT_DIR|g" "$KIT_DIR/kit.desktop.in" > "$APPS/kit.desktop"
+# Quoted only when needed: some launchers keep Exec's quotes literally.
+case "$KIT_DIR" in
+  *" "*) KIT_EXEC="\"$KIT_DIR/kit\"" ;;
+  *) KIT_EXEC="$KIT_DIR/kit" ;;
+esac
+sed "s|@KIT_EXEC@|$KIT_EXEC|g" "$KIT_DIR/kit.desktop.in" > "$APPS/kit.desktop"
 ln -sf "$KIT_DIR/kit" "$BIN/kit"
 update-desktop-database "$APPS" 2>/dev/null || true
 gtk-update-icon-cache -q "$ICONS" 2>/dev/null || true
@@ -106,7 +111,7 @@ Type=Application
 Name=Kit
 GenericName=Web Browser
 Comment=Browse the web
-Exec="@KIT_DIR@/kit" %u
+Exec=@KIT_EXEC@ %u
 Icon=kit
 Terminal=false
 StartupNotify=true
@@ -117,11 +122,11 @@ Actions=new-window;new-private-window;
 
 [Desktop Action new-window]
 Name=New Window
-Exec="@KIT_DIR@/kit" --new-window %u
+Exec=@KIT_EXEC@ --new-window %u
 
 [Desktop Action new-private-window]
 Name=New Private Window
-Exec="@KIT_DIR@/kit" --private-window %u
+Exec=@KIT_EXEC@ --private-window %u
 `;
 
 function architecture(): string {
