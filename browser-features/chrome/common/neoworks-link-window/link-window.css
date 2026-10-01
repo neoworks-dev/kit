@@ -1,0 +1,93 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Minimal windows (minimal-window.ts): no sidebar or top bar. The header
+   takes the top bar's place: the page's title and address, and the button
+   that moves it into the main window. */
+:root[nw-minimal-window] :is(#neoworks-sidebar-layer, #TabsToolbar, #nav-bar, #PersonalToolbar) {
+  display: none !important;
+}
+
+/* Outranks the docked sidebar's room-making rule (neoworks-sidebar). */
+:root[nw-minimal-window][nw-sidebar-docked]:not([inDOMFullscreen]) :is(#navigator-toolbox, #browser) {
+  padding-inline-start: 0 !important;
+}
+
+#neoworks-link-window-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 8px 0 16px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  -moz-window-dragging: drag;
+}
+
+#neoworks-link-window-header .nw-link-window-titles {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#neoworks-link-window-header :is(.nw-link-window-title, .nw-link-window-url) {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#neoworks-link-window-header .nw-link-window-title {
+  font-weight: 500;
+}
+
+#neoworks-link-window-header .nw-link-window-url {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+#neoworks-link-window-header .nw-link-window-close {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-dim);
+  -moz-window-dragging: no-drag;
+}
+
+#neoworks-link-window-header .nw-link-window-close:hover {
+  background: var(--glass-hover);
+  color: var(--text);
+}
+
+#neoworks-link-window-header .nw-link-window-open {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  margin: 0;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--glass-hover);
+  color: var(--text);
+  font: inherit;
+  -moz-window-dragging: no-drag;
+}
+
+#neoworks-link-window-header .nw-link-window-open:hover {
+  background: var(--glass-selected);
+}
+
+#neoworks-link-window-header .nw-icon {
+  width: 14px;
+  height: 14px;
+}
