@@ -14,7 +14,8 @@
 // needs: scripts in the page's own realm, trusted input dispatched in the
 // page's process, navigation that waits for the new document, and console
 // and network events. Screenshots are WindowGlobalParent.drawSnapshot, as
-// Firefox's own CDP took them, scaled down to a width an agent can use.
+// Firefox's own CDP took them, at CSS pixels so a point in the picture is
+// the same point for Input.*.
 //
 // Firefox shipped a CDP implementation until Firefox 129 (remote/cdp/); the
 // mapping of RemoteObjects, input and screenshots follows it. It ran on its
@@ -48,11 +49,6 @@ export class CdpError extends Error {
 
 export type CdpTarget = XULBrowserElement;
 export type CdpListener = (event: CdpEventMessage) => void;
-
-export interface CdpEngineOptions {
-  // Screenshots wider than this many pixels are scaled down to it.
-  maxScreenshotWidth?: number;
-}
 
 export interface CdpEngine {
   // One CDP command for the tab; rejects with a CdpError.
@@ -93,7 +89,6 @@ const { keyData } = ChromeUtils.importESModule(
   "chrome://remote/content/shared/webdriver/KeyData.sys.mjs",
 ) as { keyData: { getData(key: string): { key: string; code?: string; printable: boolean } } };
 
-const DEFAULT_MAX_SCREENSHOT_WIDTH = 1280;
 const SCREENSHOT_FORMATS = new Set(["png", "jpeg", "webp"]);
 const PROTOCOL_EVENT = "message-handler-protocol-event";
 
@@ -189,15 +184,10 @@ function bidi(): BidiSession {
 }
 
 class Engine implements CdpEngine {
-  readonly #maxScreenshotWidth: number;
   #listening = false;
   // Per target: who listens, and the BiDi subscription that feeds them.
   readonly #listeners = new Map<CdpTarget, { listeners: Set<CdpListener>; subscription: Promise<string | null> }>();
   #exceptionCounter = 0;
-
-  constructor(options: CdpEngineOptions) {
-    this.#maxScreenshotWidth = options.maxScreenshotWidth ?? DEFAULT_MAX_SCREENSHOT_WIDTH;
-  }
 
   // The shared session, with this engine listening to its events.
   #bidi(): BidiSession {
@@ -332,8 +322,8 @@ class Engine implements CdpEngine {
   }
 
   // Page.captureScreenshot {format, quality, clip} → {data}, base64. The
-  // visible viewport unless clipped; at the screen's pixel ratio, but never
-  // wider than maxScreenshotWidth.
+  // visible viewport unless clipped, one image pixel per CSS pixel (times
+  // clip.scale), whatever the screen's pixel ratio or the tab's zoom.
   async #screenshot(target: CdpTarget, params: JsonObject): Promise<JsonObject> {
     const format = typeof params.format === "string" ? params.format : "png";
     if (!SCREENSHOT_FORMATS.has(format)) {
@@ -347,10 +337,8 @@ class Engine implements CdpEngine {
     if (!global || !document || !view) {
       throw new CdpError(CDP_SERVER_ERROR, "The page isn't showing.");
     }
-    const zoom = (target as XULBrowserElement & { fullZoom?: number }).fullZoom ?? 1;
-    let scale = view.devicePixelRatio * zoom;
+    let scale = 1;
     let rect: DOMRect | null = null;
-    let width = target.clientWidth / zoom;
     const clip = params.clip;
     if (clip && typeof clip === "object" && !Array.isArray(clip)) {
       const { x, y, width: clipWidth, height: clipHeight } = clip;
@@ -358,13 +346,9 @@ class Engine implements CdpEngine {
         throw new CdpError(CDP_INVALID_PARAMS, "clip: x, y, width and height expected");
       }
       rect = new view.DOMRect(x, y, clipWidth, clipHeight);
-      width = clipWidth;
       if (typeof clip.scale === "number" && clip.scale > 0) {
         scale *= clip.scale;
       }
-    }
-    if (width > 0) {
-      scale = Math.min(scale, this.#maxScreenshotWidth / width);
     }
     const bitmap = await global.drawSnapshot(rect, scale, "rgb(255,255,255)");
     const canvas = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas") as HTMLCanvasElement;
@@ -448,6 +432,6 @@ class Engine implements CdpEngine {
   }
 }
 
-export function createCdpEngine(options: CdpEngineOptions = {}): CdpEngine {
-  return new Engine(options);
+export function createCdpEngine(): CdpEngine {
+  return new Engine();
 }
