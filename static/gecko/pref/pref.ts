@@ -125,10 +125,39 @@ export function applyPrefs(dir: string = binDir()): void {
       throw new Error("Preference override failed");
     }
 
+    dropOverriddenBrandingPrefs(dir, overrideIniPath);
     logger.success("Preferences override applied successfully");
   } catch (error) {
     logger.error(`Failed to apply preferences override: ${error}`);
     throw error;
+  }
+}
+
+// The override script writes firefox.js only, but the runtime's branding sets
+// some of the same prefs (Floorp's first-run URLs) in firefox-branding.js,
+// which may load after it. Its copies of overridden prefs are removed.
+function dropOverriddenBrandingPrefs(dir: string, overrideIniPath: string): void {
+  const brandingJsPath = path.join(
+    dir,
+    "browser",
+    "defaults",
+    "preferences",
+    "firefox-branding.js",
+  );
+  if (!exists(brandingJsPath)) return;
+
+  const names = new Set<string>();
+  for (const line of Deno.readTextFileSync(overrideIniPath).split("\n")) {
+    const match = line.match(/^\s*@?([^#=\s][^=]*?)\s*=/);
+    if (match) names.add(match[1]);
+  }
+  const lines = Deno.readTextFileSync(brandingJsPath).split("\n");
+  const kept = lines.filter((line) => {
+    const match = line.match(/^\s*(?:pref|lockPref)\("([^"]+)"/);
+    return !match || !names.has(match[1]);
+  });
+  if (kept.length !== lines.length) {
+    Deno.writeTextFileSync(brandingJsPath, kept.join("\n"));
   }
 }
 
