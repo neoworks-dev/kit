@@ -343,8 +343,11 @@ export function bindingsStartingWith(typedKeys: string[]): NWKeyBinding[] {
 }
 
 // Pure sequence state: which keys are typed so far and what they complete.
+// Each key must follow the previous one within its binding's timeout, so a
+// short one (double Space) can't complete late under a longer one's wait.
 export class NWKeySequenceMatcher {
   private typed: string[] = [];
+  private lastKeyAt = 0;
 
   constructor(private readonly bindings: readonly NWKeyBinding[] = NW_KEY_BINDINGS) {}
 
@@ -360,8 +363,8 @@ export class NWKeySequenceMatcher {
     this.typed = [];
   }
 
-  continues(token: string): boolean {
-    return this.candidates([...this.typed, token]).length > 0;
+  continues(token: string, now = 0): boolean {
+    return this.timelyCandidates([...this.typed, token], now - this.lastKeyAt).length > 0;
   }
 
   // The slowest candidate wins: a short double-Space timeout must not cut
@@ -371,22 +374,29 @@ export class NWKeySequenceMatcher {
     return Math.max(0, ...timeouts);
   }
 
-  handle(token: string): NWKeyResult {
+  // `now` in ms; any clock works as long as it only moves forward.
+  handle(token: string, now = 0): NWKeyResult {
+    const sinceLastKey = now - this.lastKeyAt;
+    this.lastKeyAt = now;
     if (this.typed.length > 0) {
-      const continued = this.resolve([...this.typed, token]);
+      const continued = this.resolve([...this.typed, token], sinceLastKey);
       if (continued.kind !== "none") {
         return continued;
       }
     }
-    return this.resolve([token]);
+    return this.resolve([token], 0);
   }
 
   private candidates(sequence: string[]): NWKeyBinding[] {
     return this.bindings.filter((binding) => startsWithSequence(binding.keys, sequence));
   }
 
-  private resolve(sequence: string[]): NWKeyResult {
-    const candidates = this.candidates(sequence);
+  private timelyCandidates(sequence: string[], sinceLastKey: number): NWKeyBinding[] {
+    return this.candidates(sequence).filter((binding) => sinceLastKey <= bindingTimeout(binding));
+  }
+
+  private resolve(sequence: string[], sinceLastKey: number): NWKeyResult {
+    const candidates = this.timelyCandidates(sequence, sinceLastKey);
     if (candidates.length === 0) {
       this.typed = [];
       return { kind: "none" };
@@ -409,6 +419,8 @@ export interface NWKeyDispatcherHost {
   prefixAbandoned(typedKeys: string[]): void;
   // Returns a function that cancels the timer.
   startTimer(callback: () => void, delayMs: number): () => void;
+  // Current time in ms; defaults to Date.now.
+  now?(): number;
 }
 
 // Event-level driver around the matcher: consumption, key repeat, pending
@@ -426,7 +438,7 @@ export class NWKeyDispatcher {
     }
     this.abandonIfNotContinued(token);
     const wasPending = this.matcher.isPending();
-    const result = this.matcher.handle(token);
+    const result = this.matcher.handle(token, this.now());
     if (result.kind === "match") {
       if (wasPending) {
         this.host.pendingChanged([]);
@@ -455,7 +467,7 @@ export class NWKeyDispatcher {
   // Held keys repeat single-key motions but never start or finish a sequence.
   private handleRepeat(token: string): boolean {
     this.cancel();
-    const result = this.matcher.handle(token);
+    const result = this.matcher.handle(token, this.now());
     if (result.kind === "match") {
       this.host.runBinding(result.binding);
       return true;
@@ -464,8 +476,12 @@ export class NWKeyDispatcher {
     return ALWAYS_CONSUMED_KEYS.has(token);
   }
 
+  private now(): number {
+    return this.host.now?.() ?? Date.now();
+  }
+
   private abandonIfNotContinued(token: string): void {
-    if (!this.matcher.isPending() || this.matcher.continues(token)) {
+    if (!this.matcher.isPending() || this.matcher.continues(token, this.now())) {
       return;
     }
     const abandoned = this.matcher.typedKeys;

@@ -65,10 +65,14 @@ export class NWKeysChild extends JSWindowActorChild {
   });
   private hintSession: NWLinkHintSession | null = null;
   private spaceTarget: EventTarget | null = null;
+  // Set while the lone Space is replayed (replayAbandonedSpace).
+  private replayingSpace = false;
 
   handleEvent(event: Event): void {
-    // Our own replayed Space must reach the page untouched.
-    if (!event.isTrusted) {
+    // Our own replayed Space must reach the page untouched. Dispatched by
+    // this privileged actor, it is trusted, so the flag tells it apart; taken
+    // for a new Space it would start the double-Space sequence again.
+    if (!event.isTrusted || this.replayingSpace) {
       return;
     }
     if (event.type === "pagehide") {
@@ -135,15 +139,20 @@ export class NWKeysChild extends JSWindowActorChild {
     if (keys.join(" ") !== "Space" || !target || !win) {
       return;
     }
-    target.dispatchEvent(
-      new win.KeyboardEvent("keydown", {
-        key: " ",
-        code: "Space",
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-      }),
-    );
+    this.replayingSpace = true;
+    try {
+      target.dispatchEvent(
+        new win.KeyboardEvent("keydown", {
+          key: " ",
+          code: "Space",
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+        }),
+      );
+    } finally {
+      this.replayingSpace = false;
+    }
   }
 
   private runBinding(binding: NWKeyBinding): void {
