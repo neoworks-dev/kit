@@ -16,6 +16,8 @@ export interface XhtmlInjectionOptions {
   devPages?: boolean;
   isCI?: boolean;
   allowBrowserHttpLoader?: boolean;
+  // Overrides the runtime directory (packaging); defaults to _dist/bin's.
+  binPath?: string;
 }
 
 export function buildXhtmlInjectionArgs(
@@ -36,7 +38,7 @@ export async function injectXhtmlFromTs(
 ): Promise<void> {
   const scriptPath = path.join(PROJECT_ROOT, "tools", "scripts", "xhtml.ts");
   const isCI = options.isCI ?? false;
-  let binPath = !isCI ? BIN_DIR : PROD_BIN_DIR;
+  let binPath = options.binPath ?? (!isCI ? BIN_DIR : PROD_BIN_DIR);
 
   // In CI, the default PROJECT_ROOT is incorrect because scripts run from a subdir.
   // We must manually construct the correct path to the build artifacts.

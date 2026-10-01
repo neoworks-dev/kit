@@ -8,6 +8,7 @@ import * as OnnxRuntime from "../static/gecko/onnxruntime/onnxruntime.ts";
 import * as Symlinker from "./src/symlinker.ts";
 import * as Update from "./src/update.ts";
 import * as Builder from "./src/builder.ts";
+import * as Packager from "./src/packager.ts";
 import * as DevServer from "./src/dev_server.ts";
 import * as Injector from "./src/injector.ts";
 import * as BrowserLauncher from "./src/browser_launcher.ts";
@@ -270,6 +271,7 @@ function printHelp(): void {
     "  stage      Build production assets and run browser in dev mode",
   );
   console.log("  build      Run the production build workflow (--phase)");
+  console.log("  package    Build a standalone Kit for Linux as a tarball");
   console.log("  misc       Misc commands (e.g. 'misc patch')");
   console.log("");
   console.log("Run 'feles-build <command> --help' for command-specific help.");
@@ -306,6 +308,17 @@ async function main(): Promise<void> {
         return;
       }
       await runStage({ marionette: argv.includes("--marionette") });
+      break;
+    }
+    case "package": {
+      if (argv.includes("--help") || argv.includes("-h")) {
+        console.log("Usage: feles-build package");
+        console.log(
+          "  Production build on the locked release runtime, packed into _dist/package/kit-<version>-linux-<arch>.tar.xz.",
+        );
+        return;
+      }
+      await Packager.run();
       break;
     }
     case "build": {
