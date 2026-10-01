@@ -1,3 +1,8 @@
+// Loaded into Firefox's about: pages that Kit restyles (NRAboutPreferences
+// and NWAboutDownloads actors). One script for all of them: subscripts can't
+// import, so the pages can't share code across separate bundles.
+
+import { initKitDownloads } from "./kit-downloads/index.ts";
 import { initKitPreferences } from "./kit-preferences/index.ts";
 
 // In Firefox browser chrome context, document is always available.
@@ -22,5 +27,9 @@ function hideHomePageSettings(): void {
   doc.documentElement?.appendChild(style);
 }
 
-hideHomePageSettings();
-initKitPreferences(doc);
+if (doc.documentURI?.startsWith("about:downloads")) {
+  initKitDownloads(doc);
+} else {
+  hideHomePageSettings();
+  initKitPreferences(doc);
+}

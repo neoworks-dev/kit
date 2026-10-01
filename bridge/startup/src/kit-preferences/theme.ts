@@ -7,9 +7,9 @@
 
 const STYLE_ID = "kit-preferences-theme";
 
-// Injected before the page's own stylesheets, so the doubled :root outranks
-// their token definitions.
-const KIT_PREFERENCES_CSS = `
+// Firefox's in-content tokens in Kit's colors, shared with about:downloads
+// (kit-downloads). The doubled :root outranks the page's own definitions.
+export const KIT_IN_CONTENT_TOKENS_CSS = `
 :root:root {
   font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
 
@@ -58,7 +58,10 @@ const KIT_PREFERENCES_CSS = `
   --page-nav-button-background-color-selected: light-dark(#e4e4e7, #2e2e31);
   --page-nav-button-text-color-selected: light-dark(#09090b, #fafafa);
 }
+`;
 
+// Injected before the page's own stylesheets.
+const KIT_PREFERENCES_CSS = KIT_IN_CONTENT_TOKENS_CSS + `
 /* Floorp's support site isn't Kit's. */
 #helpButton {
   display: none !important;

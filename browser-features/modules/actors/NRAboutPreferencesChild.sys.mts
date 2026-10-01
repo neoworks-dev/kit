@@ -1,4 +1,4 @@
-const PREFERENCES_SCRIPT = "chrome://noraneko-startup/content/about-preferences.js";
+const PREFERENCES_SCRIPT = "chrome://noraneko-startup/content/about-pages.js";
 
 export class NRAboutPreferencesChild extends JSWindowActorChild {
   handleEvent(event: Event): void {
