@@ -93,6 +93,9 @@ export interface NeoworksTabbrowser {
     options?: { animate?: boolean; skipSessionStore?: boolean },
   ): void;
   reloadTab(tab: BrowserTab): void;
+  // Frees the tabs' memory; they reload when selected. Moves off the
+  // selected tab first.
+  explicitUnloadTabs(tabs: BrowserTab[]): Promise<void>;
   duplicateTab(tab: BrowserTab): BrowserTab;
   moveTabTo(tab: BrowserTab, options: { tabIndex: number }): void;
   moveTabBefore(element: TabListElement, target: TabListElement): void;
