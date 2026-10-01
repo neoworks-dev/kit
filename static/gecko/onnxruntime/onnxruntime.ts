@@ -79,13 +79,13 @@ async function extract(archive: string, build: Build): Promise<string> {
   return library;
 }
 
-export async function run(): Promise<void> {
+export async function run(binDir: string = BIN_DIR): Promise<void> {
   const build = BUILDS[`${Deno.build.os}-${Deno.build.arch}`];
   if (!build) {
     logger.info(`No onnxruntime ${VERSION} for ${Deno.build.os}-${Deno.build.arch}; keeping the runtime's.`);
     return;
   }
-  const target = path.join(BIN_DIR, build.target);
+  const target = path.join(binDir, build.target);
   if (!exists(target)) {
     logger.warn(`${target} is missing; is the runtime installed?`);
     return;

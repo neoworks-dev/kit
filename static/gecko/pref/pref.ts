@@ -35,14 +35,14 @@ export function prefNeeded(): boolean {
   return true;
 }
 
-export function applyPrefs(): void {
+export function applyPrefs(dir: string = binDir()): void {
   if (!prefNeeded()) {
     logger.info("No preference override needed to apply.");
     return;
   }
 
   const firefoxJsPath = path.join(
-    binDir(),
+    dir,
     "browser",
     "defaults",
     "preferences",

@@ -206,6 +206,29 @@ export function createPatches(): void {
   }
 }
 
+// Applies every patch to a fresh runtime at `dir` (packaging). Unlike
+// applyPatches it keeps no record, so it must not run twice on one runtime.
+export function applyAllPatchesTo(dir: string): void {
+  for (const patch of listPatchFiles()) {
+    const result = runCommandChecked(
+      "git",
+      [
+        "apply",
+        "--whitespace=fix",
+        "--unsafe-paths",
+        "--directory",
+        dir,
+        path.join(PATCHES_DIR, patch),
+      ],
+      undefined,
+    );
+    if (!result.success) {
+      throw new Error(`Failed to apply ${patch}: ${result.stderr}`);
+    }
+  }
+  logger.success(`Applied ${listPatchFiles().length} patches to ${dir}.`);
+}
+
 export function run(action = "apply"): void {
   switch (action) {
     case "apply":
