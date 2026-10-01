@@ -181,7 +181,12 @@ async function testScreenshot(): Promise<void> {
   const bytes = atob(String(data));
   assertEquals(bytes.slice(1, 4), "PNG", "PNG by default");
   const width = (bytes.charCodeAt(16) << 24) | (bytes.charCodeAt(17) << 16) | (bytes.charCodeAt(18) << 8) | bytes.charCodeAt(19);
-  assert(width > 0 && width <= 1280, `at most 1280 px wide (got ${width})`);
+  const viewport = await cdp("Runtime.evaluate", {
+    expression: "[innerWidth, document.documentElement.clientWidth]",
+    returnByValue: true,
+  });
+  const cssWidths = (viewport.result as { value: number[] }).value;
+  assert(cssWidths.includes(width), `one pixel per CSS pixel: ${width} px for a viewport of ${cssWidths.join(" / ")}`);
 
   const jpeg = await cdp("Page.captureScreenshot", { format: "jpeg", quality: 50, clip: { x: 0, y: 0, width: 120, height: 60, scale: 1 } });
   assertEquals(atob(String(jpeg.data)).charCodeAt(0), 0xff, "JPEG when asked");
@@ -246,7 +251,7 @@ export async function runAllTests(): Promise<void> {
     { name: "unknown methods fail with -32601", fn: () => engineTest(testUnknownMethod) },
     { name: "Input.dispatchMouseEvent clicks with trusted input", fn: () => engineTest(testTrustedClick) },
     { name: "Input.insertText and dispatchKeyEvent type trusted keys", fn: () => engineTest(testTyping) },
-    { name: "Page.captureScreenshot is capped at 1280 px", fn: () => engineTest(testScreenshot) },
+    { name: "Page.captureScreenshot is in CSS pixels", fn: () => engineTest(testScreenshot) },
     { name: "console, errors, network and navigation become events", fn: () => engineTest(testEvents) },
     { name: "privileged pages are refused", fn: () => engineTest(testRefusesPrivilegedPages) },
   ];
