@@ -260,6 +260,15 @@ export function createWorkspace(
   icon: string,
   sharedContainerId: number | null,
 ): void {
+  switchWorkspace(addWorkspace(name, icon, sharedContainerId).id);
+}
+
+// createWorkspace without switching to it, e.g. for imported tabs.
+export function addWorkspace(
+  name: string,
+  icon: string,
+  sharedContainerId: number | null,
+): Workspace {
   const workspace: Workspace = {
     id: crypto.randomUUID(),
     name,
@@ -282,7 +291,7 @@ export function createWorkspace(
     }
   }
   saveWorkspaces([...workspaces(), workspace]);
-  switchWorkspace(workspace.id);
+  return workspace;
 }
 
 // Keeps the dedicated container's name and color in sync with the workspace.

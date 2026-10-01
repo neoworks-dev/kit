@@ -13,6 +13,7 @@ import {
 } from "#features-modules/common/NWKeymap.ts";
 
 const EDITABLE_TAGS = new Set(["input", "textarea", "select"]);
+const KEYLESS_ATTRIBUTE = "data-nw-keys-off";
 const SPACE_ACTIVATED_TAGS = new Set(["button", "toolbarbutton", "checkbox", "menuitem"]);
 
 function isEditableElement(element: Element): boolean {
@@ -29,6 +30,13 @@ function isTypingTarget(event: KeyboardEvent): boolean {
     }
   }
   return false;
+}
+
+// Modal surfaces (the first launch setup) handle their own keys.
+function isInKeylessSurface(event: KeyboardEvent): boolean {
+  return event.composedPath().some((target) =>
+    target instanceof Element && target.hasAttribute(KEYLESS_ATTRIBUTE)
+  );
 }
 
 function isSpaceActivatedTarget(event: KeyboardEvent): boolean {
@@ -49,7 +57,7 @@ function shouldCancel(event: KeyboardEvent): boolean {
   if (event.key === "Escape" || targetsWebContent(event)) {
     return true;
   }
-  return isTypingTarget(event) || isSpaceActivatedTarget(event);
+  return isTypingTarget(event) || isInKeylessSurface(event) || isSpaceActivatedTarget(event);
 }
 
 function announcePending(keys: string[]): void {
