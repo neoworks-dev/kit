@@ -16,6 +16,7 @@ import currencyDollar from "@phosphor-icons/core/bold/currency-dollar-bold.svg?r
 import filmSlate from "@phosphor-icons/core/bold/film-slate-bold.svg?raw";
 import flask from "@phosphor-icons/core/bold/flask-bold.svg?raw";
 import gameController from "@phosphor-icons/core/bold/game-controller-bold.svg?raw";
+import gitBranch from "@phosphor-icons/core/bold/git-branch-bold.svg?raw";
 import globe from "@phosphor-icons/core/bold/globe-bold.svg?raw";
 import graduationCap from "@phosphor-icons/core/bold/graduation-cap-bold.svg?raw";
 import heart from "@phosphor-icons/core/bold/heart-bold.svg?raw";
@@ -54,6 +55,8 @@ const ICONS: Record<string, string> = {
   globe,
   lightning,
   star,
+  // Grove's worktree workspaces (neoworks-grove).
+  "git-branch": gitBranch,
 };
 
 export const WORKSPACE_ICONS = Object.keys(ICONS);
