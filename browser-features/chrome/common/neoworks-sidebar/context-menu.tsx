@@ -17,7 +17,14 @@ import {
   removeFromEssentials,
 } from "./essentials.ts";
 import { startFolderEdit } from "./folder-editing.ts";
-import { closeTab, moveTabToContainer, togglePinned } from "./tab-actions.ts";
+import {
+  closeTab,
+  isUnloaded,
+  moveTabToContainer,
+  togglePinned,
+  unloadOtherTabs,
+  unloadTabs,
+} from "./tab-actions.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { removeFromSplit } from "../neoworks-split/split-view.ts";
 import type { SplitTab } from "../neoworks-split/types.ts";
@@ -111,6 +118,12 @@ function muteLabel(tabState: TabState): string {
     return "Unmute tab";
   }
   return "Mute tab";
+}
+
+function menuTabUnloaded(tabState: TabState): boolean {
+  tabState.revision();
+  const tab = menuTab();
+  return !tab || isUnloaded(tab);
 }
 
 function isMenuTabContainer(userContextId: number): boolean {
@@ -238,6 +251,12 @@ export function TabContextMenu(props: { tabState: TabState }) {
         label={muteLabel(props.tabState)}
         onCommand={withMenuTab((tab) => tab.toggleMuteAudio())}
       />
+      <xul:menuitem
+        label="Unload tab"
+        disabled={menuTabUnloaded(props.tabState) || undefined}
+        onCommand={withMenuTab((tab) => unloadTabs([tab]))}
+      />
+      <xul:menuitem label="Unload other tabs" onCommand={withMenuTab(unloadOtherTabs)} />
       <Show when={!menuTab()?.pinned}>
         <FolderSubmenu tabState={props.tabState} />
       </Show>

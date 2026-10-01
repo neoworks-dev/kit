@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { SIDEBAR_PEEK_EVENT } from "../neoworks-sidebar/sidebar-visibility.ts";
-import { openNewTab, togglePinned } from "../neoworks-sidebar/tab-actions.ts";
+import {
+  openNewTab,
+  togglePinned,
+  unloadOtherTabs,
+  unloadTabs,
+} from "../neoworks-sidebar/tab-actions.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
 import type { NeoworksCommand } from "./registry.ts";
 
@@ -58,6 +63,12 @@ export const TAB_COMMANDS: NeoworksCommand[] = [
     id: "tab:toggle-pin",
     listed: true,
     run: () => togglePinned(tabbrowser().selectedTab),
+  },
+  { id: "tab:unload", listed: true, run: () => unloadTabs([tabbrowser().selectedTab]) },
+  {
+    id: "tab:unload-others",
+    listed: true,
+    run: () => unloadOtherTabs(tabbrowser().selectedTab),
   },
   {
     id: "tab:reopen-closed",

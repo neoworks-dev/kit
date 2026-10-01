@@ -15,6 +15,7 @@ import {
 } from "./folder-actions.ts";
 import { startFolderEdit } from "./folder-editing.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
+import { unloadTabs } from "./tab-actions.ts";
 import type { BrowserTabGroup, TabState } from "./types.ts";
 
 const MENU_ID = "neoworks-sidebar-folder-menu";
@@ -95,6 +96,10 @@ export function FolderContextMenu(props: { tabState: TabState }) {
       <xul:menuitem label="Rename folder" onCommand={withMenuFolder(startFolderEdit)} />
       <ColorSubmenu tabState={props.tabState} />
       <xul:menuitem label="New tab in folder" onCommand={withMenuFolder(openTabInFolder)} />
+      <xul:menuitem
+        label="Unload tabs in folder"
+        onCommand={withMenuFolder((group) => unloadTabs(group.tabs))}
+      />
       <xul:menuseparator />
       <xul:menuitem
         label="Move folder up"

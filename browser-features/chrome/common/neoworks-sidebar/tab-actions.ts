@@ -47,6 +47,26 @@ export function moveTabToContainer(tab: BrowserTab, userContextId: number): void
   closeTab(tab);
 }
 
+// A pending tab keeps its browser but hasn't loaded its page yet.
+export function isUnloaded(tab: BrowserTab): boolean {
+  return !tab.linkedPanel || tab.hasAttribute("pending");
+}
+
+export function unloadTabs(tabs: BrowserTab[]): void {
+  const loaded = tabs.filter((tab) => !tab.closing && !isUnloaded(tab));
+  if (loaded.length === 0) {
+    return;
+  }
+  tabbrowser().explicitUnloadTabs(loaded).catch((error: unknown) => {
+    console.error("[neoworks-sidebar] Unloading tabs failed:", error);
+  });
+}
+
+// Every other tab in the current workspace, Essentials included.
+export function unloadOtherTabs(tab: BrowserTab): void {
+  unloadTabs(tabbrowser().nonHiddenTabs.filter((other) => other !== tab));
+}
+
 export function togglePinned(tab: BrowserTab): void {
   if (tab.pinned) {
     tabbrowser().unpinTab(tab);
