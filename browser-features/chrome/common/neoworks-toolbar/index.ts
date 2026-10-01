@@ -6,16 +6,19 @@ import {
   NoraComponentBase,
 } from "#features-chrome/utils/base.ts";
 import { registerCommands } from "../neoworks-commands/registry.ts";
-import { mountPageActionsMenu } from "./mount.tsx";
+import { copyPageLink, listenForCopyLinkShortcut } from "./copy-link.ts";
+import { mountPageActionsMenu, mountToast } from "./mount.tsx";
 import { insertPageActionsButton, pageActionsButton } from "./page-actions-button.ts";
 import { openPageActions, togglePageActions } from "./page-actions-menu.tsx";
 import { watchGlassTint } from "./glass-tint.ts";
+import { hideToast } from "./toast.tsx";
 import { watchWindowControls } from "./window-controls.ts";
 import { toggleWindowTransparency, watchWindowTransparency } from "./window-transparency.ts";
 import frameStyle from "../neoworks-ui/frame.css?inline";
 import glassStyle from "../neoworks-ui/glass.css?inline";
 import iconStyle from "../neoworks-ui/icons.css?inline";
 import menuStyle from "../neoworks-ui/menu.css?inline";
+import toastStyle from "./toast.css?inline";
 import toolbarStyle from "./toolbar.css?inline";
 
 function openPageActionsFromCommand(): void {
@@ -31,7 +34,7 @@ export default class NeoworksToolbar extends NoraComponentBase {
   init(): void {
     const style = document.createElement("style");
     style.id = "neoworks-toolbar-style";
-    style.textContent = frameStyle + glassStyle + iconStyle + menuStyle + toolbarStyle;
+    style.textContent = frameStyle + glassStyle + iconStyle + menuStyle + toolbarStyle + toastStyle;
     document.head.append(style);
     onCleanup(() => style.remove());
     onCleanup(watchWindowTransparency());
@@ -43,11 +46,15 @@ export default class NeoworksToolbar extends NoraComponentBase {
       return;
     }
     mountPageActionsMenu(document.body);
+    mountToast(document.body);
+    onCleanup(hideToast);
+    onCleanup(listenForCopyLinkShortcut());
     onCleanup(insertPageActionsButton(togglePageActions));
 
     const unregister = registerCommands([
       { id: "page-actions:open", listed: true, run: openPageActionsFromCommand },
       { id: "window:toggle-transparent", listed: true, run: toggleWindowTransparency },
+      { id: "page:copy-url", listed: true, run: copyPageLink },
     ]);
     onCleanup(unregister);
   }

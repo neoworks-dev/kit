@@ -6,7 +6,6 @@ import {
   bookmarkPage,
   chromeWindow,
   clearSiteData,
-  copyPageUrl,
   openAsApp,
   openSitePermissions,
   readPageState,
@@ -16,6 +15,7 @@ import {
   zoomIn,
   zoomOut,
 } from "./page-actions.ts";
+import { copyPageLink } from "./copy-link.ts";
 import type { PageState } from "./types.ts";
 import glassStyle from "../neoworks-ui/glass.css?inline";
 import iconStyle from "../neoworks-ui/icons.css?inline";
@@ -112,7 +112,7 @@ function pageTools(state: PageState): PageTool[] {
       enabled: state.readerAvailable,
       run: toggleReaderMode,
     },
-    { icon: "link", label: "Copy link", enabled: true, run: copyPageUrl },
+    { icon: "link", label: "Copy link", enabled: true, run: copyPageLink },
     { icon: "app-window", label: "Open as app", enabled: state.appAvailable, run: openAsApp },
   ];
 }
