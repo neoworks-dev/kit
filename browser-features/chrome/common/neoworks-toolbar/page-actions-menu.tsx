@@ -3,6 +3,7 @@
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 import { createPageBackdrop } from "../neoworks-ui/page-backdrop.ts";
 import { SiteStyleSection } from "../neoworks-site-style/site-section.tsx";
+import { pinCurrentPage } from "../neoworks-web-panels/actions.ts";
 import {
   bookmarkPage,
   chromeWindow,
@@ -116,6 +117,7 @@ function pageTools(state: PageState): PageTool[] {
     },
     { icon: "link", label: "Copy link", enabled: true, run: copyPageLink },
     { icon: "app-window", label: "Open as app", enabled: state.appAvailable, run: openAsApp },
+    { icon: "sidebar", label: "Web panel", enabled: state.site !== null, run: pinCurrentPage },
   ];
 }
 

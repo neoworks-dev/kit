@@ -55,6 +55,8 @@ export const NW_CHROME_COMMAND_IDS = [
   "split:close",
   "ai:toggle",
   "onboarding:open",
+  "web-panel:pin",
+  "web-panel:toggle",
 ] as const;
 
 export type NWPageCommandId = (typeof NW_PAGE_COMMAND_IDS)[number];
@@ -101,6 +103,8 @@ export const NW_COMMAND_TITLES: Record<NWCommandId, string> = {
   "split:close": "Close Split Pane",
   "ai:toggle": "Toggle AI Sidebar",
   "onboarding:open": "Run First Launch Setup",
+  "web-panel:pin": "Pin Page as Web Panel",
+  "web-panel:toggle": "Toggle Web Panel",
 };
 
 export interface NWCommandInvocation {
@@ -187,6 +191,7 @@ export const NW_KEY_BINDINGS: readonly NWKeyBinding[] = [
   { keys: ["Space", "w", "s"], command: "split:horizontal" },
   { keys: ["Space", "w", "q"], command: "split:close" },
   { keys: ["Space", "a"], command: "ai:toggle" },
+  { keys: ["Space", "p"], command: "web-panel:toggle" },
   ...quickmarkBindings("m", "quickmark:set"),
   ...quickmarkBindings("'", "quickmark:jump"),
 ];

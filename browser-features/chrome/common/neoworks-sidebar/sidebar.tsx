@@ -3,6 +3,7 @@
 import { For, Match, Switch } from "solid-js";
 import { ContainerBar } from "./container-bar.tsx";
 import { SidebarDownloadsButton } from "../neoworks-downloads/sidebar-downloads-button.tsx";
+import { WebPanelBar } from "../neoworks-web-panels/panel-bar.tsx";
 import { FolderRow } from "./folder-row.tsx";
 import { MediaControls } from "./media-controls.tsx";
 import { PinnedGrid } from "./pinned-grid.tsx";
@@ -161,6 +162,7 @@ function SidebarPanel(props: { tabState: TabState }) {
       </div>
 
       <MediaControls tabState={props.tabState} />
+      <WebPanelBar />
       <div class="nw-sidebar-footer">
         <SidebarDownloadsButton />
         <WorkspaceSwitcher />

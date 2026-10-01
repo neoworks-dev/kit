@@ -64,6 +64,7 @@
   --nw-icon-code: url("@phosphor-icons/core/bold/code-bold.svg");
   --nw-icon-magnifying-glass-plus: url("@phosphor-icons/core/bold/magnifying-glass-plus-bold.svg");
   --nw-icon-arrow-square-in: url("@phosphor-icons/core/bold/arrow-square-in-bold.svg");
+  --nw-icon-sidebar: url("@phosphor-icons/core/bold/sidebar-bold.svg");
 }
 
 .nw-icon {
@@ -295,4 +296,8 @@
 
 .nw-icon[data-icon="arrow-square-in"] {
   mask-image: var(--nw-icon-arrow-square-in);
+}
+
+.nw-icon[data-icon="sidebar"] {
+  mask-image: var(--nw-icon-sidebar);
 }

@@ -1,0 +1,157 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* The open panel sits left of the page, lined up with it: after the docked
+   sidebar, or at the window edge while the sidebar floats (it then slides in
+   over the panel). The page makes room for the pane; the tab box's own 8px
+   margin is the gap. */
+#neoworks-web-panel {
+  position: absolute;
+  top: 0;
+  bottom: 8px;
+  left: 8px;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  width: var(--nw-web-panel-width, 400px);
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  /* Hidden, not removed: the panels' pages keep running. */
+  visibility: hidden;
+  pointer-events: none;
+  -moz-window-dragging: no-drag;
+}
+
+#neoworks-web-panel[data-open] {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+:root[nw-sidebar-docked] #neoworks-web-panel {
+  left: 248px;
+}
+
+:root[nw-web-panel-open]:not([inDOMFullscreen]) #browser {
+  padding-inline-start: calc(var(--nw-web-panel-width) + 8px) !important;
+}
+
+:root[nw-web-panel-open][nw-sidebar-docked]:not([inDOMFullscreen]) #browser {
+  padding-inline-start: calc(248px + var(--nw-web-panel-width)) !important;
+}
+
+:root[inDOMFullscreen] #neoworks-web-panel {
+  display: none;
+}
+
+#neoworks-web-panel .nw-web-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 36px;
+  padding: 0 4px;
+}
+
+#neoworks-web-panel .nw-web-panel-title {
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px;
+  overflow: hidden;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#neoworks-web-panel .nw-web-panel-button {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+}
+
+#neoworks-web-panel .nw-web-panel-button:hover {
+  background: var(--glass-hover);
+  color: var(--text);
+}
+
+#neoworks-web-panel .nw-web-panel-button .nw-icon {
+  width: 14px;
+  height: 14px;
+}
+
+#neoworks-web-panel .nw-web-panel-frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+#neoworks-web-panel .nw-web-panel-browser {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  visibility: hidden;
+}
+
+#neoworks-web-panel[data-open] .nw-web-panel-browser[data-active] {
+  visibility: visible;
+}
+
+/* While dragging, the pointer must not land in a page. */
+#neoworks-web-panel[data-resizing] .nw-web-panel-frame {
+  pointer-events: none;
+}
+
+#neoworks-web-panel .nw-web-panel-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+/* Sidebar: the panel icons above the footer. */
+#neoworks-sidebar .nw-web-panel-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 8px 0;
+}
+
+#neoworks-sidebar .nw-web-panel-icon {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+}
+
+#neoworks-sidebar .nw-web-panel-icon[data-active] {
+  background: var(--glass-selected);
+  color: var(--text);
+}
+
+#neoworks-sidebar .nw-web-panel-initial {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Over the initial once the favicon loads; hidden if there is none. */
+#neoworks-sidebar .nw-web-panel-favicon {
+  position: absolute;
+  inset: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: var(--bg);
+}
