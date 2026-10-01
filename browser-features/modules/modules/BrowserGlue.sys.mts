@@ -115,6 +115,22 @@ const JS_WINDOW_ACTORS: {
     safeForUntrustedWebProcess: true,
     allFrames: true,
   },
+  // Per-site CSS and dark mode (NWSiteSettings.sys.mts). Top-level pages
+  // only: an inverted page already inverts its frames.
+  NWSiteStyle: {
+    child: {
+      esModuleURI: localPathToResourceURI(
+        "../actors/NWSiteStyleChild.sys.mts",
+      ),
+      events: {
+        DOMDocElementInserted: {},
+        DOMContentLoaded: {},
+      },
+    },
+    matches: ["http://*/*", "https://*/*"],
+    remoteTypes: WEB_REMOTE_TYPES,
+    safeForUntrustedWebProcess: true,
+  },
 };
 
 ActorManagerParent.addJSWindowActors(JS_WINDOW_ACTORS);

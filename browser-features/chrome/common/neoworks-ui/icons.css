@@ -60,6 +60,9 @@
   --nw-icon-caret-down: url("@phosphor-icons/core/bold/caret-down-bold.svg");
   --nw-icon-open-ai-logo: url("@phosphor-icons/core/bold/open-ai-logo-bold.svg");
   --nw-icon-pi: url("@phosphor-icons/core/bold/pi-bold.svg");
+  --nw-icon-moon: url("@phosphor-icons/core/bold/moon-bold.svg");
+  --nw-icon-code: url("@phosphor-icons/core/bold/code-bold.svg");
+  --nw-icon-magnifying-glass-plus: url("@phosphor-icons/core/bold/magnifying-glass-plus-bold.svg");
 }
 
 .nw-icon {
@@ -275,4 +278,16 @@
 
 .nw-icon[data-icon="pi"] {
   mask-image: var(--nw-icon-pi);
+}
+
+.nw-icon[data-icon="moon"] {
+  mask-image: var(--nw-icon-moon);
+}
+
+.nw-icon[data-icon="code"] {
+  mask-image: var(--nw-icon-code);
+}
+
+.nw-icon[data-icon="magnifying-glass-plus"] {
+  mask-image: var(--nw-icon-magnifying-glass-plus);
 }
