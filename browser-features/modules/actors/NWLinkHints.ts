@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // Vim-style link hints: label every clickable element in the viewport, then
-// activate the one whose label the user types.
+// activate the one whose label the user types. The labels follow their
+// elements while the page scrolls.
 
 const HINT_CHARACTERS = "asdfghjkl";
 const CLICKABLE_SELECTOR =
@@ -12,22 +13,19 @@ const CONTAINER_STYLE =
 const BADGE_STYLE =
   "all: initial; position: fixed; background: #fbbf24; color: #1a1a1a; font: bold 11px monospace; padding: 1px 4px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);";
 
-// Distinct labels drawn from the home row, shortest first.
+// Distinct labels drawn from the home row, shortest first. Labels are
+// expanded into longer ones only as needed, and an expanded label is dropped,
+// so none is the start of another.
 export function hintLabels(count: number): string[] {
   const characters = HINT_CHARACTERS.split("");
-  if (count <= characters.length) {
-    return characters.slice(0, count);
+  const labels = [""];
+  let expanded = 0;
+  // The empty root label always expands.
+  while (expanded === 0 || labels.length - expanded < count) {
+    const prefix = labels[expanded++];
+    labels.push(...characters.map((character) => prefix + character));
   }
-  const labels: string[] = [];
-  for (const first of characters) {
-    for (const second of characters) {
-      labels.push(first + second);
-      if (labels.length >= count) {
-        return labels;
-      }
-    }
-  }
-  return labels;
+  return labels.slice(expanded, expanded + count);
 }
 
 function isClickable(element: HTMLElement): boolean {
@@ -56,12 +54,20 @@ function isInViewport(rect: DOMRect, win: Window): boolean {
     rect.left < win.innerWidth;
 }
 
+// Inside a link or button, the outer element already gets the hint.
+function isInsideLinkOrButton(element: HTMLElement): boolean {
+  return !!element.parentElement?.closest("a[href], button");
+}
+
 function findHintTargets(win: Window): HTMLElement[] {
   const elements = Array.from(
     win.document.querySelectorAll<HTMLElement>(CLICKABLE_SELECTOR),
   );
   return elements.filter((element) =>
-    isClickable(element) && isInViewport(element.getBoundingClientRect(), win)
+    isClickable(element) &&
+    !isInsideLinkOrButton(element) &&
+    isInViewport(element.getBoundingClientRect(), win) &&
+    element.checkVisibility({ checkVisibilityCSS: true, checkOpacity: true })
   );
 }
 
@@ -101,6 +107,8 @@ export class NWLinkHintSession {
   private readonly container: HTMLElement;
   private readonly badges: HintBadge[];
   private typedLabel = "";
+  private repositionFrame = 0;
+  private readonly onViewportChange = () => this.scheduleReposition();
 
   constructor(private readonly win: Window, private readonly options: LinkHintOptions) {
     const document = win.document;
@@ -115,7 +123,11 @@ export class NWLinkHintSession {
 
     if (this.badges.length === 0) {
       this.destroy();
+      return;
     }
+    // Capture: scrolling any inner scroller moves its elements too.
+    win.addEventListener("scroll", this.onViewportChange, { capture: true, passive: true });
+    win.addEventListener("resize", this.onViewportChange);
   }
 
   isActive(): boolean {
@@ -142,25 +154,51 @@ export class NWLinkHintSession {
   }
 
   destroy(): void {
+    this.win.removeEventListener("scroll", this.onViewportChange, { capture: true });
+    this.win.removeEventListener("resize", this.onViewportChange);
+    this.win.cancelAnimationFrame(this.repositionFrame);
     this.container.remove();
     this.options.onFinish();
   }
 
   private createBadge(element: HTMLElement, label: string): HintBadge {
-    const rect = element.getBoundingClientRect();
     const badge = this.win.document.createElement("div");
     badge.textContent = label;
     badge.style.cssText = BADGE_STYLE;
-    badge.style.left = `${Math.max(0, rect.left)}px`;
-    badge.style.top = `${Math.max(0, rect.top)}px`;
     this.container.appendChild(badge);
-    return { label, element, badge };
+    const entry = { label, element, badge };
+    this.placeBadge(entry);
+    return entry;
+  }
+
+  // Pins the badge to its element's corner; hidden while the element is
+  // scrolled out of view or doesn't match what was typed.
+  private placeBadge(entry: HintBadge): void {
+    const rect = entry.element.getBoundingClientRect();
+    entry.badge.style.left = `${Math.max(0, rect.left)}px`;
+    entry.badge.style.top = `${Math.max(0, rect.top)}px`;
+    setBadgeVisible(
+      entry.badge,
+      entry.label.startsWith(this.typedLabel) && isInViewport(rect, this.win),
+    );
+  }
+
+  private scheduleReposition(): void {
+    if (this.repositionFrame) {
+      return;
+    }
+    this.repositionFrame = this.win.requestAnimationFrame(() => {
+      this.repositionFrame = 0;
+      for (const entry of this.badges) {
+        this.placeBadge(entry);
+      }
+    });
   }
 
   private updateVisibleBadges(): void {
     const remaining = this.badges.filter((entry) => entry.label.startsWith(this.typedLabel));
     for (const entry of this.badges) {
-      setBadgeVisible(entry.badge, entry.label.startsWith(this.typedLabel));
+      this.placeBadge(entry);
     }
     if (remaining.length === 0) {
       this.destroy();

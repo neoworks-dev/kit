@@ -48,9 +48,18 @@ function isSpaceActivatedTarget(event: KeyboardEvent): boolean {
 }
 
 // Remote <browser> elements forward keys to content, where the actor decides.
+// In-process pages (about:preferences, about:downloads) dispatch their keys
+// here too, with a target in the page's own document; the actor runs there
+// as well and sees into the page's shadow DOM, which chrome can't.
 function targetsWebContent(event: KeyboardEvent): boolean {
-  const target = event.target as Element | null;
-  return target?.localName === "browser";
+  const target = event.target as Node | null;
+  if (!target) {
+    return false;
+  }
+  if ((target as Element).localName === "browser") {
+    return true;
+  }
+  return (target.ownerDocument ?? target) !== document;
 }
 
 function shouldCancel(event: KeyboardEvent): boolean {
