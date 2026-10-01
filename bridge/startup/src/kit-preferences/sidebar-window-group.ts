@@ -2,7 +2,8 @@
 
 // "Sidebar and window": the prefs behind neoworks-sidebar/sidebar-docking.ts,
 // neoworks-sidebar/tab-archive.ts, neoworks-toolbar/window-transparency.ts,
-// neoworks-toolbar/window-controls.ts and neoworks-toolbar/glass-tint.ts.
+// neoworks-toolbar/window-controls.ts, neoworks-toolbar/glass-tint.ts and
+// neoworks-link-window/external-links.ts.
 // Open browser windows observe these prefs and update right away.
 
 import type { PreferencesWindow, SettingGroupConfig } from "./types.ts";
@@ -11,6 +12,7 @@ const DOCKED_PREF = "neoworks.sidebar.docked";
 const TRANSPARENT_PREF = "neoworks.window.transparent";
 const ALL_CONTROLS_PREF = "neoworks.window.allControls";
 const GLASS_TINT_PREF = "neoworks.glass.tint";
+const EXTERNAL_POPUP_PREF = "neoworks.links.externalPopup";
 const DEFAULT_GLASS_TINT = "medium";
 // Hours; 0 is never. Same default as neoworks-sidebar/tab-archive.ts.
 const ARCHIVE_AFTER_PREF = "neoworks.tabs.archiveAfterHours";
@@ -89,6 +91,14 @@ const GROUP: SettingGroupConfig = {
       },
     },
     {
+      id: "kitExternalPopup",
+      control: "moz-toggle",
+      controlAttrs: {
+        label: "Open links from other apps in a small window",
+        description: "Instead of a new tab. Move the page into a tab with Open in Kit (Ctrl+Enter), or just close the window.",
+      },
+    },
+    {
       id: "kitGlassTint",
       control: "moz-select",
       controlAttrs: {
@@ -110,6 +120,7 @@ export function registerSidebarWindowGroup(win: PreferencesWindow): void {
     { id: TRANSPARENT_PREF, type: "bool" },
     { id: ALL_CONTROLS_PREF, type: "bool" },
     { id: GLASS_TINT_PREF, type: "string" },
+    { id: EXTERNAL_POPUP_PREF, type: "bool" },
     { id: ARCHIVE_AFTER_PREF, type: "int" },
   ]);
   win.Preferences.addSetting({ id: "kitSidebarDocked", pref: DOCKED_PREF, get: booleanOr(true) });
@@ -128,6 +139,11 @@ export function registerSidebarWindowGroup(win: PreferencesWindow): void {
     pref: ARCHIVE_AFTER_PREF,
     get: archiveAfterOrDefault,
     set: (value) => Number(value),
+  });
+  win.Preferences.addSetting({
+    id: "kitExternalPopup",
+    pref: EXTERNAL_POPUP_PREF,
+    get: booleanOr(true),
   });
   win.Preferences.addSetting({ id: "kitGlassTint", pref: GLASS_TINT_PREF, get: glassTintOrDefault });
   win.SettingGroupManager.registerGroups({ [SIDEBAR_WINDOW_GROUP_ID]: GROUP });
