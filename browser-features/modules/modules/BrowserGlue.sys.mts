@@ -56,6 +56,17 @@ const JS_WINDOW_ACTORS: {
     },
     matches: ["about:preferences*", "about:settings*"],
   },
+  NWAboutDownloads: {
+    child: {
+      esModuleURI: localPathToResourceURI(
+        "../actors/NWAboutDownloadsChild.sys.mts",
+      ),
+      events: {
+        DOMDocElementInserted: {},
+      },
+    },
+    matches: ["about:downloads*"],
+  },
   NRStartPage: {
     parent: {
       esModuleURI: localPathToResourceURI(

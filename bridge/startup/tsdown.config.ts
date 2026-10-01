@@ -7,7 +7,7 @@ export default [
   defineConfig({
     entry: [
       "src/chrome_root.ts",
-      "src/about-preferences.ts",
+      "src/about-pages.ts",
     ],
     outDir: "_dist",
     platform: "browser",
