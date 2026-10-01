@@ -421,6 +421,26 @@
   }
 }
 
+/* The tab serves a Grove worktree (neoworks-grove): a green branch, pulsing
+   while Grove's agent acts in it, on a green-tinted row. */
+#neoworks-sidebar .nw-tab-grove {
+  width: 14px;
+  height: 14px;
+  color: var(--nw-success);
+}
+
+#neoworks-sidebar .nw-tab-grove[data-active] {
+  animation: nw-tab-ai-pulse 1.6s ease-in-out infinite;
+}
+
+#neoworks-sidebar .nw-tab[data-grove] {
+  background: color-mix(in srgb, var(--nw-success) 8%, transparent);
+}
+
+#neoworks-sidebar .nw-tab[data-grove][data-selected] {
+  background: color-mix(in srgb, var(--nw-success) 16%, var(--glass-selected));
+}
+
 #neoworks-sidebar .nw-tab-audio {
   width: 22px;
   height: 22px;

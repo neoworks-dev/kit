@@ -1,0 +1,92 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* The pill and frame over a tab that serves a Grove worktree
+   (tab-indicator.tsx). Grove's color is green, apart from the AI sidebar's
+   violet, so a tab Grove's agents drive never reads as Kit's own agent. */
+#neoworks-grove-indicator {
+  --nw-grove: var(--nw-success);
+}
+
+#neoworks-grove-indicator .nw-grove-frame {
+  position: fixed;
+  z-index: 6;
+  box-sizing: border-box;
+  border: 2px solid var(--nw-grove);
+  border-radius: 12px;
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--nw-grove) 30%, transparent);
+  pointer-events: none;
+  animation: nw-grove-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes nw-grove-glow {
+  50% {
+    border-color: color-mix(in srgb, var(--nw-grove) 40%, transparent);
+    box-shadow: inset 0 0 12px color-mix(in srgb, var(--nw-grove) 12%, transparent);
+  }
+}
+
+#neoworks-grove-indicator .nw-grove-pill {
+  position: fixed;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 60%;
+  height: 32px;
+  padding: 0 4px 0 12px;
+  transform: translateX(-50%);
+  border: 1px solid color-mix(in srgb, var(--nw-grove) 45%, transparent);
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  box-shadow: 0 8px 24px var(--nw-shadow);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  white-space: nowrap;
+  -moz-window-dragging: no-drag;
+}
+
+#neoworks-grove-indicator .nw-grove-icon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--nw-grove);
+}
+
+#neoworks-grove-indicator .nw-grove-pill[data-active] .nw-grove-icon {
+  animation: nw-grove-pulse 1.6s ease-in-out infinite;
+}
+
+#neoworks-grove-indicator .nw-grove-worktree {
+  flex: none;
+  font-weight: 600;
+}
+
+#neoworks-grove-indicator .nw-grove-status {
+  overflow: hidden;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+}
+
+#neoworks-grove-indicator .nw-grove-take-back {
+  flex: none;
+  appearance: none;
+  height: 24px;
+  margin: 0;
+  padding: 0 10px;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+}
+
+#neoworks-grove-indicator .nw-grove-take-back:hover {
+  background: var(--surface-hover);
+}
+
+@keyframes nw-grove-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}

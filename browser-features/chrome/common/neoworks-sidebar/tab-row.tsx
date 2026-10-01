@@ -97,6 +97,10 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
   const inSplit = read(() => !!tab.splitview);
   // Set while the AI agent works in the tab (NWAgentBrowser.sys.mts).
   const aiControlled = read(() => tab.hasAttribute("nw-ai-controlled"));
+  // The Grove worktree the tab serves, and what its agent is doing there
+  // (NWGrove.sys.mts).
+  const groveWorktree = read(() => tab.getAttribute("nw-grove"));
+  const groveActivity = read(() => tab.getAttribute("nw-grove-activity"));
 
   return (
     <div
@@ -105,6 +109,7 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
       data-selected={attributeFlag(selected())}
       data-unloaded={attributeFlag(unloaded())}
       data-drop-target={attributeFlag(isDropTarget(tab))}
+      data-grove={attributeFlag(!!groveWorktree())}
       onClick={() => selectTab(tab)}
       onAuxClick={(event: MouseEvent) => closeOnMiddleClick(event, tab)}
       onContextMenu={(event: MouseEvent) => openTabContextMenu(event, tab)}
@@ -132,6 +137,16 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
       </Show>
       <Show when={aiControlled()}>
         <span class="nw-icon nw-tab-ai" data-icon="sparkle" title="AI is controlling this tab" />
+      </Show>
+      <Show when={groveWorktree()}>
+        {(worktree) => (
+          <span
+            class="nw-icon nw-tab-grove"
+            data-icon="git-branch"
+            data-active={attributeFlag(!!groveActivity())}
+            title={`Grove: ${worktree()}${groveActivity() ? ` · ${groveActivity()}` : ""}`}
+          />
+        )}
       </Show>
       <span class="nw-tab-label">{label()}</span>
       {/* Laid over the label's end on hover (sidebar.css). */}
