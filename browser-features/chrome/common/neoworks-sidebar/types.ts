@@ -74,7 +74,7 @@ export interface NeoworksTabbrowser {
   };
   addTrustedTab(
     url: string,
-    options: { userContextId: number; pinned?: boolean; index?: number },
+    options: { userContextId: number; pinned?: boolean; index?: number; inBackground?: boolean },
   ): BrowserTab;
   // A lazy tab has no browser until it's first selected.
   addTab(

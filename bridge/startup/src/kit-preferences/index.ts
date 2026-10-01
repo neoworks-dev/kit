@@ -3,6 +3,7 @@
 // Kit's own pane in about:preferences, first in the category list, built on
 // the settings framework of Firefox's settings redesign.
 
+import { DEVELOPER_GROUP_ID, registerDeveloperGroup } from "./developer-group.ts";
 import { KEY_BINDINGS_GROUP_ID, registerKeyBindingsGroup } from "./key-bindings-group.ts";
 import {
   registerSidebarWindowGroup,
@@ -69,9 +70,15 @@ function registerKitPane(win: PreferencesWindow): void {
   registerSidebarWindowGroup(win);
   registerWorkspaceContainersGroup(win);
   registerKeyBindingsGroup(win);
+  registerDeveloperGroup(win);
   win.SettingPaneManager.registerPane(PANE_ID, {
     iconSrc: CATEGORY_ICON,
-    groupIds: [SIDEBAR_WINDOW_GROUP_ID, WORKSPACE_CONTAINERS_GROUP_ID, KEY_BINDINGS_GROUP_ID],
+    groupIds: [
+      SIDEBAR_WINDOW_GROUP_ID,
+      WORKSPACE_CONTAINERS_GROUP_ID,
+      KEY_BINDINGS_GROUP_ID,
+      DEVELOPER_GROUP_ID,
+    ],
   });
 }
 

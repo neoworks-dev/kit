@@ -31,6 +31,7 @@ import type { SplitTab } from "../neoworks-split/types.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type { BrowserTab, BrowserTabGroup, TabState, Workspace } from "./types.ts";
 import { activeWorkspaceId, moveTabToWorkspace, workspaces } from "./workspaces.ts";
+import { GroveTabMenu } from "../neoworks-grove/tab-menu.tsx";
 
 const MENU_ID = "neoworks-sidebar-tab-menu";
 
@@ -274,6 +275,7 @@ export function TabContextMenu(props: { tabState: TabState }) {
       </Show>
       <WorkspaceSubmenu tabState={props.tabState} />
       <ContainerSubmenu />
+      <GroveTabMenu tab={menuTab} revision={props.tabState.revision} />
       <xul:menuitem
         label="Move to new window"
         onCommand={withMenuTab((tab) => tabbrowser().replaceTabWithWindow(tab))}

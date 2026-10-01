@@ -184,6 +184,22 @@ function openTabIn(workspace: Workspace): BrowserTab {
   return tab;
 }
 
+// Opens `url` in a background tab of the workspace, which stays hidden
+// unless the workspace is the active one.
+export function openTabInWorkspace(workspaceId: string, url: string): BrowserTab {
+  const workspace = workspaceById(workspaceId);
+  if (!workspace) {
+    throw new Error(`No workspace ${workspaceId}`);
+  }
+  const tab = tabbrowser().addTrustedTab(url, {
+    userContextId: workspace.userContextId,
+    inBackground: true,
+  });
+  assignTab(tab, workspace.id);
+  applyVisibility();
+  return tab;
+}
+
 // Switching back returns to the tab that was selected when the workspace was
 // left: its most recently used one. SessionStore restores lastAccessed, so
 // this holds across restarts.
