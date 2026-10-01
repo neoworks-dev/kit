@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { For, Match, Switch } from "solid-js";
-import { ContainerBar } from "./container-bar.tsx";
 import { SidebarDownloadsButton } from "../neoworks-downloads/sidebar-downloads-button.tsx";
 import { WebPanelBar } from "../neoworks-web-panels/panel-bar.tsx";
 import { FolderRow } from "./folder-row.tsx";
@@ -10,7 +9,7 @@ import { PinnedGrid } from "./pinned-grid.tsx";
 import { RecentlyClosedList } from "./recently-closed-list.tsx";
 import { SplitRow } from "./split-row.tsx";
 import { openSidebarContextMenu } from "./sidebar-context-menu.tsx";
-import { sidebarDocked, toggleSidebarDocked } from "./sidebar-docking.ts";
+import { sidebarDocked } from "./sidebar-docking.ts";
 import { openNewTab } from "./tab-actions.ts";
 import {
   allowDrop,
@@ -111,13 +110,6 @@ function visibleFlag(): string | undefined {
   return undefined;
 }
 
-function dockToggleTitle(): string {
-  if (sidebarDocked()) {
-    return "Collapse sidebar";
-  }
-  return "Keep sidebar open";
-}
-
 // The layer spans the window's left edge: collapsed, a thin hover strip
 // reveals the sidebar, which slides over the page instead of taking space.
 export function Sidebar(props: { tabState: TabState }) {
@@ -139,18 +131,6 @@ function SidebarPanel(props: { tabState: TabState }) {
       onMouseEnter={handleSidebarEnter}
       onMouseLeave={handleSidebarLeave}
     >
-      <div class="nw-header">
-        <ContainerBar />
-        <button
-          type="button"
-          class="nw-icon-button"
-          title={dockToggleTitle()}
-          onClick={toggleSidebarDocked}
-        >
-          <span class="nw-icon" data-icon="sidebar-simple" />
-        </button>
-      </div>
-
       <div class="nw-scroll" onContextMenu={openSidebarContextMenu}>
         <PinnedGrid tabState={props.tabState} />
         <For each={props.tabState.entries()}>

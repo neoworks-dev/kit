@@ -31,21 +31,37 @@
   pointer-events: auto;
 }
 
-/* 8px frame + 240px of tabs + the 8px gap to the page. Collapsed, the
-   header's top padding lines it up with the page's top edge. */
+/* 8px frame + 240px of tabs + the 8px gap to the page, then 12px of inverse
+   corners: over the page, the sidebar takes the docked one's shape, frame
+   wrapped around the page's rounded top and bottom left corners (12px, as
+   #tabbrowser-tabbox in neoworks-ui/frame.css, which also leaves 8px of
+   frame below the page). The mask cuts the corners out of that strip. */
 #neoworks-sidebar {
+  --nw-page-radius: 12px;
+
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
   display: flex;
   flex-direction: column;
-  width: 256px;
+  width: calc(256px + var(--nw-page-radius));
   box-sizing: border-box;
-  padding: 0 8px 8px 8px;
+  padding: 8px calc(8px + var(--nw-page-radius)) 8px 8px;
   overflow: hidden;
   background: var(--bg);
-  box-shadow: 1px 0 0 var(--border-faint), 8px 0 32px var(--nw-shadow);
+  mask-image:
+    linear-gradient(#000, #000),
+    radial-gradient(circle at 100% 100%, transparent var(--nw-page-radius), #000 calc(var(--nw-page-radius) + 0.5px)),
+    radial-gradient(circle at 100% 0, transparent var(--nw-page-radius), #000 calc(var(--nw-page-radius) + 0.5px)),
+    linear-gradient(#000, #000);
+  mask-size:
+    calc(100% - var(--nw-page-radius)) 100%,
+    var(--nw-page-radius) var(--nw-page-radius),
+    var(--nw-page-radius) var(--nw-page-radius),
+    var(--nw-page-radius) 8px;
+  mask-position: left top, right top, right 0 bottom 8px, right bottom;
+  mask-repeat: no-repeat;
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 12px;
@@ -66,29 +82,12 @@
   backdrop-filter: blur(30px) saturate(160%);
 }
 
-/* The active workspace's name, the container chip, then the dock toggle,
-   which docked sits right beside the top bar's back button. */
-#neoworks-sidebar .nw-header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  /* Docked, 8px sidebar inset + 2px + half the 28px buttons = y 24, the top
-     bar's center line. */
-  padding: 2px 4px 6px 16px;
+/* A theme's frame is opaque (frame.css); so is the sidebar on it. */
+:root[lwtheme] #neoworks-sidebar {
+  background-color: var(--lwt-accent-color);
+  backdrop-filter: none;
 }
 
-#neoworks-sidebar .nw-header .nw-icon-button {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-md);
-}
-
-#neoworks-sidebar .nw-header .nw-icon {
-  width: 16px;
-  height: 16px;
-}
 
 /* Docked: the top bar and #browser make room: 8px frame + 240px sidebar,
    and their own 8px gap follows. DOM fullscreen (video) gives the page the
@@ -107,17 +106,36 @@
   padding: 8px 0 8px 8px;
   background: none;
   backdrop-filter: none;
-  box-shadow: none;
+  mask-image: none;
   transition: none;
 }
 
-/* The docked header takes the titlebar's place beside the top bar. */
-:root[nw-sidebar-docked][customtitlebar] #neoworks-sidebar .nw-header {
-  -moz-window-dragging: drag;
+/* An add-on theme's image, continued from the frame (neoworks-ui/frame.css)
+   over the collapsed sidebar's own background. Fixed to the window, so it
+   lines up and stays put while the sidebar slides; docked, the sidebar has
+   no background and the frame shows through. */
+:root[lwtheme]:not([nw-sidebar-docked]) #neoworks-sidebar {
+  background-image: var(--toolbox-background-image);
+  background-repeat: var(--toolbox-background-repeat);
+  background-position: var(--toolbox-background-position);
+  background-size: var(--toolbox-background-size);
+  background-attachment: fixed;
 }
 
-:root[nw-sidebar-docked][customtitlebar] #neoworks-sidebar .nw-header button {
-  -moz-window-dragging: no-drag;
+/* The mirrored header image (frame.css), shifted up by the top bar's height
+   (sidebar-offset.ts). The sidebar's transform makes it the stacking
+   context, so z-index -1 paints this between its background and its rows. */
+:root[lwtheme-image]:not([nw-sidebar-docked]) #neoworks-sidebar::before {
+  content: "";
+  position: absolute;
+  top: calc(-1 * var(--nw-sidebar-top, 0px));
+  left: 0;
+  z-index: -1;
+  width: 100vw;
+  height: 100vh;
+  background: var(--lwt-header-image) right top no-repeat;
+  transform: scaleX(-1);
+  pointer-events: none;
 }
 
 #neoworks-sidebar .nw-scroll {
@@ -329,13 +347,6 @@
 @keyframes nw-pulse {
   from { opacity: 0.3; }
   to { opacity: 1; }
-}
-
-#neoworks-sidebar .nw-container-dot {
-  width: 8px;
-  height: 8px;
-  flex-shrink: 0;
-  border-radius: 50%;
 }
 
 #neoworks-sidebar .nw-tab-label {
@@ -674,18 +685,35 @@
   background-repeat: no-repeat;
 }
 
-#neoworks-sidebar .nw-container-bar {
-  display: contents;
-}
-
+/* One row that scrolls sideways once the icons don't fit (the wheel scrolls
+   it too, workspace-switcher.tsx). Auto margins spread the icons while they
+   fit; unlike space-evenly they never push the first one out of reach. */
 #neoworks-sidebar .nw-workspace-icons {
   display: flex;
   flex: 1;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-evenly;
   gap: 2px;
   min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+#neoworks-sidebar .nw-workspace-icons > .nw-workspace-icon {
+  flex-shrink: 0;
+  margin-inline: auto;
+}
+
+/* Fades the edge the row continues behind. */
+#neoworks-sidebar .nw-workspace-icons[data-overflow-start] {
+  mask-image: linear-gradient(to right, transparent, #000 16px);
+}
+
+#neoworks-sidebar .nw-workspace-icons[data-overflow-end] {
+  mask-image: linear-gradient(to left, transparent, #000 16px);
+}
+
+#neoworks-sidebar .nw-workspace-icons[data-overflow-start][data-overflow-end] {
+  mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
 }
 
 /* Inactive workspaces are dimmed; the active one shows its color. */
@@ -722,28 +750,6 @@
   color: var(--nw-workspace-color);
 }
 
-/* Same chip as the container in the URL bar (neoworks-toolbar/toolbar.css). */
-#neoworks-sidebar .nw-container-current {
-  flex-shrink: 1;
-  min-width: 0;
-  max-width: 50%;
-  height: 22px;
-  padding: 0 8px;
-  overflow: hidden;
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--nw-chip-color) 16%, transparent);
-  color: var(--nw-chip-color);
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  transition: background-color var(--dur-fast);
-}
-
-#neoworks-sidebar .nw-container-current:hover {
-  background: color-mix(in srgb, var(--nw-chip-color) 26%, transparent);
-}
-
 #neoworks-sidebar .nw-container-dismiss {
   position: fixed;
   inset: 0;
@@ -764,22 +770,6 @@
   overflow-y: auto;
   border-radius: var(--radius-lg);
   background-color: color-mix(in srgb, var(--bg-elevated) 85%, transparent);
-}
-
-/* The container menu hangs below the header instead. */
-#neoworks-sidebar .nw-header .nw-container-menu {
-  top: calc(100% + 4px);
-  bottom: auto;
-}
-
-#neoworks-sidebar .nw-header .nw-container-menu .nw-icon-button {
-  width: 22px;
-  height: 22px;
-}
-
-#neoworks-sidebar .nw-header .nw-container-menu .nw-icon {
-  width: 14px;
-  height: 14px;
 }
 
 #neoworks-sidebar .nw-container-menu .nw-container-option {

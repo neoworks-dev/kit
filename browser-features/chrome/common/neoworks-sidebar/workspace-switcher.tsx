@@ -6,11 +6,12 @@
 // rename, recolor and delete workspaces. Reuses the container menu's
 // styles so both footer menus look the same.
 
-import { createSignal, For, Show } from "solid-js";
+import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 import { CONTAINER_COLORS, containers, NO_CONTAINER } from "./containers.ts";
 import { focusInputSoon } from "./focus-input.ts";
 import { WORKSPACE_ICONS, workspaceIconMask } from "./workspace-icons.ts";
 import { namedColor } from "./identity-colors.ts";
+import { sidebarDocked } from "./sidebar-docking.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { attributeFlag } from "./tab-row.tsx";
 import {
@@ -33,6 +34,9 @@ import {
 const MENU_NAME = "workspace-menu";
 const NEW_WORKSPACE_INPUT_ID = "neoworks-new-workspace-input";
 const RENAME_INPUT_ID = "neoworks-rename-workspace-input";
+const ICON_ROW_ID = "neoworks-workspace-icons";
+// A wheel notch in line mode scrolls the icon row by about one icon.
+const WHEEL_LINE_PX = 30;
 
 const [menuOpen, setMenuOpen] = createSignal(false);
 const [creating, setCreating] = createSignal(false);
@@ -40,6 +44,9 @@ const [editingId, setEditingId] = createSignal<string | null>(null);
 const [newIcon, setNewIcon] = createSignal(WORKSPACE_ICONS[0]);
 // null: a container of the workspace's own; otherwise a container to share.
 const [newContainer, setNewContainer] = createSignal<number | null>(null);
+// Whether the icon row continues past its left or right edge.
+const [overflowStart, setOverflowStart] = createSignal(false);
+const [overflowEnd, setOverflowEnd] = createSignal(false);
 
 function openMenu(): void {
   setMenuOpen(true);
@@ -355,14 +362,77 @@ function openMenuFromContext(event: MouseEvent): void {
   openMenu();
 }
 
+// solid-xul has no refs; the row is looked up by id.
+function iconRow(): HTMLElement | null {
+  return document.getElementById(ICON_ROW_ID) as HTMLElement | null;
+}
+
+function measureOverflow(): void {
+  const row = iconRow();
+  if (!row) {
+    return;
+  }
+  setOverflowStart(row.scrollLeft > 0);
+  setOverflowEnd(row.scrollLeft + row.clientWidth < row.scrollWidth - 1);
+}
+
+// Scrolls the row just enough to show the active workspace's icon.
+function revealActiveIcon(): void {
+  const row = iconRow();
+  const icon = row?.querySelector("[data-selected]");
+  if (!row || !icon) {
+    return;
+  }
+  const rowBox = row.getBoundingClientRect();
+  const iconBox = icon.getBoundingClientRect();
+  if (iconBox.left < rowBox.left) {
+    row.scrollLeft -= rowBox.left - iconBox.left;
+  } else if (iconBox.right > rowBox.right) {
+    row.scrollLeft += iconBox.right - rowBox.right;
+  }
+}
+
+// The vertical wheel scrolls the row sideways while it overflows.
+function scrollIconRow(event: WheelEvent): void {
+  const row = event.currentTarget as HTMLElement;
+  const delta = event.deltaY || event.deltaX;
+  if (row.scrollWidth <= row.clientWidth || delta === 0) {
+    return;
+  }
+  event.preventDefault();
+  if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+    row.scrollLeft += delta * WHEEL_LINE_PX;
+    return;
+  }
+  row.scrollLeft += delta;
+}
+
 export function WorkspaceSwitcher() {
+  createEffect(() => {
+    workspaces();
+    activeWorkspaceId();
+    sidebarDocked();
+    const frame = requestAnimationFrame(() => {
+      revealActiveIcon();
+      measureOverflow();
+    });
+    onCleanup(() => cancelAnimationFrame(frame));
+  });
+
   return (
     <>
       <Show when={menuOpen()}>
         <div class="nw-container-dismiss" onClick={closeWorkspaceMenu} />
         <WorkspaceMenu />
       </Show>
-      <div class="nw-workspace-icons">
+      <div
+        id={ICON_ROW_ID}
+        class="nw-workspace-icons"
+        data-overflow-start={attributeFlag(overflowStart())}
+        data-overflow-end={attributeFlag(overflowEnd())}
+        onWheel={scrollIconRow}
+        onScroll={measureOverflow}
+      >
         <For each={workspaces()}>
           {(workspace) => (
             <button
