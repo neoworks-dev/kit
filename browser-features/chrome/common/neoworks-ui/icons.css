@@ -57,6 +57,7 @@
   --nw-icon-push-pin-slash: url("@phosphor-icons/core/bold/push-pin-slash-bold.svg");
   --nw-icon-arrow-square-out: url("@phosphor-icons/core/bold/arrow-square-out-bold.svg");
   --nw-icon-sparkle: url("@phosphor-icons/core/bold/sparkle-bold.svg");
+  --nw-icon-git-branch: url("@phosphor-icons/core/bold/git-branch-bold.svg");
   --nw-icon-stop: url("@phosphor-icons/core/bold/stop-bold.svg");
   --nw-icon-caret-down: url("@phosphor-icons/core/bold/caret-down-bold.svg");
   --nw-icon-open-ai-logo: url("@phosphor-icons/core/bold/open-ai-logo-bold.svg");
@@ -301,4 +302,8 @@
 
 .nw-icon[data-icon="sidebar"] {
   mask-image: var(--nw-icon-sidebar);
+}
+
+.nw-icon[data-icon="git-branch"] {
+  mask-image: var(--nw-icon-git-branch);
 }
