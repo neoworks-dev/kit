@@ -489,37 +489,32 @@ async function testPinnedGrid(context: KeysTestContext): Promise<void> {
 const CONTAINER_SERVICE_IMPORT =
   `ChromeUtils.importESModule("moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs").ContextualIdentityService`;
 
-function createContainerThroughSidebar(context: KeysTestContext, name: string): Promise<number> {
+function createContainer(context: KeysTestContext, name: string): Promise<number> {
   return context.inChrome<number>(`
     const service = ${CONTAINER_SERVICE_IMPORT};
-    document.querySelector("#neoworks-sidebar .nw-container-current").click();
-    document.querySelector("#neoworks-sidebar .nw-container-new").click();
-    const input = document.getElementById("neoworks-new-container-input");
-    input.value = ${JSON.stringify(name)};
-    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-    const created = service.getPublicIdentities()
-      .find((identity) => service.getUserContextLabel(identity.userContextId) === ${JSON.stringify(name)});
-    return created ? created.userContextId : 0;
+    return service.create(${JSON.stringify(name)}, "fingerprint", "blue").userContextId;
   `);
 }
 
+// Runs the item in the sidebar's "Open new tabs in" menu without opening the
+// native popup, which would freeze Marionette.
 async function selectDefaultContainer(context: KeysTestContext, name: string): Promise<void> {
   await context.waitFor(
     () =>
       context.inChrome<boolean>(`
-        const option = [...document.querySelectorAll("#neoworks-sidebar .nw-container-option")]
-          .find((row) => row.textContent.includes(${JSON.stringify(name)}));
-        option?.click();
-        return option !== undefined;
+        const item = [...document.querySelectorAll("#neoworks-sidebar-list-menu menuitem")]
+          .find((menuitem) => menuitem.getAttribute("label") === ${JSON.stringify(name)});
+        item?.doCommand();
+        return item !== undefined;
       `),
-    "New container did not show up in the container menu",
+    "New container did not show up in the sidebar's container menu",
   );
 }
 
 async function testContainers(context: KeysTestContext): Promise<void> {
   const name = "E2E Container";
-  const userContextId = await createContainerThroughSidebar(context, name);
-  assert(userContextId > 0, "Creating a container from the sidebar failed");
+  const userContextId = await createContainer(context, name);
+  assert(userContextId > 0, "Creating a container failed");
   try {
     await selectDefaultContainer(context, name);
     const defaultId = await context.inChrome<number>(
@@ -544,7 +539,7 @@ async function testContainers(context: KeysTestContext): Promise<void> {
 const TESTS: Array<[string, (context: KeysTestContext) => Promise<void>]> = [
   ["top bar shows navigation, URL bar, extensions and menu", testTopBar],
   ["pinned tabs render as a three-column grid", testPinnedGrid],
-  ["containers can be created and used for new tabs", testContainers],
+  ["new tabs open in the container picked in the sidebar menu", testContainers],
   ["double Space opens spotlight", testDoubleSpaceOpensSpotlight],
   ["Ctrl+T opens spotlight instead of a new tab", testControlTOpensSpotlight],
   ["keys typed into inputs stay text", testDoubleSpaceInInputTypesSpaces],

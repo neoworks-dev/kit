@@ -9,6 +9,8 @@ import { createSignal } from "solid-js";
 // Window event dispatched by tab:next / tab:previous.
 export const SIDEBAR_PEEK_EVENT = "NeoworksSidebarPeek";
 
+const SIDEBAR_ID = "neoworks-sidebar";
+
 const LEAVE_HIDE_DELAY_MS = 300;
 const PEEK_DURATION_MS = 1200;
 
@@ -20,8 +22,13 @@ let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
 export const sidebarVisible = visible;
 
+// A drag swallows the mouse events: Gecko sends mouseleave when it starts and
+// no mouseenter after the drop, so ask the element whether it's hovered.
 function isInUse(): boolean {
-  return hovered || openMenus.size > 0;
+  if (hovered || openMenus.size > 0) {
+    return true;
+  }
+  return document.getElementById(SIDEBAR_ID)?.matches(":hover") ?? false;
 }
 
 function scheduleHide(delayMs: number): void {

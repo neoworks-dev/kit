@@ -13,10 +13,31 @@
   background: var(--bg) !important;
 }
 
-/* An add-on theme's header image and additional backgrounds. Firefox paints
-   them on <body> or the toolbox, which Kit keeps transparent, so the frame
-   paints them instead; --toolbox-background-* already combine them
-   (browser-shared.css). */
+/* Firefox pins the header image's art (its right end) to the top right,
+   over its tab strip. Kit's tabs are in the sidebar, so the image is
+   mirrored onto the top left corner, over the sidebar and the start of the
+   top bar. The frame keeps the additional backgrounds; a flipped layer
+   behind everything draws the header image. */
+:root#main-window[lwtheme-image] {
+  --toolbox-background-image: var(--lwt-additional-images);
+  --toolbox-background-repeat: var(--lwt-background-tiling);
+  --toolbox-background-position: var(--lwt-background-alignment);
+  --toolbox-background-size: var(--lwt-background-size);
+}
+
+:root#main-window[lwtheme-image] > body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--lwt-header-image) right top no-repeat;
+  transform: scaleX(-1);
+  pointer-events: none;
+}
+
+/* An add-on theme's additional backgrounds. Firefox paints them on <body>
+   or the toolbox, which Kit keeps transparent, so the frame paints them
+   instead. */
 :root#main-window[lwtheme] {
   background-image: var(--toolbox-background-image) !important;
   background-repeat: var(--toolbox-background-repeat) !important;
@@ -30,6 +51,12 @@
   background-color: color-mix(in srgb, var(--nw-tint) calc(var(--nw-window-tint, 0.6) * 100%), transparent) !important;
 }
 
+/* A theme's color fills the whole window, see-through or not: its header
+   image is opaque, and a tinted frame around it showed where it ends. */
+:root#main-window[lwtheme] {
+  background-color: var(--lwt-accent-color) !important;
+}
+
 /* Firefox paints its toolbox color on <body>, a lighter gray than --bg that
    would cover the frame. */
 :root#main-window > body,
@@ -41,6 +68,8 @@
 /* DOM fullscreen (video) gives the page the whole window. */
 :root:not([inDOMFullscreen]) #tabbrowser-tabbox {
   margin: 0 8px 8px;
+  /* Keep in sync with the floating sidebar's corners (neoworks-sidebar/sidebar.css). */
   border-radius: 12px;
   overflow: clip;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.1);
 }

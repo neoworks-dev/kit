@@ -4,7 +4,8 @@
 // joins or leaves its folder), on a folder header it joins that folder, and
 // below the list it moves out of any folder to the end. Folders move as a
 // whole the same way. Tabs dropped on the Essentials or pinned grid join it,
-// and on a workspace icon in the footer they move to that workspace.
+// and on a workspace icon in the footer they move to that workspace. The
+// floating sidebar stays open for the whole drag.
 
 import { createSignal } from "solid-js";
 import {
@@ -14,11 +15,14 @@ import {
   moveTabToListEnd,
 } from "./folder-actions.ts";
 import { addToEssentials, isEssential } from "./essentials.ts";
+import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { moveTabOnto, pinTab } from "./tab-actions.ts";
 import type { BrowserTab, BrowserTabGroup, TabListElement } from "./types.ts";
 import { activeWorkspaceId, moveTabToWorkspace } from "./workspaces.ts";
 
 const DRAG_TYPE = "application/x-neoworks-tab";
+// Keeps the floating sidebar open, like an open menu does.
+const DRAG_HOLD = "tab-drag";
 
 export const LIST_END = "list-end";
 export const ESSENTIALS = "essentials";
@@ -55,6 +59,7 @@ export function isDropTarget(target: DropTarget): boolean {
 
 function beginDrag(event: DragEvent, item: DraggedItem, label: string): void {
   draggedItem = item;
+  setSidebarMenuOpen(DRAG_HOLD, true);
   event.dataTransfer?.setData(DRAG_TYPE, label);
   event.dataTransfer?.setDragImage(event.currentTarget as Element, 12, 12);
 }
@@ -83,6 +88,9 @@ export function leaveDrop(target: DropTarget): void {
 }
 
 export function endDrag(): void {
+  if (draggedItem) {
+    setSidebarMenuOpen(DRAG_HOLD, false);
+  }
   draggedItem = null;
   setDropTarget(null);
   setDraggingTab(false);

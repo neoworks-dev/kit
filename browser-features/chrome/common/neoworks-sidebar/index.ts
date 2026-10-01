@@ -5,7 +5,6 @@ import {
   noraComponent,
   NoraComponentBase,
 } from "#features-chrome/utils/base.ts";
-import { closeContainerMenu } from "./container-bar.tsx";
 import { watchContainers } from "./containers.ts";
 import { closeLeftNewTabs } from "./empty-tabs.ts";
 import { watchEssentials } from "./essentials.ts";
@@ -22,6 +21,7 @@ import {
 import { createTabState } from "./tab-state.ts";
 import { flagWorkspaceContainer } from "./workspace-container-flag.ts";
 import { toggleSidebarDocked, watchSidebarDocking } from "./sidebar-docking.ts";
+import { watchSidebarOffset } from "./sidebar-offset.ts";
 import { registerCommands } from "../neoworks-commands/registry.ts";
 import { closeWorkspaceMenu } from "./workspace-switcher.tsx";
 import { routeNewTabsToDefaultContainer } from "./new-tab-container.ts";
@@ -44,6 +44,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
     const tabState = createTabState();
     const stopWatchingContainers = watchContainers();
     const stopWatchingDocking = watchSidebarDocking();
+    const stopWatchingOffset = watchSidebarOffset();
     const stopWatchingWorkspaces = watchWorkspaces();
     const stopWatchingEssentials = watchEssentials();
     const stopRoutingNewTabs = routeNewTabsToDefaultContainer();
@@ -78,8 +79,8 @@ export default class NeoworksSidebar extends NoraComponentBase {
       stopWatchingEssentials();
       stopWatchingWorkspaces();
       stopWatchingDocking();
+      stopWatchingOffset();
       removeEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
-      closeContainerMenu();
       stopWatchingContainers();
       disposeSidebarVisibility();
       tabState.dispose();
