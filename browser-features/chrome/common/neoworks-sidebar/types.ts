@@ -76,6 +76,16 @@ export interface NeoworksTabbrowser {
     url: string,
     options: { userContextId: number; pinned?: boolean; index?: number },
   ): BrowserTab;
+  // A lazy tab has no browser until it's first selected.
+  addTab(
+    url: string,
+    options: {
+      createLazyBrowser?: boolean;
+      lazyTabTitle?: string;
+      inBackground?: boolean;
+      triggeringPrincipal: nsIPrincipal;
+    },
+  ): BrowserTab;
   pinTab(tab: BrowserTab): void;
   unpinTab(tab: BrowserTab): void;
   removeTab(

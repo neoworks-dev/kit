@@ -53,6 +53,7 @@ export const NW_CHROME_COMMAND_IDS = [
   "split:horizontal",
   "split:close",
   "ai:toggle",
+  "onboarding:open",
 ] as const;
 
 export type NWPageCommandId = (typeof NW_PAGE_COMMAND_IDS)[number];
@@ -97,6 +98,7 @@ export const NW_COMMAND_TITLES: Record<NWCommandId, string> = {
   "split:horizontal": "Split Stacked",
   "split:close": "Close Split Pane",
   "ai:toggle": "Toggle AI Sidebar",
+  "onboarding:open": "Run First Launch Setup",
 };
 
 export interface NWCommandInvocation {
