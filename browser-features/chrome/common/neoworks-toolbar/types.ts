@@ -42,3 +42,9 @@ export interface PageState {
   // The page can open in its own web app window.
   appAvailable: boolean;
 }
+
+export interface ToastMessage {
+  text: string;
+  // A Phosphor icon name from neoworks-ui/icons.css.
+  icon: string;
+}

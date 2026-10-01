@@ -40,6 +40,7 @@ export const NW_CHROME_COMMAND_IDS = [
   "spotlight:open",
   "page-actions:open",
   "page:reader",
+  "page:copy-url",
   "sidebar:toggle-docked",
   "window:toggle-transparent",
   "workspace:next",
@@ -85,6 +86,7 @@ export const NW_COMMAND_TITLES: Record<NWCommandId, string> = {
   "spotlight:open": "Open Spotlight",
   "page-actions:open": "Page Actions",
   "page:reader": "Toggle Reader View",
+  "page:copy-url": "Copy Page Link",
   "sidebar:toggle-docked": "Toggle Sidebar Docking",
   "window:toggle-transparent": "Toggle Transparent Window",
   "workspace:next": "Next Workspace",
@@ -178,6 +180,7 @@ export const NW_KEY_BINDINGS: readonly NWKeyBinding[] = [
   },
   { keys: ["/"], command: "find:open" },
   { keys: ["g", "r"], command: "page:reader" },
+  { keys: ["y", "y"], command: "page:copy-url" },
   // Space is the leader: Space w … are window (split) commands, as in vim's
   // C-w.
   { keys: ["Space", "w", "v"], command: "split:vertical" },
