@@ -14,7 +14,7 @@ import {
   moveTabIntoFolder,
   moveTabToListEnd,
 } from "./folder-actions.ts";
-import { addToEssentials, isEssential } from "./essentials.ts";
+import { addToEssentials, essentialsScope, isEssential } from "./essentials.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { moveTabOnto, pinTab } from "./tab-actions.ts";
 import type { BrowserTab, BrowserTabGroup, TabListElement } from "./types.ts";
@@ -165,10 +165,11 @@ export function workspaceDrop(workspaceId: string): WorkspaceDrop {
   return `workspace:${workspaceId}`;
 }
 
-// Essentials are in every workspace already.
+// Shared Essentials are in every workspace already.
 export function allowWorkspaceDrop(event: DragEvent, workspaceId: string): void {
   const tab = draggedTab();
-  if (!tab || isEssential(tab) || workspaceId === activeWorkspaceId()) {
+  if (!tab || (isEssential(tab) && essentialsScope() === "shared") ||
+    workspaceId === activeWorkspaceId()) {
     return;
   }
   allowDrop(event, workspaceDrop(workspaceId));

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // The top of the sidebar: Essentials as a 3×3 grid of large tiles (shared by
-// every workspace), the workspace's pinned tabs as ordinary tab rows, and a
-// divider before the tab list.
+// every workspace, or kept per workspace or container), the workspace's pinned
+// tabs as ordinary tab rows, and a divider before the tab list.
 
 import { For, Show } from "solid-js";
 import { openTabContextMenu } from "./context-menu.tsx";
