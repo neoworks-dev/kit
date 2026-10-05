@@ -5,8 +5,8 @@
 // Kit's patches, prefs and branding to it like a dev build does, and puts the
 // production build of Kit's own code next to it as real files. A `kit`
 // launcher keeps Kit's profile apart from any Floorp install and an
-// install.sh registers Kit with the desktop, so it can be the default
-// browser.
+// install.sh copies Kit to ~/.local/share/kit/app and registers it with the
+// desktop, so it can be the default browser.
 //
 // The result runs without the dev servers: the production startup script
 // loads chrome://noraneko/ (bridge/startup/src/chrome_root.ts).
@@ -56,26 +56,44 @@ exec "$KIT_DIR/${BRANDING.base_name}" --profile "$PROFILE" --name kit --class ki
 `;
 
 const INSTALL_SCRIPT = `#!/bin/sh
-# Registers this Kit with the desktop: an app menu entry that handles web
-# links, its icon and a kit command. Kit stays where it was unpacked.
-#   ./install.sh              install
+# Copies this Kit to ~/.local/share/kit/app and registers it with the
+# desktop: an app menu entry that handles web links, its icon and a kit
+# command. The unpacked folder can be deleted afterwards.
+#   ./install.sh              install, or update an installed Kit
 #   ./install.sh --default    install and make Kit the default browser
-#   ./install.sh --uninstall  remove the entry, icon and command
+#   ./install.sh --uninstall  remove the app, entry, icon and command
 set -eu
-KIT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
 DATA="\${XDG_DATA_HOME:-$HOME/.local/share}"
+KIT_DIR="$DATA/kit/app"
 APPS="$DATA/applications"
 ICONS="$DATA/icons/hicolor"
 BIN="$HOME/.local/bin"
 
+# Replacing the files under a running Kit crashes it.
+if pgrep -f "^$KIT_DIR/" >/dev/null 2>&1; then
+  echo "Kit is running from $KIT_DIR. Close it and run this again." >&2
+  exit 1
+fi
+
 if [ "\${1:-}" = "--uninstall" ]; then
+  rm -rf "$KIT_DIR"
   rm -f "$APPS/kit.desktop" "$BIN/kit"
   for size in 16 32 48 64 128; do
     rm -f "$ICONS/\${size}x\${size}/apps/kit.png"
   done
   update-desktop-database "$APPS" 2>/dev/null || true
-  echo "Removed Kit's desktop entry. Your profile is still in $DATA/kit."
+  echo "Removed Kit. Your profile is still in $DATA/kit/profile."
   exit 0
+fi
+
+# Copied next to the old app first, so a failed copy leaves it intact.
+if [ "$SOURCE_DIR" != "$KIT_DIR" ]; then
+  mkdir -p "$DATA/kit"
+  rm -rf "$KIT_DIR.new"
+  cp -a "$SOURCE_DIR" "$KIT_DIR.new"
+  rm -rf "$KIT_DIR"
+  mv "$KIT_DIR.new" "$KIT_DIR"
 fi
 
 mkdir -p "$APPS" "$BIN"
@@ -92,7 +110,10 @@ sed "s|@KIT_EXEC@|$KIT_EXEC|g" "$KIT_DIR/kit.desktop.in" > "$APPS/kit.desktop"
 ln -sf "$KIT_DIR/kit" "$BIN/kit"
 update-desktop-database "$APPS" 2>/dev/null || true
 gtk-update-icon-cache -q "$ICONS" 2>/dev/null || true
-echo "Installed Kit from $KIT_DIR."
+echo "Installed Kit to $KIT_DIR."
+if [ "$SOURCE_DIR" != "$KIT_DIR" ]; then
+  echo "You can delete $SOURCE_DIR."
+fi
 
 # xdg-mime rather than xdg-settings, which refuses whenever $BROWSER is set.
 if [ "\${1:-}" = "--default" ]; then

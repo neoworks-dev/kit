@@ -27,8 +27,9 @@ deno task feles-build package
 Builds Kit in production mode on the locked release runtime and packs it into
 `_dist/package/kit-<version>-linux-<arch>.tar.xz`. To install, unpack it
 anywhere and run `./kit/install.sh` (add `--default` to make Kit the default
-browser, `--uninstall` to remove it). Kit keeps its profile in
-`~/.local/share/kit/profile`. The production build replaces the dev outputs
+browser, `--uninstall` to remove it). It copies Kit to
+`~/.local/share/kit/app`, so the unpacked folder can be deleted afterwards;
+Kit keeps its profile in `~/.local/share/kit/profile`. The production build replaces the dev outputs
 in `bridge/*/_dist`, so run `deno task dev-tool rebuild` before going back to
 `npm run dev`. See `AGENTS.md` for the architecture, conventions and the
 `dev-tool` CLI for driving a running browser.
