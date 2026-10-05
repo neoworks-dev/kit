@@ -14,7 +14,7 @@ import {
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
 import { listenForChromeKeys } from "./chrome-keys.ts";
 import { handleKeyModeEvent, refreshSelectedTabMode } from "./key-mode.ts";
-import { mountModeIndicator, mountWhichKey } from "./mount.tsx";
+import { mountWhichKey } from "./mount.tsx";
 import { redirectNativeShortcuts } from "./native-shortcuts.ts";
 import { PAGE_COMMANDS } from "./page-commands.ts";
 import { QUICKMARK_COMMANDS } from "./quickmarks.ts";
@@ -50,7 +50,6 @@ export default class NeoworksCommands extends NoraComponentBase {
     const restoreNativeShortcuts = redirectNativeShortcuts(runCommand);
     if (document.body) {
       mountWhichKey(document.body);
-      mountModeIndicator(document.body);
     }
 
     onCleanup(() => {
