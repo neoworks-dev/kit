@@ -8,7 +8,7 @@ import { createSignal } from "solid-js";
 import { NO_CONTAINER } from "../neoworks-sidebar/containers.ts";
 import { addToEssentials } from "../neoworks-sidebar/essentials.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
-import { WORKSPACE_ICONS } from "../neoworks-sidebar/workspace-icons.ts";
+import { importedWorkspaceIcon } from "../neoworks-sidebar/workspace-icons.ts";
 import { addWorkspace, moveTabToWorkspace, workspaces } from "../neoworks-sidebar/workspaces.ts";
 import type { BrowserTab } from "../neoworks-sidebar/types.ts";
 import type {
@@ -100,25 +100,31 @@ export async function detectSources(): Promise<void> {
 }
 
 // A workspace for a named group of imported tabs (a Zen space): the Kit
-// workspace with that name, or a new one in no container, like the tabs.
-function workspaceNamed(name: string): string {
+// workspace with that name, or a new one with the space's icon in no
+// container, like the tabs.
+function workspaceNamed(name: string, icon: string | undefined): string {
   const existing = workspaces().find((workspace) =>
     workspace.name.toLowerCase() === name.toLowerCase()
   );
-  return (existing ?? addWorkspace(name, WORKSPACE_ICONS[0], NO_CONTAINER)).id;
+  return (existing ?? addWorkspace(name, importedWorkspaceIcon(icon), NO_CONTAINER)).id;
 }
 
-// Essentials that don't fit the grid stay pinned in their workspace.
+// Essentials that don't fit the grid stay pinned in their workspace. With
+// per-workspace or per-container essentials, moving retags an essential to
+// its space; with shared essentials it is a no-op.
 function placeImportedTab(tab: BrowserTab, imported: ImportedTab): void {
   const browser = tabbrowser();
   if (imported.essential && addToEssentials(tab)) {
+    if (imported.workspace) {
+      moveTabToWorkspace(tab, workspaceNamed(imported.workspace, imported.workspaceIcon));
+    }
     return;
   }
   if (imported.pinned || imported.essential) {
     browser.pinTab(tab);
   }
   if (imported.workspace) {
-    moveTabToWorkspace(tab, workspaceNamed(imported.workspace));
+    moveTabToWorkspace(tab, workspaceNamed(imported.workspace, imported.workspaceIcon));
   }
 }
 
@@ -136,6 +142,11 @@ function openImportedTabs(tabs: ImportedTab[]): void {
         inBackground: true,
         triggeringPrincipal: principal,
       });
+      // Lazy tabs only get a favicon once loaded; restored ones get theirs
+      // from the session the same way.
+      if (imported.icon) {
+        browser.setIcon(tab, imported.icon);
+      }
       placeImportedTab(tab, imported);
     } catch (error) {
       console.error("[neoworks-onboarding] Couldn't open an imported tab:", imported.url, error);

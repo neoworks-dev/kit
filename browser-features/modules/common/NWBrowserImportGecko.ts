@@ -322,10 +322,40 @@ interface SessionTab {
   zenSyncId?: string;
   zenIsEmpty?: boolean;
   zenIsGlance?: boolean;
+  // The favicon: usually a data: URI, sometimes a chrome:// URL of the
+  // browser's own.
+  image?: string;
 }
 interface ZenSpace {
   uuid?: string;
   name?: string;
+  // An emoji, or a chrome:// URL of one of Zen's icons.
+  icon?: string;
+}
+
+// Zen's icons are chrome://browser/skin/zen-icons/selectable/<name>.svg;
+// Kit only knows the name.
+export function zenSpaceIcon(icon: string | undefined): string {
+  if (!icon) {
+    return "";
+  }
+  const zenIcon = /\/([\w-]+)\.svg$/.exec(icon);
+  if (zenIcon) {
+    return zenIcon[1];
+  }
+  if (icon.includes(":") || icon.includes("/")) {
+    return "";
+  }
+  return icon;
+}
+
+// Only data: URIs: other browsers' chrome:// icons don't exist in Kit, and
+// tabbrowser won't show remote ones without a loading principal.
+export function sessionTabIcon(image: string | undefined): string {
+  if (image?.startsWith("data:image/")) {
+    return image;
+  }
+  return "";
 }
 // Firefox's sessionstore has windows; Zen's own zen-sessions.jsonlz4 has
 // the tabs and spaces at the top level.
@@ -367,10 +397,10 @@ function sessionTabs(state: SessionState): ImportedTab[] | null {
   // Zen repeats synced tabs in every window.
   const synced = new Set<string>();
   for (const group of groups) {
-    const spaces = new Map<string, string>();
+    const spaces = new Map<string, ZenSpace>();
     for (const space of group.spaces ?? state.spaces ?? []) {
       if (space.uuid && space.name) {
-        spaces.set(space.uuid, space.name);
+        spaces.set(space.uuid, space);
       }
     }
     for (const tab of group.tabs ?? []) {
@@ -390,12 +420,21 @@ function sessionTabs(state: SessionState): ImportedTab[] | null {
         continue;
       }
       const imported: ImportedTab = { url: entry.url, title: entry.title ?? "", pinned: tab.pinned === true };
+      const icon = sessionTabIcon(tab.image);
+      if (icon) {
+        imported.icon = icon;
+      }
+      const space = tab.zenWorkspace ? spaces.get(tab.zenWorkspace) : undefined;
       if (tab.zenEssential) {
         // Essentials show in every space.
         imported.pinned = false;
         imported.essential = true;
-      } else if (tab.zenWorkspace && spaces.has(tab.zenWorkspace)) {
-        imported.workspace = spaces.get(tab.zenWorkspace);
+      } else if (space?.name) {
+        imported.workspace = space.name;
+        const workspaceIcon = zenSpaceIcon(space.icon);
+        if (workspaceIcon) {
+          imported.workspaceIcon = workspaceIcon;
+        }
       }
       tabs.push(imported);
     }

@@ -9,7 +9,7 @@
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 import { CONTAINER_COLORS, containers, NO_CONTAINER } from "./containers.ts";
 import { focusInputSoon } from "./focus-input.ts";
-import { WORKSPACE_ICONS, workspaceIconMask } from "./workspace-icons.ts";
+import { isEmojiIcon, WORKSPACE_ICONS, workspaceIconMask } from "./workspace-icons.ts";
 import { namedColor } from "./identity-colors.ts";
 import { sidebarDocked } from "./sidebar-docking.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
@@ -131,6 +131,24 @@ function CheckMark(props: { workspaceId: string }) {
   );
 }
 
+// A Phosphor icon, or the emoji of a workspace imported from Zen. `color`
+// tints the Phosphor icon; emoji keep their own colors.
+function WorkspaceIcon(props: { icon: string; color?: string }) {
+  return (
+    <Show
+      when={isEmojiIcon(props.icon)}
+      fallback={
+        <span
+          class="nw-icon"
+          style={{ color: props.color ?? "", "mask-image": workspaceIconMask(props.icon) }}
+        />
+      }
+    >
+      <span class="nw-icon nw-workspace-emoji">{props.icon}</span>
+    </Show>
+  );
+}
+
 // Picking an icon hands focus back to the name field, so Enter still saves.
 function IconPicker(props: {
   selected: string;
@@ -217,12 +235,9 @@ function WorkspaceOption(props: { workspace: Workspace }) {
       fallback={<WorkspaceEditor workspace={props.workspace} />}
     >
       <div class="nw-container-option" onClick={() => pickWorkspace(props.workspace.id)}>
-        <span
-          class="nw-icon"
-          style={{
-            color: namedColor(props.workspace.color),
-            "mask-image": workspaceIconMask(props.workspace.icon),
-          }}
+        <WorkspaceIcon
+          icon={props.workspace.icon}
+          color={namedColor(props.workspace.color)}
         />
         <span class="nw-tab-label">{props.workspace.name}</span>
         <CheckMark workspaceId={props.workspace.id} />
@@ -448,7 +463,7 @@ export function WorkspaceSwitcher() {
               onDragLeave={() => leaveDrop(workspaceDrop(workspace.id))}
               onDrop={(event: DragEvent) => dropOntoWorkspace(event, workspace.id)}
             >
-              <span class="nw-icon" style={{ "mask-image": workspaceIconMask(workspace.icon) }} />
+              <WorkspaceIcon icon={workspace.icon} />
             </button>
           )}
         </For>
