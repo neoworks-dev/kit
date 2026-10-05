@@ -1,0 +1,78 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Infobars ("Speech Dispatcher won't open", "Firefox prevented this page
+   from…"): a quiet strip on the elevated surface with a divider below,
+   instead of Firefox's white card with a rainbow stripe. Rules here beat the
+   element's own :host styles in infobar.css; the status color stays on the
+   icon only. */
+notification-message.infobar {
+  --message-bar-icon-background-color: transparent;
+  --message-bar-icon-container-margin-block-start: 0;
+  --info-bar-margin-inline: 0;
+  --info-bar-margin-block-start: 0;
+  --info-bar-margin-block-end: 0;
+
+  margin: 0 !important;
+  border: none !important;
+  border-block-end: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+  background: var(--bg-elevated) !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+  font: 12px var(--font-sans);
+}
+
+notification-message.infobar::before {
+  display: none !important;
+}
+
+notification-message.infobar[type="info"] {
+  --message-bar-icon-color: var(--nw-info);
+}
+
+notification-message.infobar[type="warning"] {
+  --message-bar-icon-color: var(--nw-warning);
+}
+
+notification-message.infobar:is([type="critical"], [type="error"]) {
+  --message-bar-icon-color: var(--nw-danger);
+}
+
+notification-message.infobar[type="success"] {
+  --message-bar-icon-color: var(--nw-success);
+}
+
+notification-message.infobar .notification-link {
+  color: var(--text-muted) !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+notification-message.infobar .notification-link:hover {
+  color: var(--text) !important;
+}
+
+notification-message.infobar .notification-button {
+  appearance: none !important;
+  min-height: 24px !important;
+  padding: 0 10px !important;
+  border: none !important;
+  border-radius: var(--radius-sm) !important;
+  background: var(--glass-hover) !important;
+  color: var(--text) !important;
+  font: 500 12px var(--font-sans) !important;
+  transition: background-color var(--dur-fast);
+}
+
+notification-message.infobar .notification-button:not([disabled]):hover {
+  background: var(--glass-selected) !important;
+}
+
+notification-message.infobar .notification-button.primary {
+  background: var(--text) !important;
+  color: var(--bg-elevated) !important;
+}
+
+notification-message.infobar .notification-button.primary:not([disabled]):hover {
+  background: var(--text-muted) !important;
+}

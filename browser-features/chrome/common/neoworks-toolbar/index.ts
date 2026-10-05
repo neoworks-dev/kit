@@ -20,6 +20,7 @@ import glassStyle from "../neoworks-ui/glass.css?inline";
 import iconStyle from "../neoworks-ui/icons.css?inline";
 import menuStyle from "../neoworks-ui/menu.css?inline";
 import bookmarksStyle from "./bookmarks.css?inline";
+import notificationsStyle from "./notifications.css?inline";
 import toastStyle from "./toast.css?inline";
 import toolbarStyle from "./toolbar.css?inline";
 
@@ -37,7 +38,7 @@ export default class NeoworksToolbar extends NoraComponentBase {
     const style = document.createElement("style");
     style.id = "neoworks-toolbar-style";
     style.textContent = frameStyle + glassStyle + iconStyle + menuStyle + toolbarStyle + bookmarksStyle +
-      toastStyle;
+      notificationsStyle + toastStyle;
     document.head.append(style);
     onCleanup(() => style.remove());
     onCleanup(watchWindowTransparency());
