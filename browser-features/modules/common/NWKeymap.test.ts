@@ -8,7 +8,9 @@ import {
   type TestCase,
 } from "../../chrome/test/utils/test_harness.ts";
 import {
+  INSERT_MODE_EXIT_KEY,
   isBindingLetter,
+  isKeyMode,
   isModifierKey,
   keyToken,
   type NWKeyBinding,
@@ -81,6 +83,16 @@ function testSingleKeyBinding(): void {
   const harness = new DispatcherHarness();
   assert(harness.press("j"), "j is consumed");
   assertEquals(harness.lastCommand(), "page:scroll-down", "j scrolls down");
+}
+
+function testInsertModeKeys(): void {
+  const harness = new DispatcherHarness();
+  assert(harness.press("i"), "i is consumed");
+  assertEquals(harness.lastCommand(), "mode:insert", "i enters insert mode");
+  const exitToken = keyToken(keyEvent("Escape", { shiftKey: true }));
+  assertEquals(exitToken, INSERT_MODE_EXIT_KEY, "Shift+Escape is the exit key");
+  assert(!isKeyMode("visual"), "only known modes pass the guard");
+  assert(isKeyMode("insert"), "insert is a key mode");
 }
 
 function testSequence(): void {
@@ -203,6 +215,7 @@ export async function runAllTests(): Promise<void> {
   const tests: TestCase[] = [
     { name: "keyToken normalizes keys and modifiers", fn: testKeyTokens },
     { name: "single-key binding runs", fn: testSingleKeyBinding },
+    { name: "insert mode keys", fn: testInsertModeKeys },
     { name: "two-key sequence runs", fn: testSequence },
     { name: "pending sequence expires", fn: testSequenceExpires },
     { name: "invalid follow-up key starts a new sequence", fn: testInvalidFollowUpRestarts },

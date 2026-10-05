@@ -5,8 +5,11 @@
 import {
   isBindingLetter,
   isChromeCommand,
+  isKeyMode,
   isValidKeySequence,
   NW_COMMAND_EVENT,
+  NW_KEYS_MODE_EVENT,
+  NW_KEYS_MODE_MESSAGE,
   NW_KEYS_OPEN_IN_BACKGROUND_MESSAGE,
   NW_KEYS_PENDING_EVENT,
   NW_KEYS_PENDING_MESSAGE,
@@ -19,9 +22,14 @@ interface BrowserWindow extends Window {
   openLinkIn(url: string, where: string, params: Record<string, unknown>): void;
 }
 
+interface TabEmbedder {
+  browser: Element;
+  browserWindow: BrowserWindow;
+}
+
 interface KeysMessage {
   name: string;
-  data?: { command?: unknown; letter?: unknown; url?: unknown; keys?: unknown };
+  data?: { command?: unknown; letter?: unknown; url?: unknown; keys?: unknown; mode?: unknown };
 }
 
 function toInvocation(data: KeysMessage["data"]): NWCommandInvocation | null {
@@ -40,6 +48,11 @@ function toInvocation(data: KeysMessage["data"]): NWCommandInvocation | null {
 // links open with the page's own principal.
 export class NWKeysParent extends JSWindowActorParent {
   receiveMessage(message: KeysMessage): void {
+    // Background tabs report mode changes too (navigating leaves insert mode).
+    if (message.name === NW_KEYS_MODE_MESSAGE) {
+      this.dispatchMode(message.data?.mode);
+      return;
+    }
     const browserWindow = this.selectedTabWindow();
     if (!browserWindow) {
       return;
@@ -66,16 +79,35 @@ export class NWKeysParent extends JSWindowActorParent {
     );
   }
 
-  private selectedTabWindow(): BrowserWindow | null {
+  private dispatchMode(mode: unknown): void {
+    const embedder = this.tabEmbedder();
+    if (!embedder || !isKeyMode(mode)) {
+      return;
+    }
+    const { browser, browserWindow } = embedder;
+    browserWindow.dispatchEvent(
+      new browserWindow.CustomEvent(NW_KEYS_MODE_EVENT, { detail: { browser, mode } }),
+    );
+  }
+
+  private tabEmbedder(): TabEmbedder | null {
     const browser = this.browsingContext?.top?.embedderElement;
     const browserWindow = browser?.ownerDocument?.defaultView as BrowserWindow | null | undefined;
     if (!browser || !browserWindow?.gBrowser) {
       return null;
     }
-    if (browserWindow.gBrowser.selectedBrowser !== browser) {
+    return { browser, browserWindow };
+  }
+
+  private selectedTabWindow(): BrowserWindow | null {
+    const embedder = this.tabEmbedder();
+    if (!embedder) {
       return null;
     }
-    return browserWindow;
+    if (embedder.browserWindow.gBrowser.selectedBrowser !== embedder.browser) {
+      return null;
+    }
+    return embedder.browserWindow;
   }
 
   private dispatchCommand(browserWindow: BrowserWindow, data: KeysMessage["data"]): void {
