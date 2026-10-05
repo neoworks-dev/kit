@@ -189,6 +189,22 @@
   border-radius: var(--radius-sm) !important;
 }
 
+/* Insert mode (neoworks-commands/key-mode.ts): a small tag, quieter than the
+   page action icons it sits beside. */
+#page-action-buttons > #neoworks-mode-badge {
+  align-self: center;
+  margin: 0 4px 0 0;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--nw-info) 16%, transparent);
+  color: var(--nw-info);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* While Marionette drives the browser (the dev build always), Firefox shows a
    robot icon and red stripes in the URL bar. Kit makes it unmistakable
    instead: an amber border around the whole window and a "Remote control"

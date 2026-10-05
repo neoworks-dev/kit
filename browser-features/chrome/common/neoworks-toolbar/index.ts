@@ -8,6 +8,7 @@ import {
 import { registerCommands } from "../neoworks-commands/registry.ts";
 import { copyPageLink, listenForCopyLinkShortcut } from "./copy-link.ts";
 import { mountPageActionsMenu, mountToast } from "./mount.tsx";
+import { insertModeBadge } from "./mode-badge.ts";
 import { insertPageActionsButton, pageActionsButton } from "./page-actions-button.ts";
 import { openPageActions, togglePageActions } from "./page-actions-menu.tsx";
 import { watchGlassTint } from "./glass-tint.ts";
@@ -52,6 +53,7 @@ export default class NeoworksToolbar extends NoraComponentBase {
     onCleanup(hideToast);
     onCleanup(listenForCopyLinkShortcut());
     onCleanup(insertPageActionsButton(togglePageActions));
+    onCleanup(insertModeBadge());
 
     const unregister = registerCommands([
       { id: "page-actions:open", listed: true, run: openPageActionsFromCommand },
