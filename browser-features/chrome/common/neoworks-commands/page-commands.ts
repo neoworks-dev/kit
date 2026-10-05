@@ -41,4 +41,6 @@ export const PAGE_COMMANDS: NeoworksCommand[] = [
   pageCommand("page:scroll-bottom", true),
   pageCommand("hints:open", true),
   pageCommand("hints:open-background", true),
+  pageCommand("mode:insert", true),
+  pageCommand("mode:normal", true),
 ];

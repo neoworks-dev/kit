@@ -5,15 +5,18 @@
 import { findScrollableElement, isEditableEvent } from "./NWPageUtils.ts";
 import { NWLinkHintSession } from "./NWLinkHints.ts";
 import {
+  INSERT_MODE_EXIT_KEY,
   isModifierKey,
   isPageCommand,
   keyToken,
+  NW_KEYS_MODE_MESSAGE,
   NW_KEYS_OPEN_IN_BACKGROUND_MESSAGE,
   NW_KEYS_PENDING_MESSAGE,
   NW_KEYS_RUN_IN_PAGE_MESSAGE,
   NW_KEYS_RUN_MESSAGE,
   type NWKeyBinding,
   NWKeyDispatcher,
+  type NWKeyMode,
   type NWPageCommandId,
 } from "../common/NWKeymap.ts";
 
@@ -67,6 +70,7 @@ export class NWKeysChild extends JSWindowActorChild {
   private spaceTarget: EventTarget | null = null;
   // Set while the lone Space is replayed (replayAbandonedSpace).
   private replayingSpace = false;
+  private insertMode = false;
 
   handleEvent(event: Event): void {
     // Our own replayed Space must reach the page untouched. Dispatched by
@@ -107,6 +111,15 @@ export class NWKeysChild extends JSWindowActorChild {
   private handleKeyDown(event: KeyboardEvent): void {
     const document = this.contentWindow?.document;
     if (!document || event.isComposing || isModifierKey(event)) {
+      return;
+    }
+    // Embedded content (iframes) often handles keys without a focused text
+    // field: editors, canvases, players. Keys there belong to the embed.
+    if (this.isSubframe()) {
+      return;
+    }
+    if (this.insertMode) {
+      this.handleInsertModeKey(event);
       return;
     }
     if (event.key === "Escape" || this.isTypingContext(event, document)) {
@@ -188,7 +201,39 @@ export class NWKeysChild extends JSWindowActorChild {
         return this.startHints(win, false);
       case "hints:open-background":
         return this.startHints(win, true);
+      case "mode:insert":
+        return this.setInsertMode(true);
+      case "mode:normal":
+        return this.setInsertMode(false);
     }
+  }
+
+  // Insert mode belongs to the tab's top document; subframes never take keys
+  // (isSubframe), so they have no mode to track.
+  private setInsertMode(enabled: boolean): void {
+    if (this.isSubframe() || this.insertMode === enabled) {
+      return;
+    }
+    this.dispatcher.cancel();
+    this.insertMode = enabled;
+    let mode: NWKeyMode = "normal";
+    if (enabled) {
+      mode = "insert";
+    }
+    this.sendAsyncMessage(NW_KEYS_MODE_MESSAGE, { mode });
+  }
+
+  private handleInsertModeKey(event: KeyboardEvent): void {
+    if (keyToken(event) !== INSERT_MODE_EXIT_KEY) {
+      return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    this.setInsertMode(false);
+  }
+
+  private isSubframe(): boolean {
+    return this.browsingContext?.parent != null;
   }
 
   private startHints(win: Window, background: boolean): void {
@@ -210,5 +255,6 @@ export class NWKeysChild extends JSWindowActorChild {
   private resetModes(): void {
     this.dispatcher.cancel();
     this.hintSession?.destroy();
+    this.setInsertMode(false);
   }
 }

@@ -7,10 +7,22 @@ export const NW_KEYS_RUN_MESSAGE = "NWKeys:Run";
 export const NW_KEYS_RUN_IN_PAGE_MESSAGE = "NWKeys:RunInPage";
 export const NW_KEYS_OPEN_IN_BACKGROUND_MESSAGE = "NWKeys:OpenInBackground";
 export const NW_KEYS_PENDING_MESSAGE = "NWKeys:Pending";
+export const NW_KEYS_MODE_MESSAGE = "NWKeys:Mode";
 
 // Window events the chrome features listen for.
 export const NW_COMMAND_EVENT = "NeoworksCommand";
 export const NW_KEYS_PENDING_EVENT = "NeoworksKeysPending";
+export const NW_KEYS_MODE_EVENT = "NeoworksKeysMode";
+
+// In insert mode every key goes to the page, except this one, which leaves
+// it. Plain Escape stays with the page (closing dialogs, editors' own vim).
+export const INSERT_MODE_EXIT_KEY = "S-Escape";
+
+export type NWKeyMode = "normal" | "insert";
+
+export function isKeyMode(value: unknown): value is NWKeyMode {
+  return value === "normal" || value === "insert";
+}
 
 // Commands that act on the page itself; they run inside the content process.
 export const NW_PAGE_COMMAND_IDS = [
@@ -22,6 +34,8 @@ export const NW_PAGE_COMMAND_IDS = [
   "page:scroll-bottom",
   "hints:open",
   "hints:open-background",
+  "mode:insert",
+  "mode:normal",
 ] as const;
 
 export const NW_CHROME_COMMAND_IDS = [
@@ -75,6 +89,8 @@ export const NW_COMMAND_TITLES: Record<NWCommandId, string> = {
   "page:scroll-bottom": "Scroll to Bottom",
   "hints:open": "Follow Link",
   "hints:open-background": "Open Link in Background Tab",
+  "mode:insert": "Enter Insert Mode",
+  "mode:normal": "Leave Insert Mode",
   "tab:new": "New Tab",
   "tab:close": "Close Tab",
   "tab:next": "Next Tab",
@@ -167,6 +183,7 @@ export const NW_KEY_BINDINGS: readonly NWKeyBinding[] = [
   { keys: ["G"], command: "page:scroll-bottom" },
   { keys: ["f"], command: "hints:open" },
   { keys: ["F"], command: "hints:open-background" },
+  { keys: ["i"], command: "mode:insert" },
   { keys: ["J"], command: "tab:next" },
   { keys: ["K"], command: "tab:previous" },
   { keys: ["g", "t"], command: "tab:next" },
