@@ -8,7 +8,7 @@ import { selectTab } from "../neoworks-sidebar/tab-actions.ts";
 import { archivedTabs, reopenArchivedTab } from "../neoworks-sidebar/tab-archive.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
 import { switchWorkspace } from "../neoworks-sidebar/workspaces.ts";
-import { placesResults } from "./places.ts";
+import { autofillResult, placesResults, resultUrl } from "./places.ts";
 import { isSearchQuery, localResults, navigateResult, openTabUrls } from "./search.ts";
 import { stopSuggestions, suggestionResults } from "./suggestions.ts";
 import { ResultRow, sectionTitle, startsSection } from "./result-row.tsx";
@@ -32,13 +32,14 @@ const PANEL_ID = "neoworks-spotlight-panel";
 const BACKDROP_ID = "neoworks-spotlight-backdrop";
 
 interface AsyncResults {
+  autofill: SpotlightResult[];
   suggestions: SpotlightResult[];
   places: SpotlightResult[];
 }
 
 // Drops async responses that arrive after a newer keystroke.
 let searchGeneration = 0;
-let asyncResults: AsyncResults = { suggestions: [], places: [] };
+let asyncResults: AsyncResults = { autofill: [], suggestions: [], places: [] };
 
 function inputElement(): HTMLInputElement | null {
   return document.getElementById(INPUT_ID) as HTMLInputElement | null;
@@ -67,14 +68,17 @@ export function closeSpotlight(): void {
   tabbrowser().selectedBrowser.focus();
 }
 
-// Result order: the open/search row, engine suggestions, matching
-// tabs/quickmarks/commands, then history and bookmarks.
+// Result order: the autofilled origin, the open/search row, engine
+// suggestions, matching tabs/quickmarks/commands, then history and bookmarks.
 function showResults(query: string): void {
+  const autofillUrls = new Set(asyncResults.autofill.map(resultUrl));
+  const notAutofilled = (result: SpotlightResult) => !autofillUrls.has(resultUrl(result));
   setResults([
-    ...navigateResults(query),
+    ...asyncResults.autofill,
+    ...navigateResults(query).filter(notAutofilled),
     ...asyncResults.suggestions,
     ...localResults(query),
-    ...asyncResults.places,
+    ...asyncResults.places.filter(notAutofilled),
   ]);
 }
 
@@ -87,6 +91,15 @@ function navigateResults(query: string): SpotlightResult[] {
     return [];
   }
   return [navigate];
+}
+
+async function requestAutofill(query: string, generation: number): Promise<void> {
+  const autofill = await autofillResult(query);
+  if (generation !== searchGeneration || !autofill) {
+    return;
+  }
+  asyncResults = { ...asyncResults, autofill: [autofill] };
+  showResults(query);
 }
 
 async function requestPlaces(query: string, generation: number): Promise<void> {
@@ -118,13 +131,14 @@ function updateResults(rawQuery: string): void {
   searchGeneration += 1;
   const generation = searchGeneration;
   const query = rawQuery.trim();
-  asyncResults = { suggestions: [], places: [] };
+  asyncResults = { autofill: [], suggestions: [], places: [] };
   setHighlightIndex(0);
   showResults(query);
   if (!query) {
     stopSuggestions();
     return;
   }
+  requestAutofill(query, generation).catch(logFailure("Autofill"));
   requestPlaces(query, generation).catch(logFailure("History search"));
   if (isSearchQuery(navigateResult(query))) {
     requestSuggestions(query, generation).catch(logFailure("Search suggestions"));
