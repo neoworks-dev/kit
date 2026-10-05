@@ -11,9 +11,9 @@ import {
 } from "./folder-actions.ts";
 import {
   addToEssentials,
-  essentialTabs,
+  essentialsScope,
+  hasRoomForEssential,
   isEssential,
-  MAX_ESSENTIALS,
   removeFromEssentials,
 } from "./essentials.ts";
 import { startFolderEdit } from "./folder-editing.ts";
@@ -30,7 +30,7 @@ import { removeFromSplit } from "../neoworks-split/split-view.ts";
 import type { SplitTab } from "../neoworks-split/types.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type { BrowserTab, BrowserTabGroup, TabState, Workspace } from "./types.ts";
-import { activeWorkspaceId, moveTabToWorkspace, workspaces } from "./workspaces.ts";
+import { activeWorkspace, activeWorkspaceId, moveTabToWorkspace, workspaces } from "./workspaces.ts";
 import { GroveTabMenu } from "../neoworks-grove/tab-menu.tsx";
 
 const MENU_ID = "neoworks-sidebar-tab-menu";
@@ -92,7 +92,7 @@ function EssentialsMenuItem(props: { tabState: TabState }) {
   };
   const full = () => {
     props.tabState.revision();
-    return essentialTabs().length >= MAX_ESSENTIALS;
+    return !hasRoomForEssential(activeWorkspace());
   };
   return (
     <Show
@@ -158,14 +158,15 @@ function ContainerSubmenu() {
   );
 }
 
-// Essentials are in every workspace already.
+// Shared Essentials are in every workspace already.
 function WorkspaceSubmenu(props: { tabState: TabState }) {
   const otherWorkspaces = (): Workspace[] =>
     workspaces().filter((workspace) => workspace.id !== activeWorkspaceId());
   const movable = () => {
     props.tabState.revision();
     const tab = menuTab();
-    return !!tab && !isEssential(tab) && otherWorkspaces().length > 0;
+    return !!tab && !(isEssential(tab) && essentialsScope() === "shared") &&
+      otherWorkspaces().length > 0;
   };
   return (
     <Show when={movable()}>

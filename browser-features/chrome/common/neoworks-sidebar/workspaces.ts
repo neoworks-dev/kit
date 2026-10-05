@@ -5,7 +5,8 @@
 // container it uses; the membership is stored on the tab through SessionStore
 // so it survives restarts, and so does each window's active workspace. Only the active workspace's tabs are shown,
 // pinned tabs included: each workspace has its own pinned grid. Essentials
-// (essentials.ts) belong to every workspace.
+// (essentials.ts) belong to every workspace, to one, or to a container's
+// workspaces, depending on the essentials scope pref.
 
 import { createSignal } from "solid-js";
 import {
@@ -14,7 +15,14 @@ import {
   NO_CONTAINER,
   setDefaultContainerId,
 } from "./containers.ts";
-import { isEssential } from "./essentials.ts";
+import {
+  essentialsOrphanedBy,
+  essentialWorkspaceId,
+  isEssential,
+  moveEssential,
+  tagLegacyEssentials,
+} from "./essentials.ts";
+import { ESSENTIALS_SCOPE_PREF } from "./essentials-scope.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type { BrowserTab, Workspace } from "./types.ts";
 import { removeFromSplit } from "../neoworks-split/split-view.ts";
@@ -108,13 +116,13 @@ function saveWorkspaces(next: Workspace[]): void {
 }
 
 // Tabs without a known workspace (opened before workspaces existed, or whose
-// workspace was deleted) count as part of the active one, and so do
-// Essentials.
+// workspace was deleted) count as part of the active one. So do Essentials
+// that show in it; others count as part of a workspace they show in.
 function workspaceIdOf(tab: BrowserTab): string {
   if (isEssential(tab)) {
-    return activeWorkspaceId();
+    return essentialWorkspaceId(tab);
   }
-  const stored = browserWindow.SessionStore.getCustomTabValue(tab, TAB_WORKSPACE_KEY);
+  const stored = storedWorkspaceId(tab);
   if (stored && workspaceById(stored)) {
     return stored;
   }
@@ -130,9 +138,15 @@ export function isInActiveWorkspace(extData: Record<string, string> | undefined)
   return stored === activeWorkspaceId();
 }
 
+export function storedWorkspaceId(tab: BrowserTab): string {
+  return browserWindow.SessionStore.getCustomTabValue(tab, TAB_WORKSPACE_KEY);
+}
+
 function assignTab(tab: BrowserTab, workspaceId: string): void {
   browserWindow.SessionStore.setCustomTabValue(tab, TAB_WORKSPACE_KEY, workspaceId);
 }
+
+export { assignTab as assignTabToWorkspace };
 
 // A tab leaving the Essentials stays where you are.
 export function claimForActiveWorkspace(tab: BrowserTab): void {
@@ -166,6 +180,7 @@ function hideTab(tab: BrowserTab): void {
 }
 
 function applyVisibility(): void {
+  tagLegacyEssentials();
   const browser = tabbrowser();
   for (const tab of browser.tabs) {
     if (workspaceIdOf(tab) === activeWorkspaceId()) {
@@ -249,9 +264,21 @@ export function switchWorkspaceByNumber(number: string | undefined): void {
 
 // The tab keeps its container and whether it is pinned, and goes to the end
 // of the target's list. It leaves its folder and split view, which stay here.
-// Essentials belong to every workspace, so they don't move.
+// Shared Essentials belong to every workspace, so they don't move; scoped ones
+// are retagged and keep their container.
 export function moveTabToWorkspace(tab: BrowserTab, workspaceId: string): void {
-  if (!workspaceById(workspaceId) || isEssential(tab) || workspaceIdOf(tab) === workspaceId) {
+  const target = workspaceById(workspaceId);
+  if (!target) {
+    return;
+  }
+  if (isEssential(tab)) {
+    if (moveEssential(tab, target)) {
+      leaveHiddenSelection();
+      applyVisibility();
+    }
+    return;
+  }
+  if (workspaceIdOf(tab) === workspaceId) {
     return;
   }
   const browser = tabbrowser();
@@ -267,6 +294,14 @@ export function moveTabToWorkspace(tab: BrowserTab, workspaceId: string): void {
     browser.selectedTab = tabToSelectIn(activeWorkspace());
   }
   applyVisibility();
+}
+
+// hideTab skips the selected tab, so select one that stays visible first.
+function leaveHiddenSelection(): void {
+  const browser = tabbrowser();
+  if (workspaceIdOf(browser.selectedTab) !== activeWorkspaceId()) {
+    browser.selectedTab = tabToSelectIn(activeWorkspace());
+  }
 }
 
 // Opens new tabs in a container of its own, or pass an existing container
@@ -374,6 +409,10 @@ export async function deleteWorkspace(workspace: Workspace): Promise<void> {
   for (const tab of workspaceTabs(workspace.id)) {
     tabbrowser().removeTab(tab, { animate: false });
   }
+  // Scoped Essentials have nowhere else to show.
+  for (const tab of essentialsOrphanedBy(workspace, remaining)) {
+    tabbrowser().removeTab(tab, { animate: false });
+  }
   saveWorkspaces(remaining);
   await removeWorkspaceContainer(workspace);
 }
@@ -451,10 +490,19 @@ const workspacesObserver = {
   },
 };
 
+// Another scope shows different Essentials. Moves no tabs.
+const essentialsScopeObserver = {
+  observe(): void {
+    leaveHiddenSelection();
+    applyVisibility();
+  },
+};
+
 // Returns a stop function for hot reload.
 export function watchWorkspaces(): () => void {
   Services.prefs.setBoolPref(FLOORP_WORKSPACES_PREF, false);
   Services.prefs.addObserver(WORKSPACES_PREF, workspacesObserver);
+  Services.prefs.addObserver(ESSENTIALS_SCOPE_PREF, essentialsScopeObserver);
   const tabContainer = tabbrowser().tabContainer;
   tabContainer.addEventListener("TabOpen", handleTabOpen);
   tabContainer.addEventListener("TabSelect", followSelectedTab);
@@ -469,6 +517,7 @@ export function watchWorkspaces(): () => void {
 
   return () => {
     Services.prefs.removeObserver(WORKSPACES_PREF, workspacesObserver);
+    Services.prefs.removeObserver(ESSENTIALS_SCOPE_PREF, essentialsScopeObserver);
     tabContainer.removeEventListener("TabOpen", handleTabOpen);
     tabContainer.removeEventListener("TabSelect", followSelectedTab);
     tabContainer.removeEventListener("SSTabRestoring", applyVisibility);
