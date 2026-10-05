@@ -86,6 +86,8 @@ export interface NeoworksTabbrowser {
       triggeringPrincipal: nsIPrincipal;
     },
   ): BrowserTab;
+  // Only local (data:, chrome:) icon URLs; remote ones are refused.
+  setIcon(tab: BrowserTab, iconUrl: string): void;
   pinTab(tab: BrowserTab): void;
   unpinTab(tab: BrowserTab): void;
   removeTab(

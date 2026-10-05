@@ -131,6 +131,97 @@ async function chromiumTabs(migrator: Migrator, profile: MigratorProfile | null)
   return file ? parseSessionFile(await IOUtils.read(file)) : [];
 }
 
+// --- Chromium favicons ---
+
+interface SqliteRow {
+  getResultByName(name: string): unknown;
+}
+interface SqliteConnection {
+  execute(sql: string, params?: Record<string, string>): Promise<SqliteRow[]>;
+  close(): Promise<void>;
+}
+
+const { Sqlite } = ChromeUtils.importESModule("resource://gre/modules/Sqlite.sys.mjs") as unknown as {
+  Sqlite: { openConnection(options: { path: string; readOnly?: boolean }): Promise<SqliteConnection> };
+};
+
+// Tab icons are 16px, drawn at up to 2x.
+const WANTED_ICON_SIZE = 32;
+
+// favicon_bitmaps always holds PNG.
+function imageDataUri(bytes: Uint8Array): string {
+  let binary = "";
+  for (let start = 0; start < bytes.length; start += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(start, start + 0x8000));
+  }
+  return `data:image/png;base64,${btoa(binary)}`;
+}
+
+// The smallest bitmap at least WANTED_ICON_SIZE wide, else the largest.
+function betterIcon(width: number, current: number | undefined): boolean {
+  if (current === undefined) {
+    return true;
+  }
+  if (width >= WANTED_ICON_SIZE) {
+    return current < WANTED_ICON_SIZE || width < current;
+  }
+  return current < WANTED_ICON_SIZE && width > current;
+}
+
+// Chromium session files have no favicons; its Favicons database maps page
+// URLs to them, like Firefox's Chrome bookmark import reads. Works on a copy:
+// the browser may be running and holding it.
+async function addChromiumTabIcons(profileDir: string, tabs: ImportedTab[]): Promise<void> {
+  const source = PathUtils.join(profileDir, "Favicons");
+  if (!tabs.length || !(await IOUtils.exists(source))) {
+    return;
+  }
+  const temp = await IOUtils.createUniqueDirectory(PathUtils.tempDir, "kit-browser-import");
+  try {
+    for (const name of ["Favicons", "Favicons-wal"]) {
+      if (await IOUtils.exists(PathUtils.join(profileDir, name))) {
+        await IOUtils.copy(PathUtils.join(profileDir, name), PathUtils.join(temp, name));
+      }
+    }
+    const urls = [...new Set(tabs.map((tab) => tab.url))];
+    const params: Record<string, string> = {};
+    urls.forEach((url, index) => {
+      params[`url${index}`] = url;
+    });
+    const db = await Sqlite.openConnection({ path: PathUtils.join(temp, "Favicons") });
+    let rows: SqliteRow[];
+    try {
+      rows = await db.execute(
+        `SELECT map.page_url, bit.width, bit.image_data
+         FROM icon_mapping map
+         JOIN favicon_bitmaps bit ON bit.icon_id = map.icon_id
+         WHERE map.page_url IN (${urls.map((_, index) => `:url${index}`).join(", ")})
+           AND length(bit.image_data) > 0`,
+        params,
+      );
+    } finally {
+      await db.close();
+    }
+    const best = new Map<string, { width: number; data: number[] }>();
+    for (const row of rows) {
+      const url = String(row.getResultByName("page_url"));
+      const width = Number(row.getResultByName("width"));
+      if (betterIcon(width, best.get(url)?.width)) {
+        best.set(url, { width, data: row.getResultByName("image_data") as number[] });
+      }
+    }
+    for (const tab of tabs) {
+      const icon = best.get(tab.url);
+      if (!icon) {
+        continue;
+      }
+      tab.icon = imageDataUri(new Uint8Array(icon.data));
+    }
+  } finally {
+    await IOUtils.remove(temp, { recursive: true, ignoreAbsent: true });
+  }
+}
+
 // --- MigrationUtils sources ---
 
 interface MigratorSource {
@@ -201,6 +292,13 @@ async function importMigratorType(
 ): Promise<ImportResult> {
   if (type === "tabs") {
     const tabs = await chromiumTabs(migrator, profile);
+    const dataDir = await migrator._getChromeUserDataPathIfExists?.();
+    if (dataDir && profile) {
+      // Tabs without icons are better than no tabs.
+      await addChromiumTabIcons(PathUtils.join(dataDir, profile.id), tabs).catch((error) =>
+        console.error("[NWBrowserImport] Couldn't read the favicons of", profile.id, error)
+      );
+    }
     return { type, ok: true, count: tabs.length, tabs };
   }
   const utils = migrationUtils();

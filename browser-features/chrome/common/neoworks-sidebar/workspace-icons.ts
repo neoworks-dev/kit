@@ -66,3 +66,46 @@ export const WORKSPACE_ICONS = Object.keys(ICONS);
 export function workspaceIconMask(icon: string): string {
   return phosphorMask(ICONS[icon] ?? ICONS.briefcase);
 }
+
+// Workspaces imported from Zen keep their emoji as the icon.
+export function isEmojiIcon(icon: string): boolean {
+  return !(icon in ICONS) && /\p{Extended_Pictographic}/u.test(icon);
+}
+
+// Zen's icon names that have a Phosphor match under another name.
+const ZEN_ICON_NAMES: Record<string, string> = {
+  home: "house",
+  book: "book-open",
+  school: "graduation-cap",
+  music: "music-notes",
+  chat: "chat-circle",
+  cafe: "coffee",
+  weight: "barbell",
+  flash: "lightning",
+  planet: "globe",
+  americas: "globe",
+  palette: "paint-brush",
+  brush: "paint-brush",
+  terminal: "code",
+  video: "film-slate",
+  basket: "shopping-cart",
+  coins: "currency-dollar",
+  "logo-usd": "currency-dollar",
+  flower: "leaf",
+};
+
+// Icon for a workspace from another browser's (Zen's) icon: an emoji as is,
+// an icon name if Kit has one like it, else the first icon.
+export function importedWorkspaceIcon(icon: string | undefined): string {
+  if (!icon) {
+    return WORKSPACE_ICONS[0];
+  }
+  if (isEmojiIcon(icon)) {
+    return icon;
+  }
+  const name = ZEN_ICON_NAMES[icon] ?? icon;
+  if (name in ICONS) {
+    return name;
+  }
+  return WORKSPACE_ICONS[0];
+}

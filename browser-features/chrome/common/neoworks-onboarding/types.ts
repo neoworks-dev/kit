@@ -25,6 +25,10 @@ export interface ImportedTab {
   essential?: boolean;
   // Name of the workspace (Zen space) the tab was in.
   workspace?: string;
+  // That space's icon: an emoji, or the name of one of Zen's icons.
+  workspaceIcon?: string;
+  // The tab's favicon as a data: URI.
+  icon?: string;
 }
 
 export interface ImportResult {

@@ -754,6 +754,17 @@
   height: 16px;
 }
 
+/* Emoji icons of workspaces imported from Zen: text, not a mask. */
+#neoworks-sidebar .nw-icon.nw-workspace-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  mask: none;
+  font-size: 13px;
+  line-height: 1;
+}
+
 #neoworks-sidebar .nw-workspace-icon:hover {
   background: var(--glass-hover);
   color: var(--text-muted);
