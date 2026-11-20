@@ -1,0 +1,49 @@
+# Maintainer: Moritz Utcke <moritz.utcke@gmx.de>
+#
+# Kit from its GitHub release tarballs. The release workflow updates pkgver
+# and the checksums here; .SRCINFO comes from `makepkg --printsrcinfo`.
+
+pkgname=kit-browser-bin
+_pkgname=kit-browser
+pkgver=0.0.2
+pkgrel=1
+pkgdesc="Kit, Neoworks' web browser built on Firefox"
+arch=('x86_64' 'aarch64')
+url="https://github.com/neoworks-dev/kit"
+license=('MPL-2.0')
+depends=('gtk3' 'libxt' 'dbus-glib' 'alsa-lib' 'nss' 'hicolor-icon-theme')
+optdepends=('ffmpeg: video and audio playback'
+            'libpulse: sound through PulseAudio or PipeWire')
+provides=("${_pkgname}")
+conflicts=("${_pkgname}")
+options=('!strip' '!debug')
+source_x86_64=("${url}/releases/download/v${pkgver}/kit-${pkgver}-linux-x86_64.tar.xz")
+source_aarch64=("${url}/releases/download/v${pkgver}/kit-${pkgver}-linux-aarch64.tar.xz")
+sha256sums_x86_64=('aac549b73aea6ae66de79d614771945e7a7c36ae3c0adbbb6b2c907fb5541716')
+sha256sums_aarch64=('bc6979586f68b0550d607f9f65e57d1bfaeba9f2d273627888edf5b3c92fcf2c')
+
+package() {
+  local app="/opt/${_pkgname}"
+  install -d "${pkgdir}${app}"
+  cp -a "${srcdir}/kit/." "${pkgdir}${app}/"
+
+  # pacman updates this Kit: no self-updater, no home-folder installer.
+  # (kit-launcher only runs kit-update for ~/.local/share/kit/app anyway.)
+  rm -f "${pkgdir}${app}/kit-update" "${pkgdir}${app}/install.sh"
+
+  install -d "${pkgdir}/usr/bin"
+  ln -s "${app}/kit-launcher" "${pkgdir}/usr/bin/${_pkgname}"
+
+  sed -e "s|@KIT_EXEC@|/usr/bin/${_pkgname}|g" \
+      -e "s|^Icon=kit$|Icon=${_pkgname}|" \
+      "${srcdir}/kit/kit.desktop.in" > "${srcdir}/${_pkgname}.desktop"
+  install -Dm644 "${srcdir}/${_pkgname}.desktop" \
+    "${pkgdir}/usr/share/applications/${_pkgname}.desktop"
+  rm -f "${pkgdir}${app}/kit.desktop.in"
+
+  local size
+  for size in 16 32 48 64 128; do
+    install -Dm644 "${srcdir}/kit/icons/icon${size}.png" \
+      "${pkgdir}/usr/share/icons/hicolor/${size}x${size}/apps/${_pkgname}.png"
+  done
+}
