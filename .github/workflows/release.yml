@@ -45,6 +45,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG }}
+          # libs/switchboard (the AI sidebar's harness client).
+          submodules: recursive
 
       - uses: denoland/setup-deno@v2
         with:
