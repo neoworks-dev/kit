@@ -130,6 +130,7 @@ interface SyncBrowser extends Element {
   canGoBack: boolean;
   isRemoteBrowser: boolean;
   docShellIsActive: boolean;
+  permanentKey: object;
   drawSnapshot(
     x: number,
     y: number,
@@ -160,6 +161,7 @@ interface SyncSplit extends Element {
 interface SyncTab extends Element {
   linkedBrowser: SyncBrowser | null;
   linkedPanel: string;
+  permanentKey: object;
   label: string;
   pinned: boolean;
   selected: boolean;
@@ -611,6 +613,26 @@ function restored(tab: SyncTab): Promise<void> {
   });
 }
 
+// SessionStore keeps a tab's history under its browser's permanentKey and
+// re-points that history at whatever page the browser shows when a page
+// moves in (browsing-context-did-set-embedder). swapBrowsers fires that while
+// the pages move, and only then swaps the two browsers' keys, so each key
+// ended up with the other window's history: the window showing the page
+// saved a blank tab and the one left blank saved the page. Swapping the keys
+// back keeps each with the history recorded under it.
+function keepPermanentKeys(ours: SyncTab, holder: SyncTab): void {
+  const ourBrowser = ours.linkedBrowser;
+  const holderBrowser = holder.linkedBrowser;
+  if (!ourBrowser || !holderBrowser) {
+    return;
+  }
+  const key = ourBrowser.permanentKey;
+  ourBrowser.permanentKey = holderBrowser.permanentKey;
+  holderBrowser.permanentKey = key;
+  ours.permanentKey = ourBrowser.permanentKey;
+  holder.permanentKey = holderBrowser.permanentKey;
+}
+
 function canSwap(ours: SyncTab, other: SyncTab): boolean {
   return isLive(other) && windowOf(ours) !== windowOf(other) &&
     Boolean(ours.linkedBrowser) &&
@@ -668,6 +690,7 @@ function takePage(tab: SyncTab, holder: SyncTab): SyncTab {
       moveState(holder, ours);
       return;
     }
+    keepPermanentKeys(ours, holder);
     ours.removeAttribute("pending");
     for (const attribute of ["busy", "soundplaying", "muted", "sharing", "pictureinpicture"]) {
       if (holder.hasAttribute(attribute)) {
