@@ -7,6 +7,7 @@ import type { SpotlightResult, SpotlightResultKind } from "./types.ts";
 const SECTION_TITLES: Record<SpotlightResultKind, string> = {
   navigate: "",
   suggestion: "Suggestions",
+  bang: "Bangs",
   tab: "Tabs",
   archived: "Archived tabs",
   workspace: "Workspaces",
@@ -19,6 +20,7 @@ const SECTION_TITLES: Record<SpotlightResultKind, string> = {
 const KIND_ICONS: Record<SpotlightResultKind, string> = {
   navigate: "arrow-right",
   suggestion: "magnifying-glass",
+  bang: "magnifying-glass",
   tab: "globe",
   archived: "archive",
   // Workspace rows show their color dot instead.
@@ -30,11 +32,18 @@ const KIND_ICONS: Record<SpotlightResultKind, string> = {
 };
 
 export function sectionTitle(result: SpotlightResult): string {
+  // A bang with terms is the only row; it needs no heading.
+  if (result.topHit || (result.kind === "bang" && result.terms)) {
+    return "";
+  }
   return SECTION_TITLES[result.kind];
 }
 
 // Section header before the first row of each kind group.
-export function startsSection(results: SpotlightResult[], index: number): boolean {
+export function startsSection(
+  results: SpotlightResult[],
+  index: number,
+): boolean {
   const title = sectionTitle(results[index]);
   if (!title) {
     return false;
@@ -44,6 +53,9 @@ export function startsSection(results: SpotlightResult[], index: number): boolea
 
 // `page-icon:` serves Places favicons (with a default) to chrome documents.
 function faviconOf(result: SpotlightResult): string {
+  if (result.icon) {
+    return result.icon;
+  }
   if (result.kind === "tab") {
     return result.tab.image;
   }
@@ -78,7 +90,9 @@ function attributeFlag(enabled: boolean): string | undefined {
 }
 
 function FaviconOrKindIcon(props: { result: SpotlightResult }) {
-  const icon = <span class="nw-icon" data-icon={KIND_ICONS[props.result.kind]} />;
+  const icon = (
+    <span class="nw-icon" data-icon={KIND_ICONS[props.result.kind]} />
+  );
   return (
     <Show when={faviconOf(props.result)} fallback={icon}>
       <img class="nw-spotlight-favicon" src={faviconOf(props.result)} alt="" />
@@ -92,7 +106,10 @@ function ResultIcon(props: { result: SpotlightResult }) {
       when={dotColorOf(props.result)}
       fallback={<FaviconOrKindIcon result={props.result} />}
     >
-      <span class="nw-spotlight-dot" style={{ background: dotColorOf(props.result) }} />
+      <span
+        class="nw-spotlight-dot"
+        style={{ background: dotColorOf(props.result) }}
+      />
     </Show>
   );
 }

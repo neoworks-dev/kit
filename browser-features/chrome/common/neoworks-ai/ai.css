@@ -493,3 +493,114 @@
 #neoworks-ai .nw-icon[data-icon="claude"] {
   mask-image: url("./icons/claude.svg");
 }
+
+/* The companion (companion.ts): where the shared agent is, its rambles. */
+#neoworks-ai .nw-ai-companion-header .nw-ai-title {
+  flex: 0 0 auto;
+  color: var(--text);
+}
+
+#neoworks-ai .nw-ai-companion-dot {
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+#neoworks-ai .nw-ai-companion-header[data-here] .nw-ai-companion-dot {
+  background: var(--nw-ai);
+  box-shadow: 0 0 8px var(--nw-ai);
+  animation: nw-ai-companion-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes nw-ai-companion-pulse {
+  50% {
+    box-shadow: 0 0 2px var(--nw-ai);
+  }
+}
+
+#neoworks-ai .nw-ai-companion-where {
+  flex: 1;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#neoworks-ai[data-mode="companion"] .nw-ai-header {
+  border-bottom-color: color-mix(in srgb, var(--nw-ai) 35%, transparent);
+}
+
+#neoworks-ai .nw-ai-composer-hint {
+  flex: 1;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+#neoworks-ai .nw-ai-from {
+  display: block;
+  align-self: flex-end;
+  margin-bottom: -6px;
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
+#neoworks-ai .nw-ai-ramble {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  white-space: normal;
+  border: 1px solid color-mix(in srgb, var(--nw-ai) 30%, transparent);
+}
+
+#neoworks-ai .nw-ai-ramble-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--nw-ai);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+#neoworks-ai .nw-ai-ramble-header .nw-icon {
+  width: 12px;
+  height: 12px;
+}
+
+#neoworks-ai .nw-ai-ramble-meta {
+  color: var(--text-faint);
+  font-weight: 400;
+}
+
+#neoworks-ai .nw-ai-ramble-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 1px 4px 1px 0;
+  padding: 1px 7px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--nw-ai) 16%, transparent);
+  color: var(--text);
+  font-size: 11px;
+  vertical-align: baseline;
+}
+
+#neoworks-ai .nw-ai-ramble-chip .nw-icon {
+  width: 11px;
+  height: 11px;
+  color: var(--nw-ai);
+}
+
+#neoworks-ai .nw-ai-ramble-shots {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+#neoworks-ai .nw-ai-ramble-shot {
+  height: 64px;
+  border: 1px solid var(--border-faint);
+  border-radius: 6px;
+}

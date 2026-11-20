@@ -15,7 +15,8 @@ const ATTRIBUTE = "nw-tab-in-workspace-container";
 export function flagWorkspaceContainer(tabState: TabState): void {
   createEffect(() => {
     tabState.revision();
-    const matches = tabbrowser().selectedTab.userContextId === activeWorkspace().userContextId;
+    const matches = tabbrowser().selectedTab.userContextId ===
+      activeWorkspace().userContextId;
     document.documentElement.toggleAttribute(ATTRIBUTE, matches);
   });
   onCleanup(() => document.documentElement.removeAttribute(ATTRIBUTE));

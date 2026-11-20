@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // The AI sidebar (#25, #51): a chat with Claude Code, Codex or pi, run
-// through Kit's harness sidecar. Off in private windows.
+// through Kit's harness sidecar, and the companion, the agent the user's
+// apps share. Off in private windows.
 
 import { onCleanup } from "solid-js";
 import {
@@ -10,8 +11,9 @@ import {
 } from "#features-chrome/utils/base.ts";
 import { registerCommands } from "../neoworks-commands/registry.ts";
 import { disconnect } from "./chat.ts";
+import { watchCompanion } from "./companion.ts";
 import { mountAiPanel, mountControlIndicator } from "./mount.tsx";
-import { insertAiButton, toggleAiPanel } from "./panel.ts";
+import { insertAiButton, openAiPanel, toggleAiPanel } from "./panel.ts";
 import layoutStyle from "./layout.css?inline";
 
 const { PrivateBrowsingUtils } = ChromeUtils.importESModule(
@@ -41,5 +43,7 @@ export default class NeoworksAi extends NoraComponentBase {
     onCleanup(insertAiButton());
     onCleanup(registerCommands([{ id: "ai:toggle", listed: true, run: toggleAiPanel }]));
     onCleanup(disconnect);
+    // The agent the user's apps share: when it comes to this window, the panel opens on it.
+    onCleanup(watchCompanion(openAiPanel));
   }
 }

@@ -10,11 +10,7 @@ import {
   WORKSPACES_PREF,
 } from "../../../../browser-features/chrome/common/neoworks-sidebar/workspace-model.ts";
 import type { Workspace } from "../../../../browser-features/chrome/common/neoworks-sidebar/types.ts";
-import type {
-  PreferencesWindow,
-  SettingItem,
-  SettingOption,
-} from "./types.ts";
+import type { PreferencesWindow, SettingItem, SettingOption } from "./types.ts";
 
 export const WORKSPACE_CONTAINERS_GROUP_ID = "kitWorkspaceContainers";
 
@@ -45,13 +41,20 @@ function readWorkspaces(): Workspace[] {
 }
 
 function containerOptions(): SettingOption[] {
-  const identities = ContextualIdentityService.getPublicIdentities().map((identity) => ({
+  const identities = ContextualIdentityService.getPublicIdentities().map((
+    identity,
+  ) => ({
     value: String(identity.userContextId),
     controlAttrs: {
-      label: ContextualIdentityService.getUserContextLabel(identity.userContextId),
+      label: ContextualIdentityService.getUserContextLabel(
+        identity.userContextId,
+      ),
     },
   }));
-  return [{ value: String(NO_CONTAINER), controlAttrs: { label: "No container" } }, ...identities];
+  return [{
+    value: String(NO_CONTAINER),
+    controlAttrs: { label: "No container" },
+  }, ...identities];
 }
 
 function settingIdFor(workspace: Workspace): string {
@@ -59,14 +62,19 @@ function settingIdFor(workspace: Workspace): string {
 }
 
 function containerOf(workspaceId: string, json: unknown): string {
-  const workspace = parseStored(json).find((candidate) => candidate.id === workspaceId);
+  const workspace = parseStored(json).find((candidate) =>
+    candidate.id === workspaceId
+  );
   if (!workspace) {
     return String(NO_CONTAINER);
   }
   return String(workspace.userContextId);
 }
 
-function registerWorkspaceSetting(win: PreferencesWindow, workspace: Workspace): void {
+function registerWorkspaceSetting(
+  win: PreferencesWindow,
+  workspace: Workspace,
+): void {
   win.Preferences.addSetting({
     id: settingIdFor(workspace),
     pref: WORKSPACES_PREF,
@@ -82,7 +90,10 @@ function registerWorkspaceSetting(win: PreferencesWindow, workspace: Workspace):
   });
 }
 
-function workspaceItem(workspace: Workspace, options: SettingOption[]): SettingItem {
+function workspaceItem(
+  workspace: Workspace,
+  options: SettingOption[],
+): SettingItem {
   return {
     id: settingIdFor(workspace),
     control: "moz-select",
@@ -103,7 +114,8 @@ export function registerWorkspaceContainersGroup(win: PreferencesWindow): void {
     [WORKSPACE_CONTAINERS_GROUP_ID]: {
       controlAttrs: {
         label: "Workspace containers",
-        description: "New tabs in a workspace open in the container chosen here. " +
+        description:
+          "New tabs in a workspace open in the container chosen here. " +
           "Create, rename and delete workspaces from the sidebar.",
       },
       headingLevel: 2,

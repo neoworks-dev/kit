@@ -9,9 +9,13 @@
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 import { CONTAINER_COLORS, containers, NO_CONTAINER } from "./containers.ts";
 import { focusInputSoon } from "./focus-input.ts";
-import { isEmojiIcon, WORKSPACE_ICONS, workspaceIconMask } from "./workspace-icons.ts";
+import {
+  isEmojiIcon,
+  WORKSPACE_ICONS,
+  workspaceIconMask,
+} from "./workspace-icons.ts";
 import { namedColor } from "./identity-colors.ts";
-import { sidebarDocked } from "./sidebar-docking.ts";
+import { sidebarState } from "./sidebar-state.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { attributeFlag } from "./tab-row.tsx";
 import {
@@ -39,6 +43,7 @@ const ICON_ROW_ID = "neoworks-workspace-icons";
 const WHEEL_LINE_PX = 30;
 
 const [menuOpen, setMenuOpen] = createSignal(false);
+export const workspaceMenuOpen = menuOpen;
 const [creating, setCreating] = createSignal(false);
 const [editingId, setEditingId] = createSignal<string | null>(null);
 const [newIcon, setNewIcon] = createSignal(WORKSPACE_ICONS[0]);
@@ -140,7 +145,10 @@ function WorkspaceIcon(props: { icon: string; color?: string }) {
       fallback={
         <span
           class="nw-icon"
-          style={{ color: props.color ?? "", "mask-image": workspaceIconMask(props.icon) }}
+          style={{
+            color: props.color ?? "",
+            "mask-image": workspaceIconMask(props.icon),
+          }}
         />
       }
     >
@@ -169,7 +177,10 @@ function IconPicker(props: {
               focusInputSoon(props.inputId);
             }}
           >
-            <span class="nw-icon" style={{ "mask-image": workspaceIconMask(icon) }} />
+            <span
+              class="nw-icon"
+              style={{ "mask-image": workspaceIconMask(icon) }}
+            />
           </button>
         )}
       </For>
@@ -205,7 +216,8 @@ function WorkspaceEditor(props: { workspace: Workspace }) {
           class="nw-container-input"
           value={props.workspace.name}
           spellcheck={false}
-          onKeyDown={(event: KeyboardEvent) => handleRenameKey(event, props.workspace)}
+          onKeyDown={(event: KeyboardEvent) =>
+            handleRenameKey(event, props.workspace)}
         />
         <Show when={workspaces().length > 1}>
           <button
@@ -234,7 +246,10 @@ function WorkspaceOption(props: { workspace: Workspace }) {
       when={editingId() !== props.workspace.id}
       fallback={<WorkspaceEditor workspace={props.workspace} />}
     >
-      <div class="nw-container-option" onClick={() => pickWorkspace(props.workspace.id)}>
+      <div
+        class="nw-container-option"
+        onClick={() => pickWorkspace(props.workspace.id)}
+      >
         <WorkspaceIcon
           icon={props.workspace.icon}
           color={namedColor(props.workspace.color)}
@@ -316,7 +331,10 @@ function NewWorkspaceRow() {
     <Show
       when={creating()}
       fallback={
-        <div class="nw-container-option nw-container-new" onClick={startCreating}>
+        <div
+          class="nw-container-option nw-container-new"
+          onClick={startCreating}
+        >
           <span class="nw-icon" data-icon="plus" />
           <span class="nw-tab-label">New workspace</span>
         </div>
@@ -330,7 +348,11 @@ function NewWorkspaceRow() {
           spellcheck={false}
           onKeyDown={handleCreateKey}
         />
-        <IconPicker selected={newIcon()} inputId={NEW_WORKSPACE_INPUT_ID} onPick={setNewIcon} />
+        <IconPicker
+          selected={newIcon()}
+          inputId={NEW_WORKSPACE_INPUT_ID}
+          onPick={setNewIcon}
+        />
         <ContainerChoice />
       </div>
     </Show>
@@ -340,7 +362,7 @@ function NewWorkspaceRow() {
 function WorkspaceMenu() {
   return (
     <div
-      class="nw-container-menu nw-glass"
+      class="nw-container-menu nw-glass nw-popover"
       onKeyDown={(event: KeyboardEvent) => {
         if (event.key === "Escape") {
           closeWorkspaceMenu();
@@ -391,7 +413,8 @@ function measureOverflow(): void {
   setOverflowEnd(row.scrollLeft + row.clientWidth < row.scrollWidth - 1);
 }
 
-// Scrolls the row just enough to show the active workspace's icon.
+// Scrolls the row just enough to show the active workspace's icon. The
+// compact sidebar stacks the icons, so the row scrolls down instead.
 function revealActiveIcon(): void {
   const row = iconRow();
   const icon = row?.querySelector("[data-selected]");
@@ -404,6 +427,11 @@ function revealActiveIcon(): void {
     row.scrollLeft -= rowBox.left - iconBox.left;
   } else if (iconBox.right > rowBox.right) {
     row.scrollLeft += iconBox.right - rowBox.right;
+  }
+  if (iconBox.top < rowBox.top) {
+    row.scrollTop -= rowBox.top - iconBox.top;
+  } else if (iconBox.bottom > rowBox.bottom) {
+    row.scrollTop += iconBox.bottom - rowBox.bottom;
   }
 }
 
@@ -426,7 +454,7 @@ export function WorkspaceSwitcher() {
   createEffect(() => {
     workspaces();
     activeWorkspaceId();
-    sidebarDocked();
+    sidebarState();
     const frame = requestAnimationFrame(() => {
       revealActiveIcon();
       measureOverflow();
@@ -454,14 +482,20 @@ export function WorkspaceSwitcher() {
               type="button"
               class="nw-workspace-icon"
               title={workspaceTitle(workspace)}
-              data-selected={attributeFlag(activeWorkspaceId() === workspace.id)}
-              data-drop-target={attributeFlag(isDropTarget(workspaceDrop(workspace.id)))}
+              data-selected={attributeFlag(
+                activeWorkspaceId() === workspace.id,
+              )}
+              data-drop-target={attributeFlag(
+                isDropTarget(workspaceDrop(workspace.id)),
+              )}
               style={{ "--nw-workspace-color": namedColor(workspace.color) }}
               onClick={() => handleIconClick(workspace)}
               onContextMenu={openMenuFromContext}
-              onDragOver={(event: DragEvent) => allowWorkspaceDrop(event, workspace.id)}
+              onDragOver={(event: DragEvent) =>
+                allowWorkspaceDrop(event, workspace.id)}
               onDragLeave={() => leaveDrop(workspaceDrop(workspace.id))}
-              onDrop={(event: DragEvent) => dropOntoWorkspace(event, workspace.id)}
+              onDrop={(event: DragEvent) =>
+                dropOntoWorkspace(event, workspace.id)}
             >
               <WorkspaceIcon icon={workspace.icon} />
             </button>

@@ -20,7 +20,7 @@ import {
 } from "./sidebar-visibility.ts";
 import { createTabState } from "./tab-state.ts";
 import { flagWorkspaceContainer } from "./workspace-container-flag.ts";
-import { toggleSidebarDocked, watchSidebarDocking } from "./sidebar-docking.ts";
+import { toggleSidebar, watchSidebarState } from "./sidebar-state.ts";
 import { watchSidebarOffset } from "./sidebar-offset.ts";
 import { registerCommands } from "../neoworks-commands/registry.ts";
 import { closeWorkspaceMenu } from "./workspace-switcher.tsx";
@@ -37,13 +37,15 @@ export default class NeoworksSidebar extends NoraComponentBase {
     const browserBox = document.getElementById("browser");
     const popupSet = document.getElementById("mainPopupSet");
     if (!browserBox || !popupSet) {
-      console.error("[neoworks-sidebar] Browser chrome is unavailable at init.");
+      console.error(
+        "[neoworks-sidebar] Browser chrome is unavailable at init.",
+      );
       return;
     }
 
     const tabState = createTabState();
     const stopWatchingContainers = watchContainers();
-    const stopWatchingDocking = watchSidebarDocking();
+    const stopWatchingState = watchSidebarState();
     const stopWatchingOffset = watchSidebarOffset();
     const stopWatchingWorkspaces = watchWorkspaces();
     const stopWatchingEssentials = watchEssentials();
@@ -57,9 +59,13 @@ export default class NeoworksSidebar extends NoraComponentBase {
     mountContextMenus(popupSet, tabState);
     addEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
     const unregisterCommands = registerCommands([
-      { id: "sidebar:toggle-docked", listed: true, run: toggleSidebarDocked },
+      { id: "sidebar:toggle", listed: true, run: toggleSidebar },
       { id: "workspace:next", listed: true, run: () => switchWorkspaceBy(1) },
-      { id: "workspace:previous", listed: true, run: () => switchWorkspaceBy(-1) },
+      {
+        id: "workspace:previous",
+        listed: true,
+        run: () => switchWorkspaceBy(-1),
+      },
       {
         id: "workspace:switch",
         listed: false,
@@ -78,7 +84,7 @@ export default class NeoworksSidebar extends NoraComponentBase {
       stopRoutingNewTabs();
       stopWatchingEssentials();
       stopWatchingWorkspaces();
-      stopWatchingDocking();
+      stopWatchingState();
       stopWatchingOffset();
       removeEventListener(SIDEBAR_PEEK_EVENT, peekSidebar);
       stopWatchingContainers();

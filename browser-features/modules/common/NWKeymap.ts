@@ -57,7 +57,7 @@ export const NW_CHROME_COMMAND_IDS = [
   "page-actions:open",
   "page:reader",
   "page:copy-url",
-  "sidebar:toggle-docked",
+  "sidebar:toggle",
   "window:toggle-transparent",
   "workspace:next",
   "workspace:previous",
@@ -109,7 +109,7 @@ export const NW_COMMAND_TITLES: Record<NWCommandId, string> = {
   "page-actions:open": "Page Actions",
   "page:reader": "Toggle Reader View",
   "page:copy-url": "Copy Page Link",
-  "sidebar:toggle-docked": "Toggle Sidebar Docking",
+  "sidebar:toggle": "Toggle Sidebar",
   "window:toggle-transparent": "Toggle Transparent Window",
   "workspace:next": "Next Workspace",
   "workspace:previous": "Previous Workspace",
@@ -149,7 +149,14 @@ const DEFAULT_SEQUENCE_TIMEOUT_MS = 2000;
 const DOUBLE_SPACE_TIMEOUT_MS = 200;
 const QUICKMARK_LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
 const WORKSPACE_NUMBERS = "123456789".split("");
-const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta", "AltGraph", "OS"]);
+const MODIFIER_KEYS = new Set([
+  "Shift",
+  "Control",
+  "Alt",
+  "Meta",
+  "AltGraph",
+  "OS",
+]);
 
 // Outside text fields Space only exists for double Space: it never scrolls,
 // not even when held.
@@ -213,6 +220,7 @@ export const NW_KEY_BINDINGS: readonly NWKeyBinding[] = [
   { keys: ["Space", "w", "q"], command: "split:close" },
   { keys: ["Space", "a"], command: "ai:toggle" },
   { keys: ["Space", "p"], command: "web-panel:toggle" },
+  { keys: ["A-c"], command: "sidebar:toggle" },
   ...quickmarkBindings("m", "quickmark:set"),
   ...quickmarkBindings("'", "quickmark:jump"),
 ];
@@ -294,8 +302,42 @@ function bindingTimeout(binding: NWKeyBinding): number {
   return DEFAULT_SEQUENCE_TIMEOUT_MS;
 }
 
+const MODIFIER_NAMES: Record<string, string> = {
+  C: "Ctrl",
+  A: "Alt",
+  M: "Meta",
+  S: "Shift",
+};
+
+// "A-c" reads "Alt+C"; keys without modifiers stay as typed ("G", "Space").
+function describeKey(key: string): string {
+  const parts = key.split("-");
+  if (
+    parts.length < 2 || parts.slice(0, -1).some((part) => !MODIFIER_NAMES[part])
+  ) {
+    return key;
+  }
+  const base = parts[parts.length - 1];
+  const names = parts.slice(0, -1).map((part) => MODIFIER_NAMES[part]);
+  return [...names, base.length === 1 ? base.toUpperCase() : base].join("+");
+}
+
 export function describeKeys(keys: string[]): string {
-  return keys.join(" ");
+  return keys.map(describeKey).join(" ");
+}
+
+// A single key with Ctrl, Alt or Meta can't be text, so its binding works
+// everywhere: in text fields, in insert mode, in embedded frames.
+export function globalBindingFor(
+  token: string,
+  bindings: readonly NWKeyBinding[] = NW_KEY_BINDINGS,
+): NWKeyBinding | undefined {
+  if (!/^(C|A|M)-/.test(token)) {
+    return undefined;
+  }
+  return bindings.find((binding) =>
+    binding.keys.length === 1 && binding.keys[0] === token
+  );
 }
 
 export interface NWBindingSummary {
@@ -325,7 +367,11 @@ function bindingDescription(
   if (!binding.letter) {
     return describeKeys(binding.keys);
   }
-  return argumentRange(bindings, binding.command, describeKeys(binding.keys.slice(0, -1)));
+  return argumentRange(
+    bindings,
+    binding.command,
+    describeKeys(binding.keys.slice(0, -1)),
+  );
 }
 
 // One entry per command in binding order, for a readable key reference.
@@ -355,7 +401,8 @@ export function bindingsForCommand(command: NWCommandId): NWKeyBinding[] {
 // Bindings that could still complete after `typedKeys`.
 export function bindingsStartingWith(typedKeys: string[]): NWKeyBinding[] {
   return NW_KEY_BINDINGS.filter((binding) =>
-    binding.keys.length > typedKeys.length && startsWithSequence(binding.keys, typedKeys)
+    binding.keys.length > typedKeys.length &&
+    startsWithSequence(binding.keys, typedKeys)
   );
 }
 
@@ -366,7 +413,9 @@ export class NWKeySequenceMatcher {
   private typed: string[] = [];
   private lastKeyAt = 0;
 
-  constructor(private readonly bindings: readonly NWKeyBinding[] = NW_KEY_BINDINGS) {}
+  constructor(
+    private readonly bindings: readonly NWKeyBinding[] = NW_KEY_BINDINGS,
+  ) {}
 
   get typedKeys(): string[] {
     return [...this.typed];
@@ -381,7 +430,8 @@ export class NWKeySequenceMatcher {
   }
 
   continues(token: string, now = 0): boolean {
-    return this.timelyCandidates([...this.typed, token], now - this.lastKeyAt).length > 0;
+    return this.timelyCandidates([...this.typed, token], now - this.lastKeyAt)
+      .length > 0;
   }
 
   // The slowest candidate wins: a short double-Space timeout must not cut
@@ -405,11 +455,18 @@ export class NWKeySequenceMatcher {
   }
 
   private candidates(sequence: string[]): NWKeyBinding[] {
-    return this.bindings.filter((binding) => startsWithSequence(binding.keys, sequence));
+    return this.bindings.filter((binding) =>
+      startsWithSequence(binding.keys, sequence)
+    );
   }
 
-  private timelyCandidates(sequence: string[], sinceLastKey: number): NWKeyBinding[] {
-    return this.candidates(sequence).filter((binding) => sinceLastKey <= bindingTimeout(binding));
+  private timelyCandidates(
+    sequence: string[],
+    sinceLastKey: number,
+  ): NWKeyBinding[] {
+    return this.candidates(sequence).filter((binding) =>
+      sinceLastKey <= bindingTimeout(binding)
+    );
   }
 
   private resolve(sequence: string[], sinceLastKey: number): NWKeyResult {
@@ -418,7 +475,9 @@ export class NWKeySequenceMatcher {
       this.typed = [];
       return { kind: "none" };
     }
-    const exactMatch = candidates.find((binding) => binding.keys.length === sequence.length);
+    const exactMatch = candidates.find((binding) =>
+      binding.keys.length === sequence.length
+    );
     if (exactMatch) {
       this.typed = [];
       return { kind: "match", binding: exactMatch };
@@ -498,7 +557,9 @@ export class NWKeyDispatcher {
   }
 
   private abandonIfNotContinued(token: string): void {
-    if (!this.matcher.isPending() || this.matcher.continues(token, this.now())) {
+    if (
+      !this.matcher.isPending() || this.matcher.continues(token, this.now())
+    ) {
       return;
     }
     const abandoned = this.matcher.typedKeys;

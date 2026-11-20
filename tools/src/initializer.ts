@@ -11,6 +11,7 @@ import {
   getBinArchive,
   PATHS,
   PLATFORM,
+  RUNTIME_BRANDING,
   VERSION,
 } from "./defines.ts";
 import type { BinArchive, Platform } from "./defines.ts";
@@ -34,8 +35,8 @@ const logger = new Logger("initializer");
 const RUNTIME_BASE_URL = "https://dev-assets.floorp.app/floorp-runtime-builds/";
 const RUNTIME_INDEX_URL = `${RUNTIME_BASE_URL}.ftp-deploy-sync-state.json`;
 
-export const LOCKED_RUNTIME_GITHUB_TOKEN_ENV = "FLOORP_RUNTIME_GITHUB_TOKEN";
-export const LOCKED_RUNTIME_MARKER = ".floorp-runtime-lock.json";
+export const LOCKED_RUNTIME_GITHUB_TOKEN_ENV = "KIT_RUNTIME_GITHUB_TOKEN";
+export const LOCKED_RUNTIME_MARKER = ".kit-runtime-lock.json";
 
 export type LockedRuntimeFetch = (
   input: string | URL | Request,
@@ -139,7 +140,7 @@ interface RuntimeLayout {
   legacyVersionFile: string;
 }
 
-export const DEBUG_RUNTIME_MARKER = ".floorp-runtime-debug.json";
+export const DEBUG_RUNTIME_MARKER = ".kit-runtime-debug.json";
 
 interface DebugRuntimeMarker {
   schemaVersion: 1;
@@ -195,33 +196,68 @@ export function selectLockedRuntimeArtifact(
   return matches[0];
 }
 
+// The runtime's executables, renamed so process lists and task managers show
+// Kit. Linux ships the same binary twice; the `-bin` copy is the one kept.
+const RUNTIME_EXECUTABLE_RENAMES: ReadonlyArray<[string, string]> = [
+  [`${RUNTIME_BRANDING.base_name}-bin`, BRANDING.base_name],
+  [`${RUNTIME_BRANDING.base_name}.exe`, `${BRANDING.base_name}.exe`],
+];
+const RUNTIME_DUPLICATE_EXECUTABLE = RUNTIME_BRANDING.base_name;
+
+// Turns a freshly extracted runtime (`<root>/floorp/floorp-bin`) into Kit's
+// layout (`<root>/kit/kit`). macOS bundles are copied straight into Kit's
+// folder and keep their names: renaming a bundle's executable means editing
+// its Info.plist and signature.
+export async function adoptRuntimeLayout(treeRoot: string): Promise<void> {
+  const extractedRoot = path.join(treeRoot, RUNTIME_BRANDING.base_name);
+  const runtimeRoot = path.join(treeRoot, BRANDING.base_name);
+  if (await pathExists(extractedRoot)) {
+    if (await pathExists(runtimeRoot)) {
+      throw new Error(
+        `Both ${extractedRoot} and ${runtimeRoot} exist; refusing to merge runtimes.`,
+      );
+    }
+    await Deno.rename(extractedRoot, runtimeRoot);
+  }
+  for (const [from, to] of RUNTIME_EXECUTABLE_RENAMES) {
+    const source = path.join(runtimeRoot, from);
+    if (await pathExists(source)) {
+      await Deno.rename(source, path.join(runtimeRoot, to));
+    }
+  }
+  const duplicate = path.join(runtimeRoot, RUNTIME_DUPLICATE_EXECUTABLE);
+  if (await pathExists(duplicate)) {
+    await Deno.remove(duplicate);
+  }
+}
+
 export function runtimeLayoutFor(
   binRootDir: string,
   artifact: RuntimeArtifact,
 ): RuntimeLayout {
-  const floorpRoot = path.join(binRootDir, BRANDING.base_name);
+  const runtimeRoot = path.join(binRootDir, BRANDING.base_name);
   switch (artifact.platform) {
     case "windows":
       return {
-        applicationIni: path.join(floorpRoot, "application.ini"),
-        executable: path.join(floorpRoot, `${BRANDING.base_name}.exe`),
-        legacyVersionFile: path.join(floorpRoot, "nora.version.txt"),
+        applicationIni: path.join(runtimeRoot, "application.ini"),
+        executable: path.join(runtimeRoot, `${BRANDING.base_name}.exe`),
+        legacyVersionFile: path.join(runtimeRoot, "nora.version.txt"),
       };
     case "linux":
       return {
-        applicationIni: path.join(floorpRoot, "application.ini"),
-        executable: path.join(floorpRoot, `${BRANDING.base_name}-bin`),
-        legacyVersionFile: path.join(floorpRoot, "nora.version.txt"),
+        applicationIni: path.join(runtimeRoot, "application.ini"),
+        executable: path.join(runtimeRoot, BRANDING.base_name),
+        legacyVersionFile: path.join(runtimeRoot, "nora.version.txt"),
       };
     case "macos": {
       const appRoot = path.join(
-        floorpRoot,
-        `${BRANDING.display_name}.app`,
+        runtimeRoot,
+        `${RUNTIME_BRANDING.display_name}.app`,
         "Contents",
       );
       return {
         applicationIni: path.join(appRoot, "Resources", "application.ini"),
-        executable: path.join(appRoot, "MacOS", BRANDING.base_name),
+        executable: path.join(appRoot, "MacOS", RUNTIME_BRANDING.base_name),
         legacyVersionFile: path.join(
           appRoot,
           "Resources",
@@ -411,7 +447,7 @@ export async function prepareDebugMacInfoPlist(
   const appRoot = path.join(
     treeRoot,
     BRANDING.base_name,
-    `${BRANDING.display_name}.app`,
+    `${RUNTIME_BRANDING.display_name}.app`,
   );
   const infoPlist = path.join(appRoot, "Contents", "Info.plist");
   const info = await Deno.lstat(infoPlist);
@@ -691,15 +727,17 @@ async function extractLockedMainArchive(
       await extractZipSafely(
         archivePath,
         destinationRoot,
-        BRANDING.base_name,
+        RUNTIME_BRANDING.base_name,
       );
+      await adoptRuntimeLayout(destinationRoot);
       return;
     case "tar-xz-floorp":
       await extractTarXzSafely(
         archivePath,
         destinationRoot,
-        BRANDING.base_name,
+        RUNTIME_BRANDING.base_name,
       );
+      await adoptRuntimeLayout(destinationRoot);
       return;
     case "dmg-floorp-app": {
       const mountPoint = await Deno.makeTempDir({
@@ -718,16 +756,16 @@ async function extractLockedMainArchive(
           archivePath,
         ]);
         attached = true;
-        const floorpRoot = path.join(destinationRoot, BRANDING.base_name);
-        await Deno.mkdir(floorpRoot, { recursive: true });
-        const expectedAppName = `${BRANDING.display_name}.app`;
+        const runtimeRoot = path.join(destinationRoot, BRANDING.base_name);
+        await Deno.mkdir(runtimeRoot, { recursive: true });
+        const expectedAppName = `${RUNTIME_BRANDING.display_name}.app`;
         const sourceApp = await findSingleTopLevelAppDirectory(
           mountPoint,
           expectedAppName,
         );
         await copyDirectoryTreeSafely(
           sourceApp,
-          path.join(floorpRoot, expectedAppName),
+          path.join(runtimeRoot, expectedAppName),
         );
         try {
           runCommand("xattr", ["-rc", destinationRoot]);
@@ -972,9 +1010,9 @@ async function assertRuntimeTree(
   const parsed = parseApplicationIni(
     await Deno.readTextFile(layout.applicationIni),
   );
-  if (parsed.name && parsed.name !== BRANDING.display_name) {
+  if (parsed.name && parsed.name !== RUNTIME_BRANDING.display_name) {
     throw new Error(
-      `Locked Runtime application name mismatch: ${parsed.name} !== ${BRANDING.display_name}.`,
+      `Locked Runtime application name mismatch: ${parsed.name} !== ${RUNTIME_BRANDING.display_name}.`,
     );
   }
   if (parsed.version !== artifact.version) {
@@ -1039,7 +1077,7 @@ function debugRuntimeVersionPath(binRootDir: string): string {
   return path.join(
     binRootDir,
     BRANDING.base_name,
-    `${BRANDING.display_name}.app`,
+    `${RUNTIME_BRANDING.display_name}.app`,
     "Contents",
     "Resources",
     "nora.version.txt",
@@ -1063,9 +1101,9 @@ async function assertDebugRuntimeTree(binRootDir: string): Promise<{
 
   const applicationIni = await findSingleApplicationIni(binRootDir);
   const parsed = parseApplicationIni(await Deno.readTextFile(applicationIni));
-  if (parsed.name && parsed.name !== BRANDING.display_name) {
+  if (parsed.name && parsed.name !== RUNTIME_BRANDING.display_name) {
     throw new Error(
-      `Debug Runtime application name mismatch: ${parsed.name} !== ${BRANDING.display_name}.`,
+      `Debug Runtime application name mismatch: ${parsed.name} !== ${RUNTIME_BRANDING.display_name}.`,
     );
   }
   return parsed;
@@ -2064,7 +2102,11 @@ async function extractNestedZip(
     }
 
     logger.info("Extracting inner zip...");
-    await extractZipSafely(innerZipPath, extractToDir, BRANDING.base_name);
+    await extractZipSafely(
+      innerZipPath,
+      extractToDir,
+      RUNTIME_BRANDING.base_name,
+    );
 
     // Set proper permissions on Unix-like systems
     if (PLATFORM !== "windows") {
@@ -2088,16 +2130,16 @@ export async function copyDebugMacAppFromMountedDmg(
   mountPoint: string,
   destinationRoot: string,
 ): Promise<void> {
-  const floorpRoot = path.join(destinationRoot, BRANDING.base_name);
-  await Deno.mkdir(floorpRoot, { recursive: true });
-  const expectedAppName = `${BRANDING.display_name}.app`;
+  const runtimeRoot = path.join(destinationRoot, BRANDING.base_name);
+  await Deno.mkdir(runtimeRoot, { recursive: true });
+  const expectedAppName = `${RUNTIME_BRANDING.display_name}.app`;
   const sourceApp = await findSingleTopLevelAppDirectory(
     mountPoint,
     expectedAppName,
   );
   await copyDirectoryTreeSafely(
     sourceApp,
-    path.join(floorpRoot, expectedAppName),
+    path.join(runtimeRoot, expectedAppName),
   );
 }
 
@@ -2189,7 +2231,7 @@ export async function decompressBin(
           await extractTarXzSafely(
             archivePath,
             destinationRoot,
-            BRANDING.base_name,
+            RUNTIME_BRANDING.base_name,
           );
           break;
         }
@@ -2199,6 +2241,7 @@ export async function decompressBin(
       }
     }
 
+    await adoptRuntimeLayout(destinationRoot);
     const versionPath = debugRuntimeVersionPath(destinationRoot);
     Deno.mkdirSync(path.dirname(versionPath), { recursive: true });
     Deno.writeTextFileSync(versionPath, VERSION);

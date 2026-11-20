@@ -22,7 +22,7 @@ deno task test:smoke                # Smoke tests
 deno task dev-tool                  # Development utility CLI
 ```
 
-`FLOORP_DEV_RUNTIME_DISTRIBUTION=release` (used by the `package.json` scripts)
+`KIT_DEV_RUNTIME_DISTRIBUTION=release` (used by the `package.json` scripts)
 installs the locked release runtime instead of the latest debug build.
 
 ## Architecture

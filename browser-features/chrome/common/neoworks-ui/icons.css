@@ -25,12 +25,19 @@
   --nw-icon-check: url("@phosphor-icons/core/bold/check-bold.svg");
   --nw-icon-caret-up-down: url("@phosphor-icons/core/bold/caret-up-down-bold.svg");
   --nw-icon-dots-three: url("@phosphor-icons/core/bold/dots-three-bold.svg");
+  --nw-icon-dots-six: url("@phosphor-icons/core/bold/dots-six-bold.svg");
+  --nw-icon-arrows-out-simple: url("@phosphor-icons/core/bold/arrows-out-simple-bold.svg");
   --nw-icon-puzzle-piece: url("@phosphor-icons/core/bold/puzzle-piece-bold.svg");
   --nw-icon-download-simple: url("@phosphor-icons/core/bold/download-simple-bold.svg");
   --nw-icon-speaker-high: url("@phosphor-icons/core/bold/speaker-high-bold.svg");
   --nw-icon-speaker-slash: url("@phosphor-icons/core/bold/speaker-slash-bold.svg");
   --nw-icon-sliders: url("@phosphor-icons/core/bold/sliders-bold.svg");
   --nw-icon-camera: url("@phosphor-icons/core/bold/camera-bold.svg");
+  --nw-icon-cursor-click: url("@phosphor-icons/core/bold/cursor-click-bold.svg");
+  --nw-icon-text-aa: url("@phosphor-icons/core/bold/text-aa-bold.svg");
+  --nw-icon-microphone: url("@phosphor-icons/core/bold/microphone-bold.svg");
+  --nw-icon-sign-out: url("@phosphor-icons/core/bold/sign-out-bold.svg");
+  --nw-icon-hand-pointing: url("@phosphor-icons/core/bold/hand-pointing-bold.svg");
   --nw-icon-book-open: url("@phosphor-icons/core/bold/book-open-bold.svg");
   --nw-icon-link: url("@phosphor-icons/core/bold/link-bold.svg");
   --nw-icon-lock: url("@phosphor-icons/core/bold/lock-bold.svg");
@@ -152,6 +159,14 @@
   mask-image: var(--nw-icon-dots-three);
 }
 
+.nw-icon[data-icon="dots-six"] {
+  mask-image: var(--nw-icon-dots-six);
+}
+
+.nw-icon[data-icon="arrows-out-simple"] {
+  mask-image: var(--nw-icon-arrows-out-simple);
+}
+
 .nw-icon[data-icon="puzzle-piece"] {
   mask-image: var(--nw-icon-puzzle-piece);
 }
@@ -174,6 +189,26 @@
 
 .nw-icon[data-icon="camera"] {
   mask-image: var(--nw-icon-camera);
+}
+
+.nw-icon[data-icon="cursor-click"] {
+  mask-image: var(--nw-icon-cursor-click);
+}
+
+.nw-icon[data-icon="text-aa"] {
+  mask-image: var(--nw-icon-text-aa);
+}
+
+.nw-icon[data-icon="microphone"] {
+  mask-image: var(--nw-icon-microphone);
+}
+
+.nw-icon[data-icon="sign-out"] {
+  mask-image: var(--nw-icon-sign-out);
+}
+
+.nw-icon[data-icon="hand-pointing"] {
+  mask-image: var(--nw-icon-hand-pointing);
 }
 
 .nw-icon[data-icon="book-open"] {

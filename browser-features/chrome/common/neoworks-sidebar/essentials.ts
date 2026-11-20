@@ -12,13 +12,14 @@
 import {
   containerTagOf,
   essentialOrphaned,
+  ESSENTIALS_SCOPE_PREF,
   essentialScope,
   type EssentialsScope,
-  ESSENTIALS_SCOPE_PREF,
   type EssentialTag,
   parseEssentialsScope,
 } from "./essentials-scope.ts";
 import { tabbrowser } from "./tabbrowser.ts";
+import { deleteTabValue, getTabValue, setTabValue } from "./tab-values.ts";
 import {
   activeWorkspace,
   assignTabToWorkspace,
@@ -36,24 +37,18 @@ const ESSENTIAL_KEY = "neoworksEssential";
 // itself is the tab's usual workspace id.
 const CONTAINER_KEY = "neoworksEssentialContainer";
 
-interface SessionStoreApi {
-  getCustomTabValue(tab: BrowserTab, key: string): string;
-  setCustomTabValue(tab: BrowserTab, key: string, value: string): void;
-  deleteCustomTabValue(tab: BrowserTab, key: string): void;
-}
-
-const browserWindow = window as unknown as { SessionStore: SessionStoreApi };
-
 export function isEssential(tab: BrowserTab): boolean {
-  return browserWindow.SessionStore.getCustomTabValue(tab, ESSENTIAL_KEY) === "true";
+  return getTabValue(tab, ESSENTIAL_KEY) === "true";
 }
 
 export function essentialsScope(): EssentialsScope {
-  return parseEssentialsScope(Services.prefs.getStringPref(ESSENTIALS_SCOPE_PREF, "shared"));
+  return parseEssentialsScope(
+    Services.prefs.getStringPref(ESSENTIALS_SCOPE_PREF, "shared"),
+  );
 }
 
 function storedContainerTag(tab: BrowserTab): string {
-  return browserWindow.SessionStore.getCustomTabValue(tab, CONTAINER_KEY);
+  return getTabValue(tab, CONTAINER_KEY);
 }
 
 // Essentials from before scopes (no container tag) and ones whose workspace or
@@ -66,9 +61,12 @@ function effectiveTag(tab: BrowserTab): EssentialTag {
   const workspaceId = storedWorkspaceId(tab);
   return {
     workspaceId: workspaceById(workspaceId) ? workspaceId : "",
-    containerId: workspaces().some((workspace) => containerTagOf(workspace) === containerId)
-      ? containerId
-      : "",
+    containerId:
+      workspaces().some((workspace) =>
+          containerTagOf(workspace) === containerId
+        )
+        ? containerId
+        : "",
   };
 }
 
@@ -76,7 +74,10 @@ export function essentialTabs(): BrowserTab[] {
   return tabbrowser().tabs.filter(isEssential);
 }
 
-export function essentialBelongsTo(tab: BrowserTab, workspace: Workspace): boolean {
+export function essentialBelongsTo(
+  tab: BrowserTab,
+  workspace: Workspace,
+): boolean {
   return essentialScope(effectiveTag(tab), workspace, essentialsScope());
 }
 
@@ -91,24 +92,31 @@ export function essentialWorkspaceId(tab: BrowserTab): string {
   if (essentialsScope() === "workspace") {
     return tag.workspaceId;
   }
-  const owner = workspaces().find((workspace) => containerTagOf(workspace) === tag.containerId);
+  const owner = workspaces().find((workspace) =>
+    containerTagOf(workspace) === tag.containerId
+  );
   return owner?.id ?? active.id;
 }
 
 function essentialsIn(workspace: Workspace, except?: BrowserTab): BrowserTab[] {
-  return essentialTabs().filter((tab) => tab !== except && essentialBelongsTo(tab, workspace));
+  return essentialTabs().filter((tab) =>
+    tab !== except && essentialBelongsTo(tab, workspace)
+  );
 }
 
 // Whether `workspace`'s Essentials have room for another. After switching the
 // scope a set can hold more than the maximum; it stays visible but doesn't
 // grow.
-export function hasRoomForEssential(workspace: Workspace, except?: BrowserTab): boolean {
+export function hasRoomForEssential(
+  workspace: Workspace,
+  except?: BrowserTab,
+): boolean {
   return essentialsIn(workspace, except).length < MAX_ESSENTIALS;
 }
 
 function tagEssential(tab: BrowserTab, workspace: Workspace): void {
   assignTabToWorkspace(tab, workspace.id);
-  browserWindow.SessionStore.setCustomTabValue(tab, CONTAINER_KEY, containerTagOf(workspace));
+  setTabValue(tab, CONTAINER_KEY, containerTagOf(workspace));
 }
 
 // Essentials from before scopes are tagged with the workspace you are in once
@@ -139,11 +147,17 @@ export function moveEssential(tab: BrowserTab, target: Workspace): boolean {
 }
 
 // Essentials that go away with `deleted` (it was the last place they showed).
-export function essentialsOrphanedBy(deleted: Workspace, remaining: Workspace[]): BrowserTab[] {
+export function essentialsOrphanedBy(
+  deleted: Workspace,
+  remaining: Workspace[],
+): BrowserTab[] {
   const scope = essentialsScope();
   return essentialTabs().filter((tab) =>
     essentialOrphaned(
-      { workspaceId: storedWorkspaceId(tab), containerId: storedContainerTag(tab) },
+      {
+        workspaceId: storedWorkspaceId(tab),
+        containerId: storedContainerTag(tab),
+      },
       deleted,
       remaining,
       scope,
@@ -170,7 +184,7 @@ export function addToEssentials(tab: BrowserTab): boolean {
   if (!hasRoomForEssential(workspace)) {
     return false;
   }
-  browserWindow.SessionStore.setCustomTabValue(tab, ESSENTIAL_KEY, "true");
+  setTabValue(tab, ESSENTIAL_KEY, "true");
   tagEssential(tab, workspace);
   if (!tab.pinned) {
     tabbrowser().pinTab(tab);
@@ -184,8 +198,8 @@ export function removeFromEssentials(tab: BrowserTab): void {
   if (!isEssential(tab)) {
     return;
   }
-  browserWindow.SessionStore.deleteCustomTabValue(tab, ESSENTIAL_KEY);
-  browserWindow.SessionStore.deleteCustomTabValue(tab, CONTAINER_KEY);
+  deleteTabValue(tab, ESSENTIAL_KEY);
+  deleteTabValue(tab, CONTAINER_KEY);
   claimForActiveWorkspace(tab);
   announceChange(tab);
 }

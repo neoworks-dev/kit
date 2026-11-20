@@ -13,14 +13,17 @@ import speakerSlashIcon from "@phosphor-icons/core/fill/speaker-slash-fill.svg?r
 import { Show } from "solid-js";
 import { phosphorMask } from "../neoworks-ui/phosphor.ts";
 import { createMediaSession } from "./media-session.ts";
+import { compactTitle } from "./sidebar-state.ts";
 import { selectTab } from "./tab-actions.ts";
-import { Favicon, tabReader } from "./tab-row.tsx";
+import { attributeFlag, Favicon, tabReader } from "./tab-row.tsx";
 import type { MediaSession, TabState } from "./types.ts";
 
+// `main` marks play / pause, the one button the compact sidebar keeps.
 function ControlButton(props: {
   icon: string;
   title: string;
   disabled?: boolean;
+  main?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -28,13 +31,17 @@ function ControlButton(props: {
       type="button"
       class="nw-icon-button nw-media-button"
       title={props.title}
+      data-main={attributeFlag(props.main ?? false)}
       disabled={props.disabled}
       onClick={(event: MouseEvent) => {
         event.stopPropagation();
         props.onClick();
       }}
     >
-      <span class="nw-icon" style={{ "mask-image": phosphorMask(props.icon) }} />
+      <span
+        class="nw-icon"
+        style={{ "mask-image": phosphorMask(props.icon) }}
+      />
     </button>
   );
 }
@@ -73,7 +80,11 @@ function MediaCard(props: { session: MediaSession; tabState: TabState }) {
   const title = () => metadata().title || label();
 
   return (
-    <div class="nw-media" onClick={() => selectTab(tab())}>
+    <div
+      class="nw-media"
+      title={compactTitle(title())}
+      onClick={() => selectTab(tab())}
+    >
       <div class="nw-media-info">
         <div class="nw-media-info-inner">
           <span class="nw-media-title">{title()}</span>
@@ -95,6 +106,7 @@ function MediaCard(props: { session: MediaSession; tabState: TabState }) {
         <ControlButton
           icon={props.session.controller.isPlaying ? pauseIcon : playIcon}
           title={props.session.controller.isPlaying ? "Pause" : "Play"}
+          main
           onClick={() => togglePlaying(props.session)}
         />
         <ControlButton

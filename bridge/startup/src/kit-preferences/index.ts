@@ -3,12 +3,19 @@
 // Kit's own pane in about:preferences, first in the category list, built on
 // the settings framework of Firefox's settings redesign.
 
-import { DEVELOPER_GROUP_ID, registerDeveloperGroup } from "./developer-group.ts";
-import { KEY_BINDINGS_GROUP_ID, registerKeyBindingsGroup } from "./key-bindings-group.ts";
+import {
+  DEVELOPER_GROUP_ID,
+  registerDeveloperGroup,
+} from "./developer-group.ts";
+import {
+  KEY_BINDINGS_GROUP_ID,
+  registerKeyBindingsGroup,
+} from "./key-bindings-group.ts";
 import {
   registerSidebarWindowGroup,
   SIDEBAR_WINDOW_GROUP_ID,
 } from "./sidebar-window-group.ts";
+import { registerSearchGroup, SEARCH_GROUP_ID } from "./search-group.ts";
 import { injectKitTheme } from "./theme.ts";
 import type { PreferencesWindow } from "./types.ts";
 import {
@@ -69,6 +76,7 @@ function titleKitPane(doc: Document): void {
 function registerKitPane(win: PreferencesWindow): void {
   registerSidebarWindowGroup(win);
   registerWorkspaceContainersGroup(win);
+  registerSearchGroup(win);
   registerKeyBindingsGroup(win);
   registerDeveloperGroup(win);
   win.SettingPaneManager.registerPane(PANE_ID, {
@@ -76,6 +84,7 @@ function registerKitPane(win: PreferencesWindow): void {
     groupIds: [
       SIDEBAR_WINDOW_GROUP_ID,
       WORKSPACE_CONTAINERS_GROUP_ID,
+      SEARCH_GROUP_ID,
       KEY_BINDINGS_GROUP_ID,
       DEVELOPER_GROUP_ID,
     ],
@@ -93,11 +102,17 @@ export function initKitPreferences(doc: Document): void {
       titleKitPane(doc);
       registerKitPane(doc.defaultView as unknown as PreferencesWindow);
     } catch (error) {
-      console.error("[kit-preferences] Adding Kit's settings pane failed:", error);
+      console.error(
+        "[kit-preferences] Adding Kit's settings pane failed:",
+        error,
+      );
     }
   };
   if (doc.readyState === "loading") {
-    doc.defaultView?.addEventListener("DOMContentLoaded", run, { once: true, capture: true });
+    doc.defaultView?.addEventListener("DOMContentLoaded", run, {
+      once: true,
+      capture: true,
+    });
     return;
   }
   run();

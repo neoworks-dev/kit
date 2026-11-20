@@ -6,13 +6,14 @@ import { attributeFlag, Segmented, SettingRow, Toggle } from "./controls.tsx";
 import {
   ARCHIVE_AFTER_OPTIONS,
   archiveAfterHours,
-  docked,
   GLASS_TINT_OPTIONS,
   glassTint,
   setArchiveAfterHours,
-  setDocked,
   setGlassTint,
+  setSidebarState,
   setTransparent,
+  SIDEBAR_STATE_OPTIONS,
+  sidebarState,
   transparent,
 } from "./settings.ts";
 import { checkDefaultBrowser, defaultBrowserState, makeDefaultBrowser } from "./default-browser.ts";
@@ -118,10 +119,16 @@ export function SettingsStep() {
       <h1 class="nw-onboarding-title">Tabs and sidebar</h1>
       <p class="nw-onboarding-lead">Kit keeps your tabs in a sidebar, grouped into workspaces.</p>
       <SettingRow
-        title="Dock the sidebar"
-        description="Keep the sidebar beside the page. Off, it slides in over the page when you need it."
+        title="Sidebar"
+        stacked
+        description="Beside the page, as a column of icons, or hidden until you move to the window's left edge."
       >
-        <Toggle label="Dock the sidebar" checked={docked()} onChange={setDocked} />
+        <Segmented
+          label="Sidebar"
+          options={SIDEBAR_STATE_OPTIONS}
+          value={sidebarState()}
+          onChange={setSidebarState}
+        />
       </SettingRow>
       <SettingRow
         title="Archive unused tabs"

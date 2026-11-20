@@ -32,6 +32,8 @@ const TAB_EVENTS = [
   "SplitViewCreated",
   "SplitViewRemoved",
   "SplitViewTabChange",
+  // Window sync copied the tab's values from another window.
+  "NWTabSynced",
 ];
 
 // Entry objects are cached so <For> keeps existing rows instead of

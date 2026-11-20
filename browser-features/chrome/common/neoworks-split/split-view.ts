@@ -8,6 +8,7 @@
 
 import { createSignal } from "solid-js";
 import { defaultContainerId } from "../neoworks-sidebar/containers.ts";
+import { tabUrl } from "../neoworks-window-sync/mirrors.ts";
 import {
   insertAtDivider,
   insertPane,
@@ -150,7 +151,6 @@ export function queueLayout(): void {
   });
 }
 
-// Firefox leaves pinned tabs out of split views.
 function canSplit(tab: SplitTab): boolean {
   return !tab.pinned && !tab.closing;
 }
@@ -161,18 +161,32 @@ function openTab(): SplitTab {
   });
 }
 
+// Firefox keeps pinned tabs, and so Essentials, out of split views: their
+// page joins as a new tab in the same container, and the pinned tab stays
+// where it is.
+function splittable(tab: SplitTab): SplitTab {
+  if (canSplit(tab)) {
+    return tab;
+  }
+  return tabbrowser().addTrustedTab(tabUrl(tab) || browserWindow.BROWSER_NEW_TAB_URL, {
+    userContextId: tab.userContextId,
+  });
+}
+
 // Puts `tab` beside `target` (a pane on screen) on `side`. Starts a split
 // view, joins the target's, or moves a pane within the same split.
-export function splitWith(target: SplitTab, tab: SplitTab, side: DropSide): void {
-  if (target === tab || !canSplit(target) || !canSplit(tab)) {
+export function splitWith(dropped: SplitTab, dragged: SplitTab, side: DropSide): void {
+  if (dropped === dragged || dropped.closing || dragged.closing) {
     return;
   }
-  const browser = tabbrowser();
-  const wrapper = target.splitview;
-  if (tab.splitview && tab.splitview !== wrapper) {
+  if (dragged.splitview && dragged.splitview !== dropped.splitview) {
     // Taking a tab out of another split view isn't supported by Firefox.
     return;
   }
+  const target = splittable(dropped);
+  const tab = splittable(dragged);
+  const browser = tabbrowser();
+  const wrapper = target.splitview;
   if (wrapper) {
     let root = currentRoot(wrapper) ?? pane(target);
     if (tab.splitview === wrapper) {
@@ -279,6 +293,17 @@ function handleTabClose(event: Event): void {
       rebuildWithout(wrapper, null);
     }
   }, 0);
+}
+
+// The pane handle's expand button: ends the split and shows only `tab`.
+export function showAlone(tab: SplitTab): void {
+  const wrapper = tab.splitview;
+  if (!wrapper) {
+    return;
+  }
+  wrapper.unsplitTabs();
+  tabbrowser().selectedTab = tab;
+  queueLayout();
 }
 
 // Space w q: closes the pane you're in, like closing a vim window.

@@ -1,17 +1,25 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // Right-click menu for the empty part of the tab list. Also holds what used
-// to be the header's buttons: the container new tabs open in, and docking.
+// to be the header's buttons: the container new tabs open in, and how the
+// sidebar sits in the window.
 
 import { For } from "solid-js";
-import { type Container, containers, defaultContainerId, NO_CONTAINER, setDefaultContainerId } from "./containers.ts";
+import {
+  type Container,
+  containers,
+  defaultContainerId,
+  NO_CONTAINER,
+  setDefaultContainerId,
+} from "./containers.ts";
 import { openContextMenuAt } from "./context-menu.tsx";
 import { createFolder } from "./folder-actions.ts";
 import { startFolderEdit } from "./folder-editing.ts";
-import { sidebarDocked, toggleSidebarDocked } from "./sidebar-docking.ts";
+import { setSidebarState, sidebarState } from "./sidebar-state.ts";
 import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { openNewTab } from "./tab-actions.ts";
 import { tabbrowser } from "./tabbrowser.ts";
+import type { SidebarState } from "./types.ts";
 
 const MENU_ID = "neoworks-sidebar-list-menu";
 const CONTAINER_SETTINGS_URL = "about:preferences#containers";
@@ -53,15 +61,47 @@ function NewTabContainerSubmenu() {
   return (
     <xul:menu label="Open new tabs in">
       <xul:menupopup>
-        <NewTabContainerItem label="No container" userContextId={NO_CONTAINER} />
+        <NewTabContainerItem
+          label="No container"
+          userContextId={NO_CONTAINER}
+        />
         <xul:menuseparator />
         <For each={containers()}>
           {(container: Container) => (
-            <NewTabContainerItem label={container.name} userContextId={container.userContextId} />
+            <NewTabContainerItem
+              label={container.name}
+              userContextId={container.userContextId}
+            />
           )}
         </For>
         <xul:menuseparator />
-        <xul:menuitem label="Manage containers…" onCommand={openContainerSettings} />
+        <xul:menuitem
+          label="Manage containers…"
+          onCommand={openContainerSettings}
+        />
+      </xul:menupopup>
+    </xul:menu>
+  );
+}
+
+function SidebarStateItem(props: { label: string; state: SidebarState }) {
+  return (
+    <xul:menuitem
+      type="checkbox"
+      label={props.label}
+      checked={sidebarState() === props.state}
+      onCommand={() => setSidebarState(props.state)}
+    />
+  );
+}
+
+function SidebarStateSubmenu() {
+  return (
+    <xul:menu label="Sidebar">
+      <xul:menupopup>
+        <SidebarStateItem label="Expanded" state="expanded" />
+        <SidebarStateItem label="Icons only" state="compact" />
+        <SidebarStateItem label="Hidden" state="hidden" />
       </xul:menupopup>
     </xul:menu>
   );
@@ -86,12 +126,7 @@ export function SidebarContextMenu() {
       <xul:menuitem label="New folder" onCommand={openNewFolder} />
       <xul:menuseparator />
       <NewTabContainerSubmenu />
-      <xul:menuitem
-        type="checkbox"
-        label="Keep sidebar open"
-        checked={sidebarDocked()}
-        onCommand={toggleSidebarDocked}
-      />
+      <SidebarStateSubmenu />
     </xul:menupopup>
   );
 }

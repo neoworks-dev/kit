@@ -5,12 +5,23 @@
 // defaults; open windows observe them and update right away.
 
 import { createSignal } from "solid-js";
+import {
+  DEFAULT_SIDEBAR_STATE,
+  parseSidebarState,
+  SIDEBAR_STATE_PREF,
+} from "../neoworks-sidebar/sidebar-state-model.ts";
+import type { SidebarState } from "../neoworks-sidebar/types.ts";
 import type { SettingOption } from "./types.ts";
 
-const DOCKED_PREF = "neoworks.sidebar.docked";
 const TRANSPARENT_PREF = "neoworks.window.transparent";
 const GLASS_TINT_PREF = "neoworks.glass.tint";
 const ARCHIVE_AFTER_PREF = "neoworks.tabs.archiveAfterHours";
+
+export const SIDEBAR_STATE_OPTIONS: SettingOption<SidebarState>[] = [
+  { value: "expanded", label: "Expanded" },
+  { value: "compact", label: "Icons only" },
+  { value: "hidden", label: "Hidden" },
+];
 
 export const GLASS_TINT_OPTIONS: SettingOption<string>[] = [
   { value: "light", label: "Light" },
@@ -27,23 +38,25 @@ export const ARCHIVE_AFTER_OPTIONS: SettingOption<number>[] = [
   { value: 168, label: "7 days" },
 ];
 
-const [docked, setDockedSignal] = createSignal(true);
+const [sidebarState, setSidebarStateSignal] = createSignal<SidebarState>(DEFAULT_SIDEBAR_STATE);
 const [transparent, setTransparentSignal] = createSignal(false);
 const [glassTint, setGlassTintSignal] = createSignal("medium");
-const [archiveAfterHours, setArchiveAfterSignal] = createSignal(24);
+const [archiveAfterHours, setArchiveAfterSignal] = createSignal(168);
 
-export { archiveAfterHours, docked, glassTint, transparent };
+export { archiveAfterHours, glassTint, sidebarState, transparent };
 
 export function readSettings(): void {
-  setDockedSignal(Services.prefs.getBoolPref(DOCKED_PREF, true));
+  setSidebarStateSignal(
+    parseSidebarState(Services.prefs.getStringPref(SIDEBAR_STATE_PREF, DEFAULT_SIDEBAR_STATE)),
+  );
   setTransparentSignal(Services.prefs.getBoolPref(TRANSPARENT_PREF, false));
   setGlassTintSignal(Services.prefs.getStringPref(GLASS_TINT_PREF, "medium") || "medium");
-  setArchiveAfterSignal(Services.prefs.getIntPref(ARCHIVE_AFTER_PREF, 24));
+  setArchiveAfterSignal(Services.prefs.getIntPref(ARCHIVE_AFTER_PREF, 168));
 }
 
-export function setDocked(value: boolean): void {
-  Services.prefs.setBoolPref(DOCKED_PREF, value);
-  setDockedSignal(value);
+export function setSidebarState(value: SidebarState): void {
+  Services.prefs.setStringPref(SIDEBAR_STATE_PREF, value);
+  setSidebarStateSignal(value);
 }
 
 export function setTransparent(value: boolean): void {

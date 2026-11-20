@@ -36,6 +36,11 @@ export function closeAiPanel(): void {
   applyOpen(false);
 }
 
+// Opens the panel for the shared agent, which needs no sidecar of Kit's own.
+export function openAiPanel(): void {
+  applyOpen(true);
+}
+
 // Next to the downloads button at the right of the top bar. Returns a
 // remover for hot reload.
 export function insertAiButton(): () => void {

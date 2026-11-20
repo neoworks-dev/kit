@@ -439,10 +439,10 @@ export interface WindowsProcessIdentity {
 
 export interface WindowsAutoStartState {
   deno: WindowsProcessIdentity;
-  floorpExecutablePath: string;
-  ownedFloorp: Map<number, WindowsProcessIdentity>;
-  blockedFloorpProcessIds: Set<number>;
-  ambiguousFloorp: string[];
+  kitExecutablePath: string;
+  ownedKit: Map<number, WindowsProcessIdentity>;
+  blockedKitProcessIds: Set<number>;
+  ambiguousKit: string[];
   listenerRoot: WindowsProcessIdentity | null;
   port: number | null;
   treeKillSafe: boolean;
@@ -479,11 +479,11 @@ ConvertTo-Json -InputObject $rows -Compress -Depth 4
 const WINDOWS_LISTENER_SNAPSHOT_SCRIPT = String.raw`
 $ErrorActionPreference = 'Stop'
 $port = 0
-if (-not [int]::TryParse($env:FLOORP_COLOCATED_LOCAL_PORT, [ref]$port)) {
-  throw 'FLOORP_COLOCATED_LOCAL_PORT must be an integer'
+if (-not [int]::TryParse($env:KIT_COLOCATED_LOCAL_PORT, [ref]$port)) {
+  throw 'KIT_COLOCATED_LOCAL_PORT must be an integer'
 }
 if ($port -lt 1 -or $port -gt 65535) {
-  throw 'FLOORP_COLOCATED_LOCAL_PORT is outside the TCP port range'
+  throw 'KIT_COLOCATED_LOCAL_PORT is outside the TCP port range'
 }
 $connections = @(Get-NetTCPConnection -ErrorAction Stop)
 $rows = @(
@@ -737,7 +737,7 @@ function matchesWindowsDenoIdentity(
 
 export function assertWindowsAutoStartPreflight(
   processes: WindowsProcessRecord[],
-  floorpExecutablePath = BIN_PATH_EXE,
+  kitExecutablePath = BIN_PATH_EXE,
 ): void {
   if (processes.length === 0) {
     throw new Error("Win32_Process preflight returned no processes");
@@ -746,7 +746,7 @@ export function assertWindowsAutoStartPreflight(
   const existing = processes.filter((process) =>
     isSameWindowsExecutablePath(
       process.executablePath,
-      floorpExecutablePath,
+      kitExecutablePath,
     )
   );
   if (existing.length > 0) {
@@ -782,14 +782,14 @@ export function selectWindowsDenoIdentity(
 
 export function createWindowsAutoStartState(
   deno: WindowsProcessIdentity,
-  floorpExecutablePath = BIN_PATH_EXE,
+  kitExecutablePath = BIN_PATH_EXE,
 ): WindowsAutoStartState {
   return {
     deno,
-    floorpExecutablePath,
-    ownedFloorp: new Map<number, WindowsProcessIdentity>(),
-    blockedFloorpProcessIds: new Set<number>(),
-    ambiguousFloorp: [],
+    kitExecutablePath,
+    ownedKit: new Map<number, WindowsProcessIdentity>(),
+    blockedKitProcessIds: new Set<number>(),
+    ambiguousKit: [],
     listenerRoot: null,
     port: null,
     treeKillSafe: true,
@@ -827,10 +827,10 @@ function addUniqueMessage(target: string[], message: string): void {
   }
 }
 
-export function reconcileWindowsFloorpOwnership(
+export function reconcileWindowsKitOwnership(
   state: WindowsAutoStartState,
   processes: WindowsProcessRecord[],
-  floorpExecutablePath = state.floorpExecutablePath,
+  kitExecutablePath = state.kitExecutablePath,
 ): string[] {
   const issues: string[] = [];
   let byPid: Map<number, WindowsProcessRecord>;
@@ -855,13 +855,13 @@ export function reconcileWindowsFloorpOwnership(
   const candidates = processes.filter((process) =>
     isSameWindowsExecutablePath(
       process.executablePath,
-      floorpExecutablePath,
+      kitExecutablePath,
     )
   );
   const linked = new Set<number>();
 
-  for (const [processId, identity] of state.ownedFloorp) {
-    if (state.blockedFloorpProcessIds.has(processId)) {
+  for (const [processId, identity] of state.ownedKit) {
+    if (state.blockedKitProcessIds.has(processId)) {
       continue;
     }
     const current = byPid.get(processId);
@@ -870,7 +870,7 @@ export function reconcileWindowsFloorpOwnership(
     }
     if (!matchesWindowsProcessIdentity(current, identity)) {
       issues.push(
-        `Owned Floorp PID ${processId} no longer matches its captured identity`,
+        `Owned Kit PID ${processId} no longer matches its captured identity`,
       );
       continue;
     }
@@ -879,7 +879,7 @@ export function reconcileWindowsFloorpOwnership(
 
   if (denoIsLive && state.listenerRoot === null) {
     for (const candidate of candidates) {
-      if (state.blockedFloorpProcessIds.has(candidate.processId)) {
+      if (state.blockedKitProcessIds.has(candidate.processId)) {
         continue;
       }
       if (
@@ -900,7 +900,7 @@ export function reconcileWindowsFloorpOwnership(
     for (const candidate of candidates) {
       if (
         linked.has(candidate.processId) ||
-        state.blockedFloorpProcessIds.has(candidate.processId)
+        state.blockedKitProcessIds.has(candidate.processId)
       ) {
         continue;
       }
@@ -916,41 +916,41 @@ export function reconcileWindowsFloorpOwnership(
   }
 
   for (const candidate of candidates) {
-    if (state.blockedFloorpProcessIds.has(candidate.processId)) {
+    if (state.blockedKitProcessIds.has(candidate.processId)) {
       addUniqueMessage(
-        state.ambiguousFloorp,
-        `Blocked identity-mismatched exact-path Floorp PID ${candidate.processId}`,
+        state.ambiguousKit,
+        `Blocked identity-mismatched exact-path Kit PID ${candidate.processId}`,
       );
       continue;
     }
     if (!linked.has(candidate.processId)) {
       addUniqueMessage(
-        state.ambiguousFloorp,
-        `Unlinked exact-path Floorp PID ${candidate.processId}`,
+        state.ambiguousKit,
+        `Unlinked exact-path Kit PID ${candidate.processId}`,
       );
       continue;
     }
     try {
-      const identity = captureWindowsProcessIdentity(candidate, "Owned Floorp");
-      const existing = state.ownedFloorp.get(candidate.processId);
+      const identity = captureWindowsProcessIdentity(candidate, "Owned Kit");
+      const existing = state.ownedKit.get(candidate.processId);
       if (existing && !matchesWindowsProcessIdentity(candidate, existing)) {
         issues.push(
-          `Owned Floorp PID ${candidate.processId} was reused by another process`,
+          `Owned Kit PID ${candidate.processId} was reused by another process`,
         );
         continue;
       }
-      state.ownedFloorp.set(candidate.processId, identity);
+      state.ownedKit.set(candidate.processId, identity);
     } catch (error) {
       addUniqueMessage(
-        state.ambiguousFloorp,
-        `Exact-path Floorp PID ${candidate.processId} has an invalid identity: ${
+        state.ambiguousKit,
+        `Exact-path Kit PID ${candidate.processId} has an invalid identity: ${
           errorToMessage(error)
         }`,
       );
     }
   }
 
-  if (issues.length > 0 || state.ambiguousFloorp.length > 0) {
+  if (issues.length > 0 || state.ambiguousKit.length > 0) {
     state.treeKillSafe = false;
   }
 
@@ -981,22 +981,22 @@ export function promoteWindowsReadyBrowserOwnership(
       continue;
     }
     if (!matchesWindowsProcessIdentityStrict(current, identity)) {
-      state.blockedFloorpProcessIds.add(processId);
+      state.blockedKitProcessIds.add(processId);
       issues.push(
-        `Previously owned Floorp PID ${processId} no longer matches its captured identity`,
+        `Previously owned Kit PID ${processId} no longer matches its captured identity`,
       );
       continue;
     }
     verified.set(processId, identity);
   }
 
-  if (!state.blockedFloorpProcessIds.has(listenerRoot.processId)) {
+  if (!state.blockedKitProcessIds.has(listenerRoot.processId)) {
     verified.set(listenerRoot.processId, listenerRoot);
   }
 
-  state.ownedFloorp.clear();
+  state.ownedKit.clear();
   for (const [processId, identity] of verified) {
-    state.ownedFloorp.set(processId, identity);
+    state.ownedKit.set(processId, identity);
   }
 
   if (issues.length > 0) {
@@ -1010,7 +1010,7 @@ export function selectWindowsListenerRoot(
   listeners: WindowsListenerRecord[],
   processes: WindowsProcessRecord[],
   denoIdentity: WindowsProcessIdentity,
-  floorpExecutablePath = BIN_PATH_EXE,
+  kitExecutablePath = BIN_PATH_EXE,
   previouslyOwned?: ReadonlyMap<number, WindowsProcessIdentity>,
 ): WindowsProcessIdentity {
   const listenRows = listeners.filter((listener) =>
@@ -1037,7 +1037,7 @@ export function selectWindowsListenerRoot(
     throw new Error(`TCP port ${port} owner PID ${ownerPid} was not found`);
   }
   if (
-    !isSameWindowsExecutablePath(owner.executablePath, floorpExecutablePath)
+    !isSameWindowsExecutablePath(owner.executablePath, kitExecutablePath)
   ) {
     throw new Error(
       `TCP port ${port} owner PID ${ownerPid} is not the locked test browser executable`,
@@ -1049,7 +1049,7 @@ export function selectWindowsListenerRoot(
     );
   }
   if (isContentProcessCommandLine(owner.commandLine)) {
-    throw new Error(`TCP port ${port} is owned by a Floorp content process`);
+    throw new Error(`TCP port ${port} is owned by a Kit content process`);
   }
   const ownerIdentity = captureWindowsProcessIdentity(
     owner,
@@ -1100,7 +1100,7 @@ function createWindowsProcessControlDeps(): WindowsProcessControlDeps {
     async listListeners(port) {
       return parseWindowsListenerSnapshot(
         await runPowerShellJson(WINDOWS_LISTENER_SNAPSHOT_SCRIPT, {
-          FLOORP_COLOCATED_LOCAL_PORT: String(port),
+          KIT_COLOCATED_LOCAL_PORT: String(port),
         }),
       );
     },
@@ -1161,13 +1161,13 @@ async function refreshWindowsOwnershipOrThrow(
   deps: WindowsProcessControlDeps,
 ): Promise<void> {
   try {
-    const issues = reconcileWindowsFloorpOwnership(
+    const issues = reconcileWindowsKitOwnership(
       state,
       await deps.listProcesses(),
     );
-    if (issues.length > 0 || state.ambiguousFloorp.length > 0) {
+    if (issues.length > 0 || state.ambiguousKit.length > 0) {
       throw new Error(
-        [...issues, ...state.ambiguousFloorp].join(" | "),
+        [...issues, ...state.ambiguousKit].join(" | "),
       );
     }
   } catch (error) {
@@ -1182,7 +1182,7 @@ export async function captureWindowsReadyBrowser(
   deps: WindowsProcessControlDeps,
 ): Promise<void> {
   state.port = port;
-  const previouslyOwned = new Map(state.ownedFloorp);
+  const previouslyOwned = new Map(state.ownedKit);
   try {
     const processes = await deps.listProcesses();
     const listeners = await deps.listListeners(port);
@@ -1191,7 +1191,7 @@ export async function captureWindowsReadyBrowser(
       listeners,
       processes,
       state.deno,
-      state.floorpExecutablePath,
+      state.kitExecutablePath,
       previouslyOwned,
     );
     const promotionIssues = promoteWindowsReadyBrowserOwnership(
@@ -1200,7 +1200,7 @@ export async function captureWindowsReadyBrowser(
       listenerRoot,
       previouslyOwned,
     );
-    const preListenerIssues = reconcileWindowsFloorpOwnership(
+    const preListenerIssues = reconcileWindowsKitOwnership(
       state,
       processes,
     );
@@ -1208,12 +1208,12 @@ export async function captureWindowsReadyBrowser(
     const issues = [
       ...promotionIssues,
       ...preListenerIssues,
-      ...reconcileWindowsFloorpOwnership(state, processes),
+      ...reconcileWindowsKitOwnership(state, processes),
     ];
-    if (issues.length > 0 || state.ambiguousFloorp.length > 0) {
+    if (issues.length > 0 || state.ambiguousKit.length > 0) {
       throw new Error(
         `Windows browser ownership capture failed: ${
-          [...issues, ...state.ambiguousFloorp].join(" | ")
+          [...issues, ...state.ambiguousKit].join(" | ")
         }`,
       );
     }
@@ -1223,10 +1223,10 @@ export async function captureWindowsReadyBrowser(
   }
 }
 
-function orderedOwnedFloorpIdentities(
+function orderedOwnedKitIdentities(
   state: WindowsAutoStartState,
 ): WindowsProcessIdentity[] {
-  const identities = Array.from(state.ownedFloorp.values());
+  const identities = Array.from(state.ownedKit.values());
   return identities.sort((left, right) => {
     if (left.processId === state.listenerRoot?.processId) {
       return -1;
@@ -1260,14 +1260,14 @@ export async function stopWindowsAutoStartedBrowser(
   const initialProcesses = await readProcesses("initial process enumeration");
   if (initialProcesses) {
     try {
-      const issues = reconcileWindowsFloorpOwnership(
+      const issues = reconcileWindowsKitOwnership(
         state,
         initialProcesses,
       );
       for (const issue of issues) {
         recordError(issue);
       }
-      if (issues.length > 0 || state.ambiguousFloorp.length > 0) {
+      if (issues.length > 0 || state.ambiguousKit.length > 0) {
         state.treeKillSafe = false;
       }
     } catch (error) {
@@ -1281,7 +1281,7 @@ export async function stopWindowsAutoStartedBrowser(
   );
   if (denoVerification) {
     try {
-      const verificationIssues = reconcileWindowsFloorpOwnership(
+      const verificationIssues = reconcileWindowsKitOwnership(
         state,
         denoVerification,
       );
@@ -1289,7 +1289,7 @@ export async function stopWindowsAutoStartedBrowser(
         recordError(issue);
       }
       if (
-        verificationIssues.length > 0 || state.ambiguousFloorp.length > 0
+        verificationIssues.length > 0 || state.ambiguousKit.length > 0
       ) {
         state.treeKillSafe = false;
       }
@@ -1337,7 +1337,7 @@ export async function stopWindowsAutoStartedBrowser(
       break;
     }
     try {
-      for (const issue of reconcileWindowsFloorpOwnership(state, processes)) {
+      for (const issue of reconcileWindowsKitOwnership(state, processes)) {
         recordError(issue);
       }
     } catch (error) {
@@ -1347,7 +1347,7 @@ export async function stopWindowsAutoStartedBrowser(
     }
 
     const byPid = processIndex(processes);
-    const liveOwned = orderedOwnedFloorpIdentities(state).filter((identity) => {
+    const liveOwned = orderedOwnedKitIdentities(state).filter((identity) => {
       const current = byPid.get(identity.processId);
       if (!current) {
         return false;
@@ -1355,7 +1355,7 @@ export async function stopWindowsAutoStartedBrowser(
       if (!matchesWindowsProcessIdentity(current, identity)) {
         state.treeKillSafe = false;
         recordError(
-          `Skipped Floorp PID ${identity.processId}: captured identity no longer matches`,
+          `Skipped Kit PID ${identity.processId}: captured identity no longer matches`,
         );
         return false;
       }
@@ -1367,7 +1367,7 @@ export async function stopWindowsAutoStartedBrowser(
 
     for (const identity of liveOwned) {
       const freshProcesses = await readProcesses(
-        `pre-taskkill verification for Floorp PID ${identity.processId}`,
+        `pre-taskkill verification for Kit PID ${identity.processId}`,
       );
       if (!freshProcesses) {
         break;
@@ -1378,7 +1378,7 @@ export async function stopWindowsAutoStartedBrowser(
       } catch (error) {
         state.treeKillSafe = false;
         recordError(
-          `pre-taskkill verification for Floorp PID ${identity.processId}: ${
+          `pre-taskkill verification for Kit PID ${identity.processId}: ${
             errorToMessage(error)
           }`,
         );
@@ -1390,7 +1390,7 @@ export async function stopWindowsAutoStartedBrowser(
       if (!matchesWindowsProcessIdentity(current, identity)) {
         state.treeKillSafe = false;
         recordError(
-          `Skipped Floorp PID ${identity.processId}: identity changed before taskkill`,
+          `Skipped Kit PID ${identity.processId}: identity changed before taskkill`,
         );
         continue;
       }
@@ -1398,12 +1398,12 @@ export async function stopWindowsAutoStartedBrowser(
         const result = await deps.taskkill(identity.processId, false);
         writeLog?.(
           "INFO",
-          `Owned Floorp root-only taskkill PID ${identity.processId}: success=${result.success}, code=${result.code}`,
+          `Owned Kit root-only taskkill PID ${identity.processId}: success=${result.success}, code=${result.code}`,
         );
       } catch (error) {
         writeLog?.(
           "INFO",
-          `Owned Floorp root-only taskkill PID ${identity.processId} threw: ${
+          `Owned Kit root-only taskkill PID ${identity.processId} threw: ${
             errorToMessage(error)
           }`,
         );
@@ -1422,20 +1422,20 @@ export async function stopWindowsAutoStartedBrowser(
   if (finalProcesses) {
     try {
       for (
-        const issue of reconcileWindowsFloorpOwnership(state, finalProcesses)
+        const issue of reconcileWindowsKitOwnership(state, finalProcesses)
       ) {
         recordError(issue);
       }
       const finalByPid = processIndex(finalProcesses);
-      for (const identity of state.ownedFloorp.values()) {
+      for (const identity of state.ownedKit.values()) {
         const current = finalByPid.get(identity.processId);
         if (current && matchesWindowsProcessIdentity(current, identity)) {
           recordError(
-            `Owned Floorp PID ${identity.processId} survived teardown`,
+            `Owned Kit PID ${identity.processId} survived teardown`,
           );
         } else if (current) {
           recordError(
-            `Floorp PID ${identity.processId} was reused before final verification`,
+            `Kit PID ${identity.processId} was reused before final verification`,
           );
         }
       }
@@ -1454,7 +1454,7 @@ export async function stopWindowsAutoStartedBrowser(
     }
   }
 
-  for (const ambiguity of state.ambiguousFloorp) {
+  for (const ambiguity of state.ambiguousKit) {
     recordError(ambiguity);
   }
 

@@ -5,8 +5,9 @@
 
 import { createEffect, onCleanup, onMount, Show } from "solid-js";
 import { isNewTabPage } from "./new-tab-container.ts";
-import { sidebarDocked } from "./sidebar-docking.ts";
+import { sidebarDocked } from "./sidebar-state.ts";
 import { sidebarVisible } from "./sidebar-visibility.ts";
+import { contentTab, tabUrl } from "../neoworks-window-sync/mirrors.ts";
 import {
   dismissTabPreview,
   hideTabPreview,
@@ -33,12 +34,14 @@ const browserWindow = window as unknown as { PageThumbs: PageThumbs };
 // Pointer actions that dismiss the card until the pointer leaves the row.
 const DISMISS_EVENTS = ["mousedown", "dragstart", "contextmenu", "wheel"];
 
+// A mirror's page, and so its thumbnail, is in another window.
 function hasThumbnail(tab: BrowserTab): boolean {
-  return !tab.hasAttribute("pending") && !!tab.linkedBrowser.browsingContext;
+  const page = contentTab(tab);
+  return !page.hasAttribute("pending") && !!page.linkedBrowser.browsingContext;
 }
 
 function urlOf(tab: BrowserTab): string {
-  return tab.linkedBrowser.currentURI?.spec ?? "";
+  return tabUrl(tab);
 }
 
 // The host is shown strong, the rest of the URL dimmed.
@@ -68,7 +71,7 @@ function createThumbnail(tab: BrowserTab, container: Element): void {
   ) as HTMLCanvasElement;
   canvas.width = THUMBNAIL_WIDTH * devicePixelRatio;
   canvas.height = THUMBNAIL_HEIGHT * devicePixelRatio;
-  browserWindow.PageThumbs.captureTabPreviewThumbnail(tab.linkedBrowser, canvas)
+  browserWindow.PageThumbs.captureTabPreviewThumbnail(contentTab(tab).linkedBrowser, canvas)
     .then((captured) => {
       if (captured && tabPreviewTarget()?.tab === tab) {
         container.replaceChildren(canvas);

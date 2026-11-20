@@ -102,8 +102,8 @@ const JS_WINDOW_ACTORS: {
         pagehide: {},
       },
     },
-    matches: ["http://*/*", "https://*/*", "file:///*", "about:*"],
-    remoteTypes: WEB_FILE_AND_ABOUT_REMOTE_TYPES,
+    // No `matches` or `remoteTypes`: keys work on every page a tab can show
+    // (data:, view-source:, extension pages, …), not just web and about: ones.
     safeForUntrustedWebProcess: true,
     allFrames: true,
   },

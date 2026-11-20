@@ -20,11 +20,12 @@ import {
   stopFolderEdit,
 } from "./folder-editing.ts";
 import { namedColor } from "./identity-colors.ts";
+import { compactTitle } from "./sidebar-state.ts";
 import {
-  allowDrop,
+  allowFolderDrop,
   dropOntoFolder,
+  dropPositionOf,
   endDrag,
-  isDropTarget,
   leaveDrop,
   startFolderDrag,
 } from "./tab-drag.ts";
@@ -160,15 +161,16 @@ function FolderHeader(props: { group: BrowserTabGroup; tabState: TabState }) {
     <div
       id={headerId(group)}
       class="nw-group-header"
+      title={compactTitle(`${label()} (${tabCount()})`)}
       tabindex="0"
       draggable="true"
-      data-drop-target={attributeFlag(isDropTarget(group))}
+      data-drop={dropPositionOf(group)}
       onClick={() => toggleFolderCollapsed(group)}
       onDblClick={() => startFolderEdit(group)}
       onKeyDown={(event: KeyboardEvent) => handleHeaderKey(event, group)}
       onContextMenu={(event: MouseEvent) => openFolderContextMenu(event, group)}
       onDragStart={(event: DragEvent) => startFolderDrag(event, group)}
-      onDragOver={(event: DragEvent) => allowDrop(event, group)}
+      onDragOver={(event: DragEvent) => allowFolderDrop(event, group)}
       onDragLeave={() => leaveDrop(group)}
       onDrop={(event: DragEvent) => dropOntoFolder(event, group)}
       onDragEnd={endDrag}
@@ -189,7 +191,9 @@ function FolderHeader(props: { group: BrowserTabGroup; tabState: TabState }) {
   );
 }
 
-export function FolderRow(props: { group: BrowserTabGroup; tabState: TabState }) {
+export function FolderRow(
+  props: { group: BrowserTabGroup; tabState: TabState },
+) {
   const group = props.group;
   const read = tabReader(props.tabState);
 

@@ -57,15 +57,15 @@ export function createSmokeSteps(mode: SmokeMode): SmokeStep[] {
 
   const runtimeSteps: SmokeStep[] = [
     {
-      name: "runtime scan: floorp chrome test targets",
+      name: "runtime scan: kit chrome test targets",
       args: ["task", "test", "--list", "--layer", "chrome"],
     },
     {
-      name: "runtime scan: floorp esm test targets",
+      name: "runtime scan: kit esm test targets",
       args: ["task", "test", "--list", "--layer", "esm"],
     },
     {
-      name: "runtime scan: floorp pages test targets",
+      name: "runtime scan: kit pages test targets",
       args: ["task", "test", "--list", "--layer", "pages"],
     },
     {

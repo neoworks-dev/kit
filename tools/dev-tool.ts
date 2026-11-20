@@ -45,7 +45,7 @@ Options:
   --base-url <url>          OS API verify: server base URL
   --timeout <sec>           OS API verify: health wait timeout seconds
   --interval <sec>          OS API verify: health poll interval seconds
-  --skip-start              OS API verify: do not start Floorp process
+  --skip-start              OS API verify: do not start Kit process
   --help, -h                Show this help
 `.trim();
 
@@ -305,12 +305,12 @@ async function cmdStop() {
       await runSilent("taskkill", ["/PID", p, "/T", "/F"]);
     }
 
-    // 3. Kill only dev floorp.exe (uses test profile, not the user's regular browser)
+    // 3. Kill only dev kit.exe (uses test profile, not the user's regular browser)
     const findBrowser = new Deno.Command("powershell", {
       args: [
         "-NoProfile",
         "-Command",
-        `Get-WmiObject Win32_Process | Where-Object { $_.Name -eq 'floorp.exe' -and $_.CommandLine -like '*_dist*profile*test*' } | ForEach-Object { $_.ProcessId }`,
+        `Get-WmiObject Win32_Process | Where-Object { $_.Name -eq 'kit.exe' -and $_.CommandLine -like '*_dist*profile*test*' } | ForEach-Object { $_.ProcessId }`,
       ],
       stdout: "piped",
       stderr: "null",
@@ -325,12 +325,12 @@ async function cmdStop() {
       await runSilent("taskkill", ["/PID", p, "/F"]);
     }
     if (browserPids.length === 0 && pid) {
-      // Fallback: find floorp by parent PID (never kill by image name alone)
+      // Fallback: find Kit by parent PID (never kill by image name alone)
       const findChild = new Deno.Command("powershell", {
         args: [
           "-NoProfile",
           "-Command",
-          `Get-WmiObject Win32_Process | Where-Object { $_.Name -eq 'floorp.exe' -and $_.ParentProcessId -eq ${pid} } | ForEach-Object { $_.ProcessId }`,
+          `Get-WmiObject Win32_Process | Where-Object { $_.Name -eq 'kit.exe' -and $_.ParentProcessId -eq ${pid} } | ForEach-Object { $_.ProcessId }`,
         ],
         stdout: "piped",
         stderr: "null",
@@ -386,19 +386,19 @@ async function cmdStop() {
       }
     }
 
-    // Kill floorp browser processes using the test profile
-    const findFloorp = new Deno.Command("pgrep", {
+    // Kill Kit browser processes using the test profile
+    const findKit = new Deno.Command("pgrep", {
       args: ["-f", "_dist/profile/test"],
       stdout: "piped",
       stderr: "null",
     });
-    const floorpOut = await findFloorp.output();
-    const floorpPids = new TextDecoder()
-      .decode(floorpOut.stdout)
+    const kitOut = await findKit.output();
+    const kitPids = new TextDecoder()
+      .decode(kitOut.stdout)
       .trim()
       .split(/\n/)
       .filter(Boolean);
-    for (const p of floorpPids) {
+    for (const p of kitPids) {
       await runSilent("kill", ["-9", p]);
     }
 

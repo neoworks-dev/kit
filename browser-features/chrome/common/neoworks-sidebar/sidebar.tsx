@@ -9,7 +9,12 @@ import { PinnedGrid } from "./pinned-grid.tsx";
 import { RecentlyClosedList } from "./recently-closed-list.tsx";
 import { SplitRow } from "./split-row.tsx";
 import { openSidebarContextMenu } from "./sidebar-context-menu.tsx";
-import { sidebarDocked } from "./sidebar-docking.ts";
+import { editedFolder } from "./folder-editing.ts";
+import {
+  compactTitle,
+  sidebarCompact,
+  sidebarDocked,
+} from "./sidebar-state.ts";
 import { openNewTab } from "./tab-actions.ts";
 import {
   allowDrop,
@@ -25,7 +30,7 @@ import {
 } from "./sidebar-visibility.ts";
 import { attributeFlag, TabRow } from "./tab-row.tsx";
 import { TabPreview } from "./tab-preview.tsx";
-import { WorkspaceSwitcher } from "./workspace-switcher.tsx";
+import { workspaceMenuOpen, WorkspaceSwitcher } from "./workspace-switcher.tsx";
 import type {
   BrowserSplitView,
   BrowserTab,
@@ -77,7 +82,11 @@ function EntryRow(props: { entry: SidebarEntry; tabState: TabState }) {
 
 function NewTabRow() {
   return (
-    <div class="nw-tab nw-new-tab" onClick={openNewTab}>
+    <div
+      class="nw-tab nw-new-tab"
+      title={compactTitle("New tab")}
+      onClick={openNewTab}
+    >
       <span class="nw-favicon">
         <span class="nw-icon" data-icon="plus" />
       </span>
@@ -110,7 +119,13 @@ function visibleFlag(): string | undefined {
   return undefined;
 }
 
-// The layer spans the window's left edge: collapsed, a thin hover strip
+// The workspace menu and a folder's name field need the full width: while
+// one is open, the compact sidebar widens over the page.
+function widenedOverPage(): boolean {
+  return sidebarCompact() && (workspaceMenuOpen() || editedFolder() !== null);
+}
+
+// The layer spans the window's left edge: hidden, a thin hover strip
 // reveals the sidebar, which slides over the page instead of taking space.
 export function Sidebar(props: { tabState: TabState }) {
   return (
@@ -128,6 +143,8 @@ function SidebarPanel(props: { tabState: TabState }) {
     <div
       id="neoworks-sidebar"
       data-visible={visibleFlag()}
+      data-compact={attributeFlag(sidebarCompact() && !widenedOverPage())}
+      data-widened={attributeFlag(widenedOverPage())}
       onMouseEnter={handleSidebarEnter}
       onMouseLeave={handleSidebarLeave}
     >

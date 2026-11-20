@@ -2,12 +2,14 @@
 
 // Writes Kit's branding over the prebuilt Floorp runtime's: brand names (window
 // title, Firefox's own menus and dialogs, about:preferences), the about dialog
-// logo and style, and the window icons. Runs on every build; a freshly
+// logo and style, the window icons, and the marmot in place of Firefox's fox
+// illustrations (marmot.ts). Runs on every build; a freshly
 // downloaded runtime starts out as Floorp again.
 
 import * as path from "@std/path";
 import { BIN_DIR } from "../../../tools/src/defines.ts";
 import { exists, Logger } from "../../../tools/src/utils.ts";
+import { applyMarmot } from "./marmot.ts";
 
 const logger = new Logger("branding");
 
@@ -111,6 +113,11 @@ export function run(binDir: string = BIN_DIR): void {
   copy("wordmark.svg", path.join(content, "about-wordmark.svg"));
   copy("wordmark.svg", path.join(content, "firefox-wordmark.svg"));
   copy("aboutDialog.css", path.join(content, "aboutDialog.css"));
+  // about:logo shows Floorp's logo otherwise.
+  copy("icon256.png", path.join(content, "about.png"));
+
+  // Firefox's fox illustrations -> the marmot.
+  const marmots = applyMarmot(binDir);
 
   // Window icons (Linux/Windows).
   const icons = path.join(binDir, "browser", "chrome", "icons", "default");
@@ -118,5 +125,7 @@ export function run(binDir: string = BIN_DIR): void {
     copy(`icon${size}.png`, path.join(icons, `default${size}.png`));
   }
 
-  logger.success("Applied Kit branding to the runtime.");
+  logger.success(
+    `Applied Kit branding to the runtime (${marmots} marmot illustrations).`,
+  );
 }

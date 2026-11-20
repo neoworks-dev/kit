@@ -22,7 +22,7 @@ import {
   parseOptions,
   parseWindowsListenerSnapshot,
   parseWindowsProcessSnapshot,
-  reconcileWindowsFloorpOwnership,
+  reconcileWindowsKitOwnership,
   selectWindowsDenoIdentity,
   selectWindowsListenerRoot,
   stopWindowsAutoStartedBrowser,
@@ -342,7 +342,7 @@ Deno.test("host cleanup removes its control file even when prefs cleanup fails",
 });
 
 const TEST_DENO_EXE = "C:\\tools\\deno.exe";
-const TEST_FLOORP_EXE = "E:\\repo\\_dist\\bin\\floorp\\floorp.exe";
+const TEST_KIT_EXE = "E:\\repo\\_dist\\bin\\kit\\kit.exe";
 
 function windowsProcess(
   processId: number,
@@ -437,7 +437,7 @@ Deno.test("Windows snapshot parsers fail closed on blank, null, and missing fiel
 
 Deno.test("Windows preflight rejects the exact test executable only", () => {
   assertThrows(
-    () => assertWindowsAutoStartPreflight([], TEST_FLOORP_EXE),
+    () => assertWindowsAutoStartPreflight([], TEST_KIT_EXE),
     Error,
     "returned no processes",
   );
@@ -449,11 +449,11 @@ Deno.test("Windows preflight rejects the exact test executable only", () => {
           windowsProcess(
             200,
             100,
-            TEST_FLOORP_EXE.toUpperCase(),
-            `"${TEST_FLOORP_EXE}"`,
+            TEST_KIT_EXE.toUpperCase(),
+            `"${TEST_KIT_EXE}"`,
           ),
         ],
-        TEST_FLOORP_EXE,
+        TEST_KIT_EXE,
       ),
     Error,
     "Refusing auto-start",
@@ -469,7 +469,7 @@ Deno.test("Windows preflight rejects the exact test executable only", () => {
         '"C:\\Program Files\\Ablaze Floorp\\floorp.exe"',
       ),
     ],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
 });
 
@@ -504,8 +504,8 @@ Deno.test("Windows listener ownership accepts dual-stack rows for one verified r
   const root = windowsProcess(
     200,
     150,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
   );
   const identity = selectWindowsListenerRoot(
     2828,
@@ -525,7 +525,7 @@ Deno.test("Windows listener ownership accepts dual-stack rows for one verified r
     ],
     [deno, intermediate, root],
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   assertEquals(identity.processId, 200);
 });
@@ -540,14 +540,14 @@ Deno.test("Windows listener ownership rejects multiple owners and content roots"
   const root = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
   );
   const other = windowsProcess(
     201,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
   );
   assertThrows(
     () =>
@@ -569,7 +569,7 @@ Deno.test("Windows listener ownership rejects multiple owners and content roots"
         ],
         [deno, root, other],
         denoIdentity,
-        TEST_FLOORP_EXE,
+        TEST_KIT_EXE,
       ),
     Error,
     "exactly one owner",
@@ -578,8 +578,8 @@ Deno.test("Windows listener ownership rejects multiple owners and content roots"
   const contentRoot = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}" -contentproc -parentPid 199`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}" -contentproc -parentPid 199`,
   );
   assertThrows(
     () =>
@@ -593,7 +593,7 @@ Deno.test("Windows listener ownership rejects multiple owners and content roots"
         }],
         [deno, contentRoot],
         denoIdentity,
-        TEST_FLOORP_EXE,
+        TEST_KIT_EXE,
       ),
     Error,
     "content process",
@@ -602,8 +602,8 @@ Deno.test("Windows listener ownership rejects multiple owners and content roots"
   const brokenRoot = windowsProcess(
     200,
     4,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
   );
   assertThrows(
     () =>
@@ -617,7 +617,7 @@ Deno.test("Windows listener ownership rejects multiple owners and content roots"
         }],
         [deno, brokenRoot],
         denoIdentity,
-        TEST_FLOORP_EXE,
+        TEST_KIT_EXE,
       ),
     Error,
     "not descended",
@@ -636,7 +636,7 @@ Deno.test("Windows listener ownership rejects multiple owners and content roots"
         }],
         [deno, missingCreationDate],
         denoIdentity,
-        TEST_FLOORP_EXE,
+        TEST_KIT_EXE,
       ),
     Error,
     "has no CreationDate",
@@ -648,18 +648,18 @@ Deno.test("Windows listener ownership accepts only a previously captured reparen
   const originalRoot = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
     "same-root-identity",
   );
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  reconcileWindowsFloorpOwnership(
+  reconcileWindowsKitOwnership(
     state,
     [deno, originalRoot],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   const reparentedRoot = { ...originalRoot, parentProcessId: 4 };
   const listeners = [{
@@ -674,8 +674,8 @@ Deno.test("Windows listener ownership accepts only a previously captured reparen
     listeners,
     [deno, reparentedRoot],
     state.deno,
-    TEST_FLOORP_EXE,
-    new Map(state.ownedFloorp),
+    TEST_KIT_EXE,
+    new Map(state.ownedKit),
   );
   assertEquals(accepted.processId, 200);
   assertEquals(accepted.creationDate, "same-root-identity");
@@ -687,7 +687,7 @@ Deno.test("Windows listener ownership accepts only a previously captured reparen
         listeners,
         [deno, reparentedRoot],
         state.deno,
-        TEST_FLOORP_EXE,
+        TEST_KIT_EXE,
       ),
     Error,
     "no matching previously-owned identity",
@@ -699,36 +699,36 @@ Deno.test("Windows readiness preserves the verified launcher ancestor of the lis
   const launcher = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}" --marionette`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}" --marionette`,
   );
   const listenerRoot = windowsProcess(
     201,
     200,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}" --marionette`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}" --marionette`,
   );
   const content = windowsProcess(
     202,
     201,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}" -contentproc -parentPid 201`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}" -contentproc -parentPid 201`,
   );
   const processes = [deno, launcher, listenerRoot, content];
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   assertEquals(
-    reconcileWindowsFloorpOwnership(
+    reconcileWindowsKitOwnership(
       state,
       [deno, launcher],
-      TEST_FLOORP_EXE,
+      TEST_KIT_EXE,
     ),
     [],
   );
   assertEquals(
-    Array.from(state.ownedFloorp.keys()).sort((left, right) => left - right),
+    Array.from(state.ownedKit.keys()).sort((left, right) => left - right),
     [200],
   );
 
@@ -750,11 +750,11 @@ Deno.test("Windows readiness preserves the verified launcher ancestor of the lis
 
   assertEquals(state.listenerRoot?.processId, 201);
   assertEquals(
-    Array.from(state.ownedFloorp.keys()).sort((left, right) => left - right),
+    Array.from(state.ownedKit.keys()).sort((left, right) => left - right),
     [200, 201, 202],
   );
-  assertEquals(state.blockedFloorpProcessIds.size, 0);
-  assertEquals(state.ambiguousFloorp, []);
+  assertEquals(state.blockedKitProcessIds.size, 0);
+  assertEquals(state.ambiguousKit, []);
 });
 
 Deno.test("Windows readiness owns an exact-path sibling currently descended from verified Deno", async () => {
@@ -762,19 +762,19 @@ Deno.test("Windows readiness owns an exact-path sibling currently descended from
   const listenerRoot = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}" --marionette`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}" --marionette`,
   );
   const sibling = windowsProcess(
     300,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}" --marionette`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}" --marionette`,
   );
   const processes = [deno, listenerRoot, sibling];
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   const deps: WindowsProcessControlDeps = {
     listProcesses: () => Promise.resolve(processes),
@@ -793,10 +793,10 @@ Deno.test("Windows readiness owns an exact-path sibling currently descended from
   await captureWindowsReadyBrowser(state, 2828, deps);
 
   assertEquals(
-    Array.from(state.ownedFloorp.keys()).sort((left, right) => left - right),
+    Array.from(state.ownedKit.keys()).sort((left, right) => left - right),
     [200, 300],
   );
-  assertEquals(state.ambiguousFloorp, []);
+  assertEquals(state.ambiguousKit, []);
   assertEquals(state.treeKillSafe, true);
 });
 
@@ -805,28 +805,28 @@ Deno.test("Windows readiness blocks a present previously-owned identity mismatch
   const originalLauncher = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}" --marionette`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}" --marionette`,
   );
   const listenerRoot = windowsProcess(
     201,
     200,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}" --marionette`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}" --marionette`,
   );
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  reconcileWindowsFloorpOwnership(
+  reconcileWindowsKitOwnership(
     state,
     [deno, originalLauncher, listenerRoot],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
 
   const changedLauncher = {
     ...originalLauncher,
-    commandLine: `"${TEST_FLOORP_EXE}" --changed`,
+    commandLine: `"${TEST_KIT_EXE}" --changed`,
   };
   const currentProcesses = [deno, changedLauncher, listenerRoot];
   const deps: WindowsProcessControlDeps = {
@@ -846,19 +846,19 @@ Deno.test("Windows readiness blocks a present previously-owned identity mismatch
   await assertRejects(
     () => captureWindowsReadyBrowser(state, 2828, deps),
     Error,
-    "Previously owned Floorp PID 200 no longer matches",
+    "Previously owned Kit PID 200 no longer matches",
   );
-  assertEquals(state.blockedFloorpProcessIds.has(200), true);
-  assertEquals(state.ownedFloorp.has(200), false);
+  assertEquals(state.blockedKitProcessIds.has(200), true);
+  assertEquals(state.ownedKit.has(200), false);
 
-  reconcileWindowsFloorpOwnership(
+  reconcileWindowsKitOwnership(
     state,
     currentProcesses,
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  assertEquals(state.ownedFloorp.has(200), false);
+  assertEquals(state.ownedKit.has(200), false);
   assertEquals(
-    state.ambiguousFloorp.some((message) => message.includes("PID 200")),
+    state.ambiguousKit.some((message) => message.includes("PID 200")),
     true,
   );
 });
@@ -868,29 +868,29 @@ Deno.test("Windows ownership expands exact-path children by ancestry and -parent
   const root = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
   );
   const content = windowsProcess(
     201,
     4,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}" -contentproc -parentPid 200`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}" -contentproc -parentPid 200`,
   );
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   assertEquals(
-    reconcileWindowsFloorpOwnership(
+    reconcileWindowsKitOwnership(
       state,
       [deno, root, content],
-      TEST_FLOORP_EXE,
+      TEST_KIT_EXE,
     ),
     [],
   );
-  assertEquals(Array.from(state.ownedFloorp.keys()).sort(), [200, 201]);
-  assertEquals(state.ambiguousFloorp, []);
+  assertEquals(Array.from(state.ownedKit.keys()).sort(), [200, 201]);
+  assertEquals(state.ambiguousKit, []);
 });
 
 Deno.test("Windows ownership treats a second root outside the listener tree as ambiguous", () => {
@@ -898,18 +898,18 @@ Deno.test("Windows ownership treats a second root outside the listener tree as a
   const listenerRoot = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
   );
   const secondRoot = windowsProcess(
     300,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
   );
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   const rootIdentity = selectWindowsListenerRoot(
     2828,
@@ -921,20 +921,20 @@ Deno.test("Windows ownership treats a second root outside the listener tree as a
     }],
     [deno, listenerRoot, secondRoot],
     state.deno,
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   state.listenerRoot = rootIdentity;
-  state.ownedFloorp.set(rootIdentity.processId, rootIdentity);
+  state.ownedKit.set(rootIdentity.processId, rootIdentity);
 
-  reconcileWindowsFloorpOwnership(
+  reconcileWindowsKitOwnership(
     state,
     [deno, listenerRoot, secondRoot],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
 
-  assertEquals(Array.from(state.ownedFloorp.keys()), [200]);
-  assertEquals(state.ambiguousFloorp, [
-    "Unlinked exact-path Floorp PID 300",
+  assertEquals(Array.from(state.ownedKit.keys()), [200]);
+  assertEquals(state.ambiguousKit, [
+    "Unlinked exact-path Kit PID 300",
   ]);
 });
 
@@ -943,81 +943,81 @@ Deno.test("Windows ownership never grants a new child through a stale -parentPid
   const parent = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
     "parent-original",
   );
   const newChild = windowsProcess(
     201,
     4,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}" -contentproc -parentPid 200`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}" -contentproc -parentPid 200`,
   );
 
   const missingParentState = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  reconcileWindowsFloorpOwnership(
+  reconcileWindowsKitOwnership(
     missingParentState,
     [deno, parent],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  missingParentState.listenerRoot = missingParentState.ownedFloorp.get(200) ??
+  missingParentState.listenerRoot = missingParentState.ownedKit.get(200) ??
     null;
-  reconcileWindowsFloorpOwnership(
+  reconcileWindowsKitOwnership(
     missingParentState,
     [deno, newChild],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  assertEquals(missingParentState.ownedFloorp.has(201), false);
+  assertEquals(missingParentState.ownedKit.has(201), false);
   assertEquals(
-    missingParentState.ambiguousFloorp.includes(
-      "Unlinked exact-path Floorp PID 201",
+    missingParentState.ambiguousKit.includes(
+      "Unlinked exact-path Kit PID 201",
     ),
     true,
   );
 
   const reusedParentState = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  reconcileWindowsFloorpOwnership(
+  reconcileWindowsKitOwnership(
     reusedParentState,
     [deno, parent],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  reusedParentState.listenerRoot = reusedParentState.ownedFloorp.get(200) ??
+  reusedParentState.listenerRoot = reusedParentState.ownedKit.get(200) ??
     null;
   const reusedParent = { ...parent, creationDate: "parent-reused" };
-  const reusedIssues = reconcileWindowsFloorpOwnership(
+  const reusedIssues = reconcileWindowsKitOwnership(
     reusedParentState,
     [deno, reusedParent, newChild],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   assertEquals(
     reusedIssues.some((issue) => issue.includes("no longer matches")),
     true,
   );
-  assertEquals(reusedParentState.ownedFloorp.has(201), false);
+  assertEquals(reusedParentState.ownedKit.has(201), false);
 
   const alreadyOwnedState = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  reconcileWindowsFloorpOwnership(
+  reconcileWindowsKitOwnership(
     alreadyOwnedState,
     [deno, parent, newChild],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  alreadyOwnedState.listenerRoot = alreadyOwnedState.ownedFloorp.get(200) ??
+  alreadyOwnedState.listenerRoot = alreadyOwnedState.ownedKit.get(200) ??
     null;
-  reconcileWindowsFloorpOwnership(
+  reconcileWindowsKitOwnership(
     alreadyOwnedState,
     [deno, newChild],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  assertEquals(alreadyOwnedState.ownedFloorp.has(201), true);
+  assertEquals(alreadyOwnedState.ownedKit.has(201), true);
 });
 
 Deno.test("Windows teardown always cleans verified survivors after diagnostic root taskkill", async () => {
@@ -1025,14 +1025,14 @@ Deno.test("Windows teardown always cleans verified survivors after diagnostic ro
   const root = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
   );
   const content = windowsProcess(
     201,
     200,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}" -contentproc -parentPid 200`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}" -contentproc -parentPid 200`,
   );
   const live = new Map(
     [deno, root, content].map((process) => [process.processId, process]),
@@ -1060,14 +1060,14 @@ Deno.test("Windows teardown always cleans verified survivors after diagnostic ro
   };
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  reconcileWindowsFloorpOwnership(
+  reconcileWindowsKitOwnership(
     state,
     [deno, root, content],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  state.listenerRoot = state.ownedFloorp.get(200) ?? null;
+  state.listenerRoot = state.ownedKit.get(200) ?? null;
   state.port = 2828;
 
   await stopWindowsAutoStartedBrowser(state, deps);
@@ -1082,8 +1082,8 @@ Deno.test("Windows teardown records but never kills an unlinked exact-path proce
   const unrelated = windowsProcess(
     999,
     4,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
   );
   const live = new Map(
     [deno, unrelated].map((process) => [process.processId, process]),
@@ -1102,13 +1102,13 @@ Deno.test("Windows teardown records but never kills an unlinked exact-path proce
   };
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
 
   await assertRejects(
     () => stopWindowsAutoStartedBrowser(state, deps),
     Error,
-    "Unlinked exact-path Floorp PID 999",
+    "Unlinked exact-path Kit PID 999",
   );
   assertEquals(killed, [100]);
   assertEquals(live.has(999), true);
@@ -1119,18 +1119,18 @@ Deno.test("Windows teardown disables Deno tree kill when a sibling is ambiguous"
   const listenerRoot = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
   );
   const sibling = windowsProcess(
     300,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
   );
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   const listenerIdentity = selectWindowsListenerRoot(
     2828,
@@ -1142,10 +1142,10 @@ Deno.test("Windows teardown disables Deno tree kill when a sibling is ambiguous"
     }],
     [deno, listenerRoot],
     state.deno,
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   state.listenerRoot = listenerIdentity;
-  state.ownedFloorp.set(200, listenerIdentity);
+  state.ownedKit.set(200, listenerIdentity);
 
   const live = new Map(
     [deno, listenerRoot, sibling].map((
@@ -1172,7 +1172,7 @@ Deno.test("Windows teardown disables Deno tree kill when a sibling is ambiguous"
   await assertRejects(
     () => stopWindowsAutoStartedBrowser(state, deps),
     Error,
-    "Unlinked exact-path Floorp PID 300",
+    "Unlinked exact-path Kit PID 300",
   );
   assertEquals(kills, [
     { processId: 100, includeTree: false },
@@ -1182,20 +1182,20 @@ Deno.test("Windows teardown disables Deno tree kill when a sibling is ambiguous"
   assertEquals(state.treeKillSafe, false);
 });
 
-Deno.test("Windows teardown revalidates Floorp identity immediately before taskkill", async () => {
+Deno.test("Windows teardown revalidates Kit identity immediately before taskkill", async () => {
   const deno = denoProcess();
   const root = windowsProcess(
     200,
     100,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
     "root-original",
   );
   const reusedRoot = windowsProcess(
     200,
     4,
-    TEST_FLOORP_EXE,
-    `"${TEST_FLOORP_EXE}"`,
+    TEST_KIT_EXE,
+    `"${TEST_KIT_EXE}"`,
     "root-reused",
   );
   let listCall = 0;
@@ -1228,12 +1228,12 @@ Deno.test("Windows teardown revalidates Floorp identity immediately before taskk
   };
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
-  reconcileWindowsFloorpOwnership(
+  reconcileWindowsKitOwnership(
     state,
     [deno, root],
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
 
   await assertRejects(
@@ -1269,7 +1269,7 @@ Deno.test("Windows teardown revalidates the captured Deno command line before ta
   };
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
 
   await assertRejects(
@@ -1284,7 +1284,7 @@ Deno.test("Windows teardown fails when the captured port remains reachable", asy
   const deno = denoProcess();
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   state.port = 2828;
   const deps: WindowsProcessControlDeps = {
@@ -1306,7 +1306,7 @@ Deno.test("Windows teardown detects an IPv6 listener even when IPv4 connect fail
   const deno = denoProcess();
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   state.port = 2828;
   const deps: WindowsProcessControlDeps = {
@@ -1334,7 +1334,7 @@ Deno.test("Windows teardown fails closed when the final listener query fails", a
   const deno = denoProcess();
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   state.port = 2828;
   const deps: WindowsProcessControlDeps = {
@@ -1371,7 +1371,7 @@ Deno.test("Windows verified teardown failure invokes root-only child fallback an
   const deno = denoProcess();
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   const deps: WindowsProcessControlDeps = {
     listProcesses: () => Promise.reject(new Error("process query failed")),
@@ -1407,7 +1407,7 @@ Deno.test("Windows verified teardown combines root-only fallback failure", async
   const deno = denoProcess();
   const state = createWindowsAutoStartState(
     selectWindowsDenoIdentity([deno], 100, TEST_DENO_EXE),
-    TEST_FLOORP_EXE,
+    TEST_KIT_EXE,
   );
   const deps: WindowsProcessControlDeps = {
     listProcesses: () => Promise.reject(new Error("process query failed")),

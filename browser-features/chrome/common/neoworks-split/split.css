@@ -31,7 +31,7 @@
 
 /* The pane with keyboard focus (the selected tab). */
 #tabbrowser-tabpanels[nw-split] > .split-view-panel.deck-selected > .browserContainer {
-  outline: 2px solid color-mix(in srgb, var(--nw-ink) 28%, transparent) !important;
+  outline: 2px solid color-mix(in srgb, var(--nw-ink) 60%, transparent) !important;
   outline-offset: -2px !important;
 }
 
@@ -116,6 +116,79 @@
 #neoworks-split-overlay .nw-split-add .nw-icon {
   width: 12px;
   height: 12px;
+}
+
+/* The pane handle: hidden until the strip at the top of the pane (or the
+   handle itself) is hovered, and while it is dragged. */
+#neoworks-split-overlay .nw-split-handle-zone {
+  position: fixed;
+  display: flex;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+#neoworks-split-overlay .nw-split-handle {
+  position: absolute;
+  top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 120ms, transform 120ms;
+}
+
+#neoworks-split-overlay .nw-split-handle-zone:is(:hover, [data-moving]) .nw-split-handle {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+#neoworks-split-overlay .nw-split-grip,
+#neoworks-split-overlay .nw-split-handle-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  user-select: none;
+}
+
+#neoworks-split-overlay .nw-split-grip {
+  cursor: grab;
+}
+
+#neoworks-split-overlay .nw-split-handle-zone[data-moving] .nw-split-grip {
+  cursor: grabbing;
+}
+
+#neoworks-split-overlay .nw-split-handle-button {
+  cursor: pointer;
+}
+
+#neoworks-split-overlay :is(.nw-split-grip, .nw-split-handle-button):hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+#neoworks-split-overlay :is(.nw-split-grip, .nw-split-handle-button) .nw-icon {
+  width: 14px;
+  height: 14px;
+}
+
+#neoworks-split-overlay .nw-split-move-choice {
+  position: fixed;
 }
 
 #neoworks-split-overlay .nw-split-drop-area {

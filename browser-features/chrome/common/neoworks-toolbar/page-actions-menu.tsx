@@ -292,8 +292,12 @@ export function PageActionsMenu() {
       <style>{glassStyle + iconStyle + pageActionsStyle + siteStyleStyle}</style>
       <div
         id={PANEL_ID}
-        class="nw-page-actions-panel nw-glass"
-        style={{ top: `${position().top}px`, left: `${position().left}px` }}
+        class="nw-page-actions-panel nw-glass nw-popover"
+        style={{
+          top: `${position().top}px`,
+          left: `${position().left}px`,
+          "--nw-popover-origin": "top right",
+        }}
       >
         <canvas id={BACKDROP_ID} class="nw-glass-backdrop" />
         <Show when={pageState()}>

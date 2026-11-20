@@ -23,7 +23,7 @@ function runInSelectedPage(command: NWPageCommandId): void {
       command,
     });
   } catch (error) {
-    // Pages outside the actor's matches (chrome:, about:blank) have no NWKeys actor.
+    // Chrome documents (and pages still loading) have no NWKeys actor.
     console.warn("[neoworks-commands] Page command unavailable:", command, error);
   }
 }

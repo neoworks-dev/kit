@@ -6,6 +6,7 @@ import {
   NoraComponentBase,
 } from "#features-chrome/utils/base.ts";
 import { registerCommands } from "../neoworks-commands/registry.ts";
+import { watchDefaultEngine } from "./engine.ts";
 import { mountSpotlight } from "./mount.tsx";
 import { openSpotlight } from "./spotlight.tsx";
 
@@ -13,10 +14,13 @@ import { openSpotlight } from "./spotlight.tsx";
 export default class NeoworksSpotlight extends NoraComponentBase {
   init(): void {
     if (!document.body) {
-      console.error("[neoworks-spotlight] Browser chrome is unavailable at init.");
+      console.error(
+        "[neoworks-spotlight] Browser chrome is unavailable at init.",
+      );
       return;
     }
     mountSpotlight(document.body);
+    onCleanup(watchDefaultEngine());
 
     const unregister = registerCommands([
       { id: "spotlight:open", listed: false, run: openSpotlight },

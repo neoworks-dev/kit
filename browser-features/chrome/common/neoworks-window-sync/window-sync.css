@@ -1,0 +1,41 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* A page that moved to another window, as it looked when it left, darkened
+   so it reads as not live here. It covers the blank page underneath until
+   the page comes back (focusing the window brings it), then fades out. */
+.nw-sync-placeholder {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--nw-frame, #000);
+  transition: opacity 160ms ease-out;
+}
+
+.nw-sync-placeholder[data-leaving] {
+  opacity: 0;
+}
+
+.nw-sync-placeholder > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+  filter: saturate(0.5) brightness(0.5);
+}
+
+.nw-sync-placeholder-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong, rgb(255 255 255 / 0.16));
+  border-radius: 999px;
+  background: var(--bg-elevated, #222);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.4);
+  color: var(--text, #fff);
+  font: menu;
+  font-size: 12px;
+  white-space: nowrap;
+}

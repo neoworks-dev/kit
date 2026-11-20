@@ -5,6 +5,7 @@
 // the actor.
 
 import {
+  globalBindingFor,
   isModifierKey,
   keyToken,
   NW_KEYS_PENDING_EVENT,
@@ -14,7 +15,12 @@ import {
 
 const EDITABLE_TAGS = new Set(["input", "textarea", "select"]);
 const KEYLESS_ATTRIBUTE = "data-nw-keys-off";
-const SPACE_ACTIVATED_TAGS = new Set(["button", "toolbarbutton", "checkbox", "menuitem"]);
+const SPACE_ACTIVATED_TAGS = new Set([
+  "button",
+  "toolbarbutton",
+  "checkbox",
+  "menuitem",
+]);
 
 function isEditableElement(element: Element): boolean {
   if (EDITABLE_TAGS.has(element.localName)) {
@@ -66,7 +72,8 @@ function shouldCancel(event: KeyboardEvent): boolean {
   if (event.key === "Escape" || targetsWebContent(event)) {
     return true;
   }
-  return isTypingTarget(event) || isInKeylessSurface(event) || isSpaceActivatedTarget(event);
+  return isTypingTarget(event) || isInKeylessSurface(event) ||
+    isSpaceActivatedTarget(event);
 }
 
 function announcePending(keys: string[]): void {
@@ -77,7 +84,8 @@ export function listenForChromeKeys(
   onCommand: (invocation: NWCommandInvocation) => void,
 ): () => void {
   const dispatcher = new NWKeyDispatcher({
-    runBinding: (binding) => onCommand({ command: binding.command, letter: binding.letter }),
+    runBinding: (binding) =>
+      onCommand({ command: binding.command, letter: binding.letter }),
     pendingChanged: announcePending,
     prefixAbandoned: () => {},
     startTimer: (callback, delayMs) => {
@@ -88,6 +96,17 @@ export function listenForChromeKeys(
 
   function handleKeyDown(event: KeyboardEvent): void {
     if (event.isComposing || isModifierKey(event)) {
+      return;
+    }
+    // Web content's own actor runs global bindings for keys aimed at it.
+    const global = targetsWebContent(event)
+      ? undefined
+      : globalBindingFor(keyToken(event));
+    if (global) {
+      event.preventDefault();
+      event.stopPropagation();
+      dispatcher.cancel();
+      onCommand({ command: global.command, letter: global.letter });
       return;
     }
     if (shouldCancel(event)) {

@@ -4,7 +4,12 @@
 
 import { openNewTab } from "./tab-actions.ts";
 import { tabbrowser } from "./tabbrowser.ts";
-import type { BrowserTab, BrowserTabGroup, TabListElement } from "./types.ts";
+import type {
+  BrowserTab,
+  BrowserTabGroup,
+  EdgePosition,
+  TabListElement,
+} from "./types.ts";
 
 // Firefox's tab group palette.
 export const FOLDER_COLORS = [
@@ -100,7 +105,10 @@ function unpinForList(tab: BrowserTab): void {
   }
 }
 
-export function moveTabIntoFolder(tab: BrowserTab, group: BrowserTabGroup): void {
+export function moveTabIntoFolder(
+  tab: BrowserTab,
+  group: BrowserTabGroup,
+): void {
   unpinForList(tab);
   tabbrowser().moveTabToExistingGroup(tab, group);
 }
@@ -122,7 +130,10 @@ export function moveTabToListEnd(tab: BrowserTab): void {
 }
 
 // Takes the target's place: after it when moving down, before it when moving up.
-function moveElementOnto(element: TabListElement, target: TabListElement): void {
+function moveElementOnto(
+  element: TabListElement,
+  target: TabListElement,
+): void {
   if (element === target) {
     return;
   }
@@ -134,15 +145,30 @@ function moveElementOnto(element: TabListElement, target: TabListElement): void 
 }
 
 // Dropped on a tab inside another folder, the folder moves next to that folder.
-export function moveFolderOnto(group: BrowserTabGroup, target: TabListElement): void {
-  if (isFolder(target)) {
-    moveElementOnto(group, target);
+// Above or below a loose tab or another folder.
+export function moveFolderNextTo(
+  group: BrowserTabGroup,
+  target: TabListElement,
+  edge: EdgePosition,
+): void {
+  if (group === target || (!isFolder(target) && target.pinned)) {
     return;
   }
-  if (target.pinned) {
+  const element = isFolder(target) ? target : topLevelElement(target);
+  if (edge === "before") {
+    tabbrowser().moveTabBefore(group, element);
     return;
   }
-  moveElementOnto(group, topLevelElement(target));
+  tabbrowser().moveTabAfter(group, element);
+}
+
+// Out of any folder, just above `group`.
+export function moveTabBeforeFolder(
+  tab: BrowserTab,
+  group: BrowserTabGroup,
+): void {
+  unpinForList(tab);
+  tabbrowser().moveTabBefore(tab, group);
 }
 
 export function moveFolderToListEnd(group: BrowserTabGroup): void {

@@ -48,10 +48,19 @@ export interface SettingPaneConfig {
   groupIds: string[];
 }
 
+// A setting whose value lives outside prefs, e.g. in the search service.
+// Subclasses set `static id` and override get/set/getControlConfig/setup.
+export interface AsyncSetting {
+  emitChange(): void;
+}
+
+export type AsyncSettingClass = new () => AsyncSetting;
+
 export interface PreferencesWindow {
   Preferences: {
     addAll(preferences: PreferenceDeclaration[]): void;
-    addSetting(setting: SettingDefinition): void;
+    addSetting(setting: SettingDefinition | AsyncSettingClass): void;
+    AsyncSetting: AsyncSettingClass;
   };
   SettingGroupManager: {
     registerGroups(groups: Record<string, SettingGroupConfig>): void;

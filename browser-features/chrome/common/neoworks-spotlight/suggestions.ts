@@ -81,7 +81,9 @@ export async function suggestionResults(
   }
   const fetched = await controller.fetch({
     searchString: query,
-    inPrivateBrowsing: browserWindow.PrivateBrowsingUtils.isWindowPrivate(window),
+    inPrivateBrowsing: browserWindow.PrivateBrowsingUtils.isWindowPrivate(
+      window,
+    ),
     engine,
     maxLocalResults: 0,
     maxRemoteResults: MAX_SUGGESTIONS + 1,
@@ -90,7 +92,10 @@ export async function suggestionResults(
   if (!fetched) {
     return [];
   }
-  const terms = uniqueSuggestions(query, fetched.remote.map((entry) => entry.value));
+  const terms = uniqueSuggestions(
+    query,
+    fetched.remote.map((entry) => entry.value),
+  );
   return terms.slice(0, MAX_SUGGESTIONS).map((term) => toResult(engine, term));
 }
 

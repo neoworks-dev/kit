@@ -1,33 +1,36 @@
 // SPDX-License-Identifier: MPL-2.0
 
-// Kit's about:downloads: Firefox's download list and commands, with a header
-// (title, open folder, clear list) and an empty state around it.
+// Kit's about:downloads: Firefox's download list and commands, with a
+// summary, search and filters, day headings, and a side panel for where
+// files are saved, built around it (layout.ts).
 
+import { formatBytes, KINDS, summarize } from "./catalog.ts";
+import { buildPage, type PageParts } from "./layout.ts";
+import {
+  applyListView,
+  downloadInfos,
+  fillVisibleRows,
+  type ListView,
+} from "./list.ts";
+import {
+  asksWhereToSave,
+  chooseDownloadFolder,
+  displayPath,
+  downloadFolder,
+  openDownloadFolder,
+  setAsksWhereToSave,
+  watchSaving,
+} from "./saving.ts";
 import { KIT_DOWNLOADS_CSS } from "./theme.ts";
+import type { DownloadFilter, DownloadSummary } from "./types.ts";
 
-const XHTML_NS = "http://www.w3.org/1999/xhtml";
 const THEMED_ATTRIBUTE = "kit-downloads-themed";
 const AUTHOR_SHEET = Ci.nsIDOMWindowUtils.AUTHOR_SHEET ?? 2;
-const HEADER_CLASS = "kit-downloads-header";
 // Firefox's command, enabled only while there is something to clear.
 const CLEAR_COMMAND_ID = "downloadsCmd_clearDownloads";
 
 interface XULCommand extends Element {
   doCommand(): void;
-}
-
-function html<K extends keyof HTMLElementTagNameMap>(
-  doc: Document,
-  tag: K,
-  className: string,
-  text?: string,
-): HTMLElementTagNameMap[K] {
-  const element = doc.createElementNS(XHTML_NS, tag) as HTMLElementTagNameMap[K];
-  element.className = className;
-  if (text) {
-    element.textContent = text;
-  }
-  return element;
 }
 
 // The page's CSP (default-src chrome:) blocks inline <style>; a sheet loaded
@@ -44,67 +47,146 @@ function injectTheme(doc: Document): void {
   );
 }
 
-// Imported on use: this script also runs in about:preferences.
-async function openDownloadsFolder(): Promise<void> {
-  const { Downloads } = ChromeUtils.importESModule(
-    "resource://gre/modules/Downloads.sys.mjs",
-  ) as { Downloads: { getPreferredDownloadsDirectory(): Promise<string> } };
-  const { DownloadsCommon } = ChromeUtils.importESModule(
-    "moz-src:///browser/components/downloads/DownloadsCommon.sys.mjs",
-  ) as { DownloadsCommon: { showDirectory(directory: nsIFile): void } };
-  const file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
-  file.initWithPath(await Downloads.getPreferredDownloadsDirectory());
-  DownloadsCommon.showDirectory(file);
+function logFailure(action: string): (error: unknown) => void {
+  return (error) => console.error(`[kit-downloads] ${action} failed:`, error);
 }
 
-function button(doc: Document, className: string, label: string, onClick: () => void) {
-  const element = html(doc, "button", `kit-downloads-button ${className}`, label);
-  element.type = "button";
-  element.addEventListener("click", onClick);
-  return element;
+function summaryText(summary: DownloadSummary): string {
+  if (summary.count === 0) {
+    return "Nothing downloaded yet";
+  }
+  const parts = [`${summary.count} ${summary.count === 1 ? "file" : "files"}`];
+  if (summary.bytes > 0) {
+    parts.push(formatBytes(summary.bytes));
+  }
+  if (summary.failed > 0) {
+    parts.push(`${summary.failed} failed`);
+  }
+  return parts.join(" · ");
 }
 
-function openFolderButton(doc: Document): HTMLButtonElement {
-  return button(doc, "kit-downloads-open-folder", "Open folder", () => {
-    openDownloadsFolder().catch((error: unknown) => {
-      console.error("[kit-downloads] Opening the downloads folder failed:", error);
-    });
+function showSummary(
+  parts: PageParts,
+  summary: DownloadSummary,
+  view: ListView,
+): void {
+  parts.summary.textContent = summaryText(summary);
+  parts.clearButton.hidden = summary.count === 0;
+  for (const [filter, chip] of parts.chips) {
+    const count = filter === "all"
+      ? summary.count
+      : filter === "failed"
+      ? summary.failed
+      : summary.byKind[filter].count;
+    chip.querySelector(".kit-chip-count")!.textContent = count > 0
+      ? String(count)
+      : "";
+    // Empty kinds have no chip, unless it's the one selected.
+    chip.hidden = filter !== "all" && count === 0 && view.filter !== filter;
+    chip.toggleAttribute("data-selected", view.filter === filter);
+  }
+  for (const kind of KINDS) {
+    const { count, bytes } = summary.byKind[kind];
+    parts.overviewRows.get(kind)!.textContent = count === 0
+      ? "None"
+      : bytes > 0
+      ? `${count} · ${formatBytes(bytes)}`
+      : String(count);
+  }
+}
+
+function showEmptyState(
+  parts: PageParts,
+  total: number,
+  shown: number,
+  doc: Document,
+): void {
+  doc.documentElement?.toggleAttribute("kit-dl-empty", shown === 0);
+  if (total === 0) {
+    parts.emptyTitle.textContent = "No downloads yet";
+    parts.emptyText.textContent = "Files you download show up here.";
+    return;
+  }
+  parts.emptyTitle.textContent = "Nothing matches";
+  parts.emptyText.textContent = "Try another search or filter.";
+}
+
+async function showSaving(parts: PageParts): Promise<void> {
+  const ask = asksWhereToSave();
+  parts.askSwitch.checked = ask;
+  const path = displayPath(await downloadFolder());
+  parts.folderPath.textContent = path;
+  parts.folderPath.title = path;
+}
+
+function wire(doc: Document, list: Element, parts: PageParts): () => void {
+  const view: ListView = { filter: "all", search: "" };
+  const win = doc.defaultView!;
+
+  const refresh = (): void => {
+    const shown = applyListView(list, view, Date.now());
+    const infos = downloadInfos(list);
+    showSummary(parts, summarize(infos), view);
+    showEmptyState(parts, infos.length, shown, doc);
+    // The list may only now have stopped being hidden as empty.
+    win.requestAnimationFrame(() => fillVisibleRows(list));
+  };
+
+  parts.search.addEventListener("input", () => {
+    view.search = parts.search.value;
+    refresh();
   });
-}
-
-function buildHeader(doc: Document): HTMLElement {
-  const header = html(doc, "header", HEADER_CLASS);
-  header.append(
-    html(doc, "h1", "kit-downloads-title", "Downloads"),
-    openFolderButton(doc),
-    button(doc, "kit-downloads-clear", "Clear list", () => {
-      doc.querySelector<XULCommand>(`#${CLEAR_COMMAND_ID}`)?.doCommand();
-    }),
+  for (const [filter, chip] of parts.chips) {
+    chip.addEventListener("click", () => {
+      view.filter = view.filter === filter ? "all" : (filter as DownloadFilter);
+      refresh();
+    });
+  }
+  parts.clearButton.addEventListener("click", () => {
+    doc.querySelector<XULCommand>(`#${CLEAR_COMMAND_ID}`)?.doCommand();
+  });
+  parts.askSwitch.addEventListener(
+    "change",
+    () => setAsksWhereToSave(parts.askSwitch.checked),
   );
-  return header;
-}
+  parts.changeFolderButton.addEventListener("click", () => {
+    chooseDownloadFolder(win).catch(
+      logFailure("Choosing the downloads folder"),
+    );
+  });
+  parts.openFolderButton.addEventListener("click", () => {
+    openDownloadFolder().catch(logFailure("Opening the downloads folder"));
+  });
 
-function buildEmptyState(doc: Document): HTMLElement {
-  const empty = html(doc, "div", "kit-downloads-empty");
-  empty.append(
-    html(doc, "div", "kit-downloads-empty-icon"),
-    html(doc, "h2", "kit-downloads-empty-title", "No downloads yet"),
-    html(doc, "p", "kit-downloads-empty-text", "Files you download show up here."),
-  );
-  return empty;
+  // Rows come and go, and change state (finished, failed) as they run.
+  const observer = new win.MutationObserver(refresh);
+  observer.observe(list, {
+    childList: true,
+    subtree: true,
+    attributeFilter: ["state"],
+  });
+  const stopSaving = watchSaving(() => {
+    showSaving(parts).catch(logFailure("Reading the downloads folder"));
+  });
+
+  refresh();
+  showSaving(parts).catch(logFailure("Reading the downloads folder"));
+  return () => {
+    observer.disconnect();
+    stopSaving();
+  };
 }
 
 function addLayout(doc: Document): void {
   const list = doc.getElementById("downloadsListBox");
-  if (!list || doc.querySelector(`.${HEADER_CLASS}`)) {
+  if (!list || doc.querySelector(".kit-dl-header")) {
     return;
   }
   // Its flex="1" stretches it to the window's height, and xul.css applies
   // that with !important.
   list.removeAttribute("flex");
-  list.before(buildHeader(doc));
-  // After the list, so CSS can hide it once the list has rows.
-  doc.getElementById("downloadsListEmptyDescription")?.after(buildEmptyState(doc));
+  const stop = wire(doc, list, buildPage(doc, list));
+  doc.defaultView?.addEventListener("unload", stop, { once: true });
 }
 
 export function initKitDownloads(doc: Document): void {
@@ -113,7 +195,10 @@ export function initKitDownloads(doc: Document): void {
     try {
       addLayout(doc);
     } catch (error) {
-      console.error("[kit-downloads] Building the downloads page failed:", error);
+      console.error(
+        "[kit-downloads] Building the downloads page failed:",
+        error,
+      );
     }
   };
   if (doc.readyState === "loading") {

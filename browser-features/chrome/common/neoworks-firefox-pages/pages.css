@@ -1,0 +1,78 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/* Firefox's own pages (error pages, about:addons, about:logins …) in
+   @neoworks-dev/ui's style: their buttons, links and accent read Firefox's
+   design tokens (design-system/tokens-shared.css), so Kit sets those. A
+   user sheet (NWPageStyles.sys.mts), so every token needs !important to win
+   over the pages' own. Primary actions are ink pills, as on neoworks.dev;
+   the focus ring is the design system's lake blue. */
+:root {
+  --kit-ink: light-dark(oklch(0.205 0.004 100), oklch(0.955 0.004 100));
+  --kit-ink-hover: light-dark(oklch(0.33 0.004 100), oklch(0.84 0.004 100));
+  --kit-on-ink: light-dark(oklch(0.993 0.0015 100), oklch(0.165 0.004 100));
+  --kit-hover: light-dark(oklch(0.908 0.004 100), oklch(0.262 0.004 100));
+  --kit-pressed: light-dark(oklch(0.884 0.004 100), oklch(0.292 0.004 100));
+  --kit-line-strong: light-dark(oklch(0.730 0.004 100), oklch(0.480 0.004 100));
+  --kit-danger: light-dark(oklch(0.470 0.135 35), oklch(0.800 0.120 35));
+  --kit-danger-soft: light-dark(oklch(0.932 0.048 35), oklch(0.232 0.048 35));
+  --kit-danger-soft-hover: light-dark(oklch(0.908 0.063 35), oklch(0.262 0.063 35));
+
+  --button-border-radius: 9999px !important;
+  --button-font-weight: 500 !important;
+  --button-padding: 0 18px !important;
+
+  /* Primary: filled with ink. */
+  --button-background-color-primary: var(--kit-ink) !important;
+  --button-background-color-primary-hover: var(--kit-ink-hover) !important;
+  --button-background-color-primary-active: var(--kit-ink-hover) !important;
+  --button-background-color-primary-selected: var(--kit-ink) !important;
+  --button-border-color-primary: transparent !important;
+  --button-border-color-primary-hover: transparent !important;
+  --button-border-color-primary-active: transparent !important;
+  --button-text-color-primary: var(--kit-on-ink) !important;
+  --button-text-color-primary-hover: var(--kit-on-ink) !important;
+  --button-text-color-primary-active: var(--kit-on-ink) !important;
+  --button-text-color-primary-selected: var(--kit-on-ink) !important;
+
+  /* Secondary: outlined, a neutral fill on hover. */
+  --button-background-color: transparent !important;
+  --button-background-color-hover: var(--kit-hover) !important;
+  --button-background-color-active: var(--kit-pressed) !important;
+  --button-border-color: var(--kit-line-strong) !important;
+  --button-border-color-hover: var(--kit-line-strong) !important;
+  --button-border-color-active: var(--kit-line-strong) !important;
+  --button-text-color: var(--kit-ink) !important;
+  --button-text-color-hover: var(--kit-ink) !important;
+  --button-text-color-active: var(--kit-ink) !important;
+
+  --button-background-color-ghost-hover: var(--kit-hover) !important;
+  --button-background-color-ghost-active: var(--kit-pressed) !important;
+
+  /* Destructive: the design system's soft danger. */
+  --button-background-color-destructive: var(--kit-danger-soft) !important;
+  --button-background-color-destructive-hover: var(--kit-danger-soft-hover) !important;
+  --button-background-color-destructive-active: var(--kit-danger-soft-hover) !important;
+  --button-border-color-destructive: transparent !important;
+  --button-text-color-destructive: var(--kit-danger) !important;
+  --button-text-color-destructive-hover: var(--kit-danger) !important;
+  --button-text-color-destructive-active: var(--kit-danger) !important;
+
+  /* Checkboxes, toggles, radio dots and selected tabs use the accent. */
+  --color-accent-primary: var(--kit-ink) !important;
+  --color-accent-primary-hover: var(--kit-ink-hover) !important;
+  --color-accent-primary-active: var(--kit-ink-hover) !important;
+  --color-accent-primary-selected: var(--kit-ink) !important;
+
+  --link-color: var(--kit-ink) !important;
+  --link-color-hover: var(--kit-ink-hover) !important;
+  --link-color-active: var(--kit-ink-hover) !important;
+  --link-color-visited: var(--kit-ink) !important;
+
+  --focus-outline-color: oklch(0.560 0.110 255) !important;
+}
+
+/* Ink links need their underline to read as links: a fine one. */
+a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}

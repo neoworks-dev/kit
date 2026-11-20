@@ -59,14 +59,14 @@ function removeProfileForTest(profilePath: string): void {
 
 Deno.test("isolated browser launch owns a fresh private profile and Marionette port", () => {
   const launch = createIsolatedBrowserLaunch({
-    binaryPath: "/opt/floorp/Floorp",
+    binaryPath: "/opt/kit/kit",
     port: 28291,
   });
   try {
     assertEquals(launch.port, 28291);
     assertNotEquals(launch.profilePath, PATHS.profile_test);
     assertEquals(launch.command, [
-      "/opt/floorp/Floorp",
+      "/opt/kit/kit",
       "--profile",
       launch.profilePath,
       "--name",
@@ -102,7 +102,7 @@ Deno.test("isolated launcher rejects invalid Marionette ports", () => {
     assertThrows(
       () =>
         createIsolatedBrowserLaunch({
-          binaryPath: "/opt/floorp/Floorp",
+          binaryPath: "/opt/kit/kit",
           port,
         }),
       Error,
@@ -113,7 +113,7 @@ Deno.test("isolated launcher rejects invalid Marionette ports", () => {
 
 Deno.test("isolated launcher cleanup is idempotent and removes its profile", () => {
   const launch = createIsolatedBrowserLaunch({
-    binaryPath: "/opt/floorp/Floorp",
+    binaryPath: "/opt/kit/kit",
     port: 28292,
   });
 
@@ -131,11 +131,11 @@ Deno.test("isolated browser pair rejects shared ports and owns distinct profiles
     () =>
       createIsolatedBrowserPairLaunch({
         first: {
-          binaryPath: "/opt/floorp/Floorp",
+          binaryPath: "/opt/kit/kit",
           port: 28291,
         },
         second: {
-          binaryPath: "/opt/floorp/Floorp",
+          binaryPath: "/opt/kit/kit",
           port: 28291,
         },
       }),
@@ -145,11 +145,11 @@ Deno.test("isolated browser pair rejects shared ports and owns distinct profiles
 
   const pair = createIsolatedBrowserPairLaunch({
     first: {
-      binaryPath: "/opt/floorp/Floorp",
+      binaryPath: "/opt/kit/kit",
       port: 28291,
     },
     second: {
-      binaryPath: "/opt/floorp/Floorp",
+      binaryPath: "/opt/kit/kit",
       port: 28292,
     },
   });
@@ -169,7 +169,7 @@ Deno.test("isolated browser pair rejects shared ports and owns distinct profiles
 
 Deno.test("isolated browser process clears inherited secrets and cleans its profile", async () => {
   const launch = createIsolatedBrowserLaunch({
-    binaryPath: "/opt/floorp/Floorp",
+    binaryPath: "/opt/kit/kit",
     port: 28291,
   });
   const killed: string[] = [];
@@ -188,8 +188,8 @@ Deno.test("isolated browser process clears inherited secrets and cleans its prof
 
   const running = await startIsolatedBrowser(launch, {
     environment: {
-      FLOORP_FXA_TEST_SECRET: "must-not-reach-browser",
-      HOME: "/private/tmp/floorp-home",
+      KIT_FXA_TEST_SECRET: "must-not-reach-browser",
+      HOME: "/private/tmp/kit-home",
       PATH: "/usr/bin:/bin",
     },
     processControl: mockProcessControl(),
@@ -211,8 +211,8 @@ Deno.test("isolated browser process clears inherited secrets and cleans its prof
     assertEquals(captured.options.stdin, "null");
     assertEquals(captured.options.stdout, "null");
     assertEquals(captured.options.stderr, "null");
-    assertEquals(captured.options.env.FLOORP_FXA_TEST_SECRET, undefined);
-    assertEquals(captured.options.env.HOME, "/private/tmp/floorp-home");
+    assertEquals(captured.options.env.KIT_FXA_TEST_SECRET, undefined);
+    assertEquals(captured.options.env.HOME, "/private/tmp/kit-home");
     assertEquals(captured.options.env.PATH, "/usr/bin:/bin");
 
     await running.stop();
@@ -228,7 +228,7 @@ Deno.test("isolated browser process clears inherited secrets and cleans its prof
 
 Deno.test("isolated Windows browser normalizes safe environment names and delegates owned-tree termination", async () => {
   const launch = createIsolatedBrowserLaunch({
-    binaryPath: "/opt/floorp/Floorp",
+    binaryPath: "/opt/kit/kit",
     port: 28293,
   });
   const terminatedPIDs: number[] = [];
@@ -240,14 +240,14 @@ Deno.test("isolated Windows browser normalizes safe environment names and delega
     environment: {
       ComSpec: "C:\\Windows\\System32\\cmd.exe",
       DISPLAY: ":99",
-      FLOORP_FXA_TEST_SECRET: "must-not-reach-browser",
+      KIT_FXA_TEST_SECRET: "must-not-reach-browser",
       HTTP_PROXY: "http://must-not-reach-browser.invalid",
       Path: "C:\\Windows\\System32",
       SystemRoot: "C:\\Windows",
       UNRELATED: "must-not-reach-browser",
       WAYLAND_DISPLAY: "wayland-0",
-      XAUTHORITY: "/tmp/floorp-xauthority",
-      XDG_RUNTIME_DIR: "/tmp/floorp-runtime",
+      XAUTHORITY: "/tmp/kit-xauthority",
+      XDG_RUNTIME_DIR: "/tmp/kit-runtime",
     },
     platform: "windows",
     processControl: mockProcessControl((child) => {
@@ -276,8 +276,8 @@ Deno.test("isolated Windows browser normalizes safe environment names and delega
       PATH: "C:\\Windows\\System32",
       SYSTEMROOT: "C:\\Windows",
       WAYLAND_DISPLAY: "wayland-0",
-      XAUTHORITY: "/tmp/floorp-xauthority",
-      XDG_RUNTIME_DIR: "/tmp/floorp-runtime",
+      XAUTHORITY: "/tmp/kit-xauthority",
+      XDG_RUNTIME_DIR: "/tmp/kit-runtime",
     });
     await running.stop();
     assertEquals(terminatedPIDs, [43]);
@@ -289,7 +289,7 @@ Deno.test("isolated Windows browser normalizes safe environment names and delega
 
 Deno.test("isolated browser retains its profile when the owned process cannot be confirmed stopped", async () => {
   const launch = createIsolatedBrowserLaunch({
-    binaryPath: "/opt/floorp/Floorp",
+    binaryPath: "/opt/kit/kit",
     port: 28294,
   });
   const killed: string[] = [];
@@ -319,7 +319,7 @@ Deno.test("isolated browser retains its profile when the owned process cannot be
 
 Deno.test("isolated browser retries a failed verified stop", async () => {
   const launch = createIsolatedBrowserLaunch({
-    binaryPath: "/opt/floorp/Floorp",
+    binaryPath: "/opt/kit/kit",
     port: 28302,
   });
   let stopAttempts = 0;
@@ -357,7 +357,7 @@ Deno.test("isolated browser retries a failed verified stop", async () => {
 
 Deno.test("isolated browser retains its profile when ownership capture fails after spawn", async () => {
   const launch = createIsolatedBrowserLaunch({
-    binaryPath: "/opt/floorp/Floorp",
+    binaryPath: "/opt/kit/kit",
     port: 28298,
   });
   const killed: string[] = [];
@@ -393,7 +393,7 @@ Deno.test("isolated browser retains its profile when ownership capture fails aft
 
 Deno.test("isolated browser cleans its profile when capture abort is verified", async () => {
   const launch = createIsolatedBrowserLaunch({
-    binaryPath: "/opt/floorp/Floorp",
+    binaryPath: "/opt/kit/kit",
     port: 28305,
   });
   const abortedPIDs: number[] = [];
@@ -432,7 +432,7 @@ Deno.test("isolated browser cleans its profile when capture abort is verified", 
 
 Deno.test("isolated browser prevents external profile cleanup after spawn", async () => {
   const launch = createIsolatedBrowserLaunch({
-    binaryPath: "/opt/floorp/Floorp",
+    binaryPath: "/opt/kit/kit",
     port: 28301,
   });
   let resolveCapture:
@@ -476,11 +476,11 @@ Deno.test("isolated browser pair removes the first profile if the second spawn f
       startIsolatedBrowserPair(
         {
           first: {
-            binaryPath: "/opt/floorp/Floorp",
+            binaryPath: "/opt/kit/kit",
             port: 28291,
           },
           second: {
-            binaryPath: "/opt/floorp/Floorp",
+            binaryPath: "/opt/kit/kit",
             port: 28292,
           },
         },
@@ -516,11 +516,11 @@ Deno.test("isolated browser pair attempts both stops and retains only an unverif
   const pair = await startIsolatedBrowserPair(
     {
       first: {
-        binaryPath: "/opt/floorp/Floorp",
+        binaryPath: "/opt/kit/kit",
         port: 28295,
       },
       second: {
-        binaryPath: "/opt/floorp/Floorp",
+        binaryPath: "/opt/kit/kit",
         port: 28296,
       },
     },
@@ -564,11 +564,11 @@ Deno.test("isolated browser pair retries after one verified stop fails", async (
   const pair = await startIsolatedBrowserPair(
     {
       first: {
-        binaryPath: "/opt/floorp/Floorp",
+        binaryPath: "/opt/kit/kit",
         port: 28303,
       },
       second: {
-        binaryPath: "/opt/floorp/Floorp",
+        binaryPath: "/opt/kit/kit",
         port: 28304,
       },
     },
@@ -628,11 +628,11 @@ Deno.test("isolated browser pair retains a profile whose ownership capture fails
       startIsolatedBrowserPair(
         {
           first: {
-            binaryPath: "/opt/floorp/Floorp",
+            binaryPath: "/opt/kit/kit",
             port: 28299,
           },
           second: {
-            binaryPath: "/opt/floorp/Floorp",
+            binaryPath: "/opt/kit/kit",
             port: 28300,
           },
         },
@@ -667,7 +667,7 @@ Deno.test("isolated browser pair retains a profile whose ownership capture fails
 
 Deno.test("isolated browser refuses to spawn without an ownership controller", async () => {
   const launch = createIsolatedBrowserLaunch({
-    binaryPath: "/opt/floorp/Floorp",
+    binaryPath: "/opt/kit/kit",
     port: 28297,
   });
   let spawnCalled = false;

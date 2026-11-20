@@ -19,7 +19,12 @@ export const { ContextualIdentityService } = ChromeUtils.importESModule(
     getPublicIdentityFromId(userContextId: number): ContextualIdentity | null;
     getUserContextLabel(userContextId: number): string;
     create(name: string, icon: string, color: string): ContextualIdentity;
-    update(userContextId: number, name: string, icon: string, color: string): boolean;
+    update(
+      userContextId: number,
+      name: string,
+      icon: string,
+      color: string,
+    ): boolean;
     remove(userContextId: number): boolean;
     closeContainerTabs(userContextId: number): Promise<void>;
   };
@@ -65,7 +70,10 @@ function readContainers(): Container[] {
 
 // A default pointing at a deleted container falls back to no container.
 function readDefaultContainerId(): number {
-  const userContextId = Services.prefs.getIntPref(DEFAULT_CONTAINER_PREF, NO_CONTAINER);
+  const userContextId = Services.prefs.getIntPref(
+    DEFAULT_CONTAINER_PREF,
+    NO_CONTAINER,
+  );
   if (!ContextualIdentityService.getPublicIdentityFromId(userContextId)) {
     return NO_CONTAINER;
   }
@@ -80,7 +88,9 @@ const [defaultContainerId, setDefaultContainerIdSignal] = createSignal(
 export { containers, defaultContainerId };
 
 export function containerById(userContextId: number): Container | undefined {
-  return containers().find((container) => container.userContextId === userContextId);
+  return containers().find((container) =>
+    container.userContextId === userContextId
+  );
 }
 
 export function setDefaultContainerId(userContextId: number): void {

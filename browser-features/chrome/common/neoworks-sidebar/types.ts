@@ -74,7 +74,12 @@ export interface NeoworksTabbrowser {
   };
   addTrustedTab(
     url: string,
-    options: { userContextId: number; pinned?: boolean; index?: number; inBackground?: boolean },
+    options: {
+      userContextId: number;
+      pinned?: boolean;
+      index?: number;
+      inBackground?: boolean;
+    },
   ): BrowserTab;
   // A lazy tab has no browser until it's first selected.
   addTab(
@@ -196,3 +201,19 @@ export interface TabArchiveModule {
   archive(tabs: ArchivedTab[]): Promise<void>;
   remove(id: string): Promise<void>;
 }
+
+// Where a dragged tab or folder lands relative to the row under the pointer
+// (tab-drag.ts): next to it, or into it (a folder header, a grid).
+export type EdgePosition = "before" | "after";
+export type DropPosition = EdgePosition | "inside";
+
+// How the sidebar sits in the window (sidebar-state.ts): out of the way until
+// the pointer reaches the left edge, a narrow column of icons, or the full
+// column with titles.
+export type SidebarState = "hidden" | "compact" | "expanded";
+
+// The two states the sidebar shortcut switches between.
+export type SidebarTogglePair =
+  | "expanded-hidden"
+  | "expanded-compact"
+  | "compact-hidden";

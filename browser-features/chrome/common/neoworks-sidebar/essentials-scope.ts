@@ -40,7 +40,8 @@ export function essentialScope(
     return tag.workspaceId === "" || tag.workspaceId === workspace.id;
   }
   if (scope === "container") {
-    return tag.containerId === "" || tag.containerId === containerTagOf(workspace);
+    return tag.containerId === "" ||
+      tag.containerId === containerTagOf(workspace);
   }
   return true;
 }
@@ -58,7 +59,9 @@ export function essentialOrphaned(
   }
   if (scope === "container") {
     return tag.containerId === containerTagOf(deleted) &&
-      !remaining.some((workspace) => workspace.userContextId === deleted.userContextId);
+      !remaining.some((workspace) =>
+        workspace.userContextId === deleted.userContextId
+      );
   }
   return false;
 }

@@ -31,7 +31,8 @@
 }
 
 :root[nw-sidebar-docked] #neoworks-web-panel {
-  left: 248px;
+  /* The docked sidebar's width: expanded or icons only (sidebar-state.ts). */
+  left: var(--nw-sidebar-width, 248px);
 }
 
 :root[nw-web-panel-open]:not([inDOMFullscreen]) #browser {
@@ -39,7 +40,7 @@
 }
 
 :root[nw-web-panel-open][nw-sidebar-docked]:not([inDOMFullscreen]) #browser {
-  padding-inline-start: calc(248px + var(--nw-web-panel-width)) !important;
+  padding-inline-start: calc(var(--nw-sidebar-width, 248px) + var(--nw-web-panel-width)) !important;
 }
 
 :root[inDOMFullscreen] #neoworks-web-panel {
