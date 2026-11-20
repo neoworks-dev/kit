@@ -314,6 +314,8 @@ async function main(): Promise<void> {
         );
         return;
       }
+      // A fresh checkout (CI) has no link-features-chrome / link-modules yet.
+      Symlinker.run();
       await Packager.run();
       break;
     }
