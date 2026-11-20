@@ -26,7 +26,9 @@ function controllerOf(tab: BrowserTab): MediaController | null {
 }
 
 // Call inside a component: listeners are removed on cleanup.
-export function createMediaSession(tabState: TabState): () => MediaSession | null {
+export function createMediaSession(
+  tabState: TabState,
+): () => MediaSession | null {
   const [revision, setRevision] = createSignal(0);
   const bump = () => setRevision((value) => value + 1);
   const watched = new Map<BrowserTab, MediaController>();
@@ -59,28 +61,32 @@ export function createMediaSession(tabState: TabState): () => MediaSession | nul
     }
   }
 
-  const session = createMemo((): MediaSession | null => {
-    tabState.revision();
-    revision();
-    const tabs = tabbrowser().tabs;
-    syncWatched(tabs);
+  const session = createMemo(
+    (): MediaSession | null => {
+      tabState.revision();
+      revision();
+      const tabs = tabbrowser().tabs;
+      syncWatched(tabs);
 
-    const active = tabs.filter((tab) => watched.get(tab)?.isActive);
-    const playing = active.find((tab) => watched.get(tab)?.isPlaying);
-    if (playing) {
-      lastPlayed = playing;
-    }
-    let tab = playing;
-    if (!tab && lastPlayed && active.includes(lastPlayed)) {
-      tab = lastPlayed;
-    }
-    tab ??= active[0];
-    const controller = tab && watched.get(tab);
-    if (!tab || !controller) {
-      return null;
-    }
-    return { tab, controller };
-  }, null, { equals: false });
+      const active = tabs.filter((tab) => watched.get(tab)?.isActive);
+      const playing = active.find((tab) => watched.get(tab)?.isPlaying);
+      if (playing) {
+        lastPlayed = playing;
+      }
+      let tab = playing;
+      if (!tab && lastPlayed && active.includes(lastPlayed)) {
+        tab = lastPlayed;
+      }
+      tab ??= active[0];
+      const controller = tab && watched.get(tab);
+      if (!tab || !controller) {
+        return null;
+      }
+      return { tab, controller };
+    },
+    null,
+    { equals: false },
+  );
 
   onCleanup(() => {
     for (const [tab, controller] of watched) {

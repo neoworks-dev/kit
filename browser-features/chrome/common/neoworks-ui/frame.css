@@ -30,7 +30,9 @@
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: var(--lwt-header-image) right top no-repeat;
+  background:
+    linear-gradient(var(--nw-image-veil), var(--nw-image-veil)),
+    var(--lwt-header-image) right top no-repeat;
   transform: scaleX(-1);
   pointer-events: none;
 }

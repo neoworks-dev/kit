@@ -32,7 +32,8 @@ function isWorkspace(value: unknown): value is Workspace {
     typeof candidate.color === "string" &&
     typeof candidate.userContextId === "number" &&
     (candidate.icon === undefined || typeof candidate.icon === "string") &&
-    (candidate.ownsContainer === undefined || typeof candidate.ownsContainer === "boolean");
+    (candidate.ownsContainer === undefined ||
+      typeof candidate.ownsContainer === "boolean");
 }
 
 function defaultIcon(workspace: Workspace): string {
@@ -55,14 +56,19 @@ function withNewerFields(workspace: Workspace): Workspace {
 // Returns the stored workspaces, or `fallback` when the JSON is missing,
 // malformed, empty or holds an invalid entry. Entries stored by an older Kit
 // get the fields added since.
-export function parseWorkspaces(json: string, fallback: Workspace[]): Workspace[] {
+export function parseWorkspaces(
+  json: string,
+  fallback: Workspace[],
+): Workspace[] {
   let stored: unknown;
   try {
     stored = JSON.parse(json);
   } catch {
     return fallback;
   }
-  if (!Array.isArray(stored) || stored.length === 0 || !stored.every(isWorkspace)) {
+  if (
+    !Array.isArray(stored) || stored.length === 0 || !stored.every(isWorkspace)
+  ) {
     return fallback;
   }
   return stored.map(withNewerFields);
@@ -99,6 +105,10 @@ export function workspaceAtNumber(
 }
 
 // Index `step` places away from `index`, wrapping around both ends.
-export function cycleIndex(index: number, step: number, length: number): number {
+export function cycleIndex(
+  index: number,
+  step: number,
+  length: number,
+): number {
   return (((index + step) % length) + length) % length;
 }

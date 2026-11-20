@@ -13,6 +13,7 @@ import { insertPageActionsButton, pageActionsButton } from "./page-actions-butto
 import { openPageActions, togglePageActions } from "./page-actions-menu.tsx";
 import { watchGlassTint } from "./glass-tint.ts";
 import { hideToast } from "./toast.tsx";
+import { noticeUpdate } from "./update-notice.ts";
 import { watchWindowControls } from "./window-controls.ts";
 import { toggleWindowTransparency, watchWindowTransparency } from "./window-transparency.ts";
 import frameStyle from "../neoworks-ui/frame.css?inline";
@@ -52,6 +53,7 @@ export default class NeoworksToolbar extends NoraComponentBase {
     mountPageActionsMenu(document.body);
     mountToast(document.body);
     onCleanup(hideToast);
+    onCleanup(noticeUpdate());
     onCleanup(listenForCopyLinkShortcut());
     onCleanup(insertPageActionsButton(togglePageActions));
     onCleanup(insertModeBadge());

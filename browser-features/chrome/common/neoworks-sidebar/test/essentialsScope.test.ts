@@ -24,12 +24,21 @@ function testSharedAlwaysBelongs(): void {
 
 function testWorkspaceScope(): void {
   assert(essentialScope(TAG, WORK, "workspace"), "shows in its workspace");
-  assert(!essentialScope(TAG, SIBLING, "workspace"), "hidden elsewhere, even in the same container");
+  assert(
+    !essentialScope(TAG, SIBLING, "workspace"),
+    "hidden elsewhere, even in the same container",
+  );
 }
 
 function testContainerScope(): void {
-  assert(essentialScope(TAG, SIBLING, "container"), "shows in a workspace with the container");
-  assert(!essentialScope(TAG, HOME, "container"), "hidden in another container");
+  assert(
+    essentialScope(TAG, SIBLING, "container"),
+    "shows in a workspace with the container",
+  );
+  assert(
+    !essentialScope(TAG, HOME, "container"),
+    "hidden in another container",
+  );
   const home = { workspaceId: "home", containerId: "0" };
   assert(essentialScope(home, HOME, "container"), "no container counts as one");
 }
@@ -43,16 +52,35 @@ function testUntaggedBelongsEverywhere(): void {
 function testParseScope(): void {
   assertEquals(parseEssentialsScope("workspace"), "workspace", "workspace");
   assertEquals(parseEssentialsScope("container"), "container", "container");
-  assertEquals(parseEssentialsScope("nonsense"), "shared", "unknown falls back");
+  assertEquals(
+    parseEssentialsScope("nonsense"),
+    "shared",
+    "unknown falls back",
+  );
   assertEquals(parseEssentialsScope(undefined), "shared", "unset falls back");
 }
 
 function testOrphaned(): void {
-  assert(essentialOrphaned(TAG, WORK, [HOME], "workspace"), "workspace mode closes its own");
-  assert(!essentialOrphaned(TAG, HOME, [WORK], "workspace"), "other workspace's stay");
-  assert(essentialOrphaned(TAG, WORK, [HOME], "container"), "last workspace of the container");
-  assert(!essentialOrphaned(TAG, WORK, [HOME, SIBLING], "container"), "container still in use");
-  assert(!essentialOrphaned(TAG, WORK, [HOME], "shared"), "shared never closes");
+  assert(
+    essentialOrphaned(TAG, WORK, [HOME], "workspace"),
+    "workspace mode closes its own",
+  );
+  assert(
+    !essentialOrphaned(TAG, HOME, [WORK], "workspace"),
+    "other workspace's stay",
+  );
+  assert(
+    essentialOrphaned(TAG, WORK, [HOME], "container"),
+    "last workspace of the container",
+  );
+  assert(
+    !essentialOrphaned(TAG, WORK, [HOME, SIBLING], "container"),
+    "container still in use",
+  );
+  assert(
+    !essentialOrphaned(TAG, WORK, [HOME], "shared"),
+    "shared never closes",
+  );
 }
 
 export async function runAllTests(): Promise<void> {
@@ -60,7 +88,10 @@ export async function runAllTests(): Promise<void> {
     { name: "shared belongs everywhere", fn: testSharedAlwaysBelongs },
     { name: "workspace scope compares workspace ids", fn: testWorkspaceScope },
     { name: "container scope compares containers", fn: testContainerScope },
-    { name: "untagged essentials belong everywhere", fn: testUntaggedBelongsEverywhere },
+    {
+      name: "untagged essentials belong everywhere",
+      fn: testUntaggedBelongsEverywhere,
+    },
     { name: "parseEssentialsScope falls back to shared", fn: testParseScope },
     { name: "essentialOrphaned follows the scope", fn: testOrphaned },
   ];

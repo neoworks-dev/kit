@@ -11,14 +11,17 @@ import type { BrowserTab, TabSelectEvent } from "./types.ts";
 
 // Folders and splits are arranged on purpose; a blank tab there stays.
 function isUntouchedNewTab(tab: BrowserTab): boolean {
-  if (tab.closing || tab.pinned || tab.group || tab.splitview || isEssential(tab)) {
+  if (
+    tab.closing || tab.pinned || tab.group || tab.splitview || isEssential(tab)
+  ) {
     return false;
   }
   const browser = tab.linkedBrowser;
   if (browser.canGoBack || browser.canGoForward) {
     return false;
   }
-  return isNewTabPage(browser.currentURI?.spec ?? "") && !tab.hasAttribute("busy");
+  return isNewTabPage(browser.currentURI?.spec ?? "") &&
+    !tab.hasAttribute("busy");
 }
 
 function closeLeftNewTab(event: Event): void {
@@ -29,7 +32,10 @@ function closeLeftNewTab(event: Event): void {
   // Not from inside the TabSelect dispatch.
   queueMicrotask(() => {
     if (!previousTab.selected && isUntouchedNewTab(previousTab)) {
-      tabbrowser().removeTab(previousTab, { animate: false, skipSessionStore: true });
+      tabbrowser().removeTab(previousTab, {
+        animate: false,
+        skipSessionStore: true,
+      });
     }
   });
 }

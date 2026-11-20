@@ -3,6 +3,7 @@
 import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import * as path from "@std/path";
 import {
+  adoptRuntimeLayout,
   copyDebugMacAppFromMountedDmg,
   debugRuntimeArchiveName,
   filterRuntimeEntries,
@@ -436,7 +437,7 @@ function fakeLockedOperations(
       }
       if (artifact.platform === "macos") {
         const contentsRoot = path.dirname(path.dirname(layout.applicationIni));
-        const stagingDeveloperPath = path.join(destination, "floorp");
+        const stagingDeveloperPath = path.join(destination, "kit");
         const infoPlist = options.malformedMacInfoPlist
           ? [
             '<?xml version="1.0" encoding="UTF-8"?>',
@@ -491,10 +492,10 @@ function fakeLockedOperationsWithoutNetwork(
 }
 
 async function writeOldRuntime(binRoot: string): Promise<void> {
-  await Deno.mkdir(`${binRoot}/floorp/.git`, { recursive: true });
+  await Deno.mkdir(`${binRoot}/kit/.git`, { recursive: true });
   await Deno.mkdir(`${binRoot}/applied_patches`, { recursive: true });
-  await Deno.writeTextFile(`${binRoot}/floorp/old.txt`, "old-runtime");
-  await Deno.writeTextFile(`${binRoot}/floorp/.git/config`, "old-git");
+  await Deno.writeTextFile(`${binRoot}/kit/old.txt`, "old-runtime");
+  await Deno.writeTextFile(`${binRoot}/kit/.git/config`, "old-git");
   await Deno.writeTextFile(`${binRoot}/applied_patches/marker`, "old-patch");
 }
 
@@ -647,6 +648,51 @@ Deno.test("locked Runtime native target mapping fails closed", () => {
   assertThrows(() => resolveNativeRuntimeTarget("freebsd", "x86_64"));
 });
 
+Deno.test("extracted Linux runtime becomes kit/kit without the duplicate binary", async () => {
+  const root = await Deno.makeTempDir();
+  try {
+    await Deno.mkdir(path.join(root, "floorp"));
+    await Deno.writeTextFile(path.join(root, "floorp", "floorp-bin"), "binary");
+    await Deno.writeTextFile(path.join(root, "floorp", "floorp"), "duplicate");
+    await Deno.writeTextFile(path.join(root, "floorp", "application.ini"), "ini");
+
+    await adoptRuntimeLayout(root);
+
+    assertEquals(await Deno.readTextFile(path.join(root, "kit", "kit")), "binary");
+    assertEquals(await Deno.readTextFile(path.join(root, "kit", "application.ini")), "ini");
+    await assertRejects(() => Deno.stat(path.join(root, "floorp")));
+    await assertRejects(() => Deno.stat(path.join(root, "kit", "floorp")));
+    await assertRejects(() => Deno.stat(path.join(root, "kit", "floorp-bin")));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("extracted Windows runtime gets kit.exe", async () => {
+  const root = await Deno.makeTempDir();
+  try {
+    await Deno.mkdir(path.join(root, "floorp"));
+    await Deno.writeTextFile(path.join(root, "floorp", "floorp.exe"), "binary");
+
+    await adoptRuntimeLayout(root);
+
+    assertEquals(await Deno.readTextFile(path.join(root, "kit", "kit.exe")), "binary");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("runtime adoption refuses to merge into an existing kit folder", async () => {
+  const root = await Deno.makeTempDir();
+  try {
+    await Deno.mkdir(path.join(root, "floorp"));
+    await Deno.mkdir(path.join(root, "kit"));
+    await assertRejects(() => adoptRuntimeLayout(root));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 Deno.test("debug macOS Runtime copies only the expected app from the DMG root", async () => {
   const root = await Deno.makeTempDir();
   try {
@@ -677,7 +723,7 @@ Deno.test("debug macOS Runtime copies only the expected app from the DMG root", 
       await Deno.readTextFile(
         path.join(
           destinationRoot,
-          "floorp",
+          "kit",
           "Floorp.app",
           "Contents",
           "MacOS",
@@ -687,7 +733,7 @@ Deno.test("debug macOS Runtime copies only the expected app from the DMG root", 
       "binary",
     );
     await assertRejects(() =>
-      Deno.stat(path.join(destinationRoot, "floorp", "Applications"))
+      Deno.stat(path.join(destinationRoot, "kit", "Applications"))
     );
     assertEquals(await Deno.readTextFile(applicationsSentinel), "outside");
   } finally {
@@ -700,10 +746,10 @@ Deno.test("debug macOS Runtime plist commits final paths before staging swap", a
   try {
     const stageRoot = path.resolve(root, "runtime-debug-staging-test");
     const finalBinRoot = path.resolve(root, "dist", "bin");
-    const stagingDeveloperPath = path.join(stageRoot, "floorp");
+    const stagingDeveloperPath = path.join(stageRoot, "kit");
     const infoPlist = path.join(
       stageRoot,
-      "floorp",
+      "kit",
       "Floorp.app",
       "Contents",
       "Info.plist",
@@ -725,7 +771,7 @@ Deno.test("debug macOS Runtime plist commits final paths before staging swap", a
     await prepareDebugMacInfoPlist(stageRoot, finalBinRoot);
 
     const content = await Deno.readTextFile(infoPlist);
-    const finalDeveloperPath = path.join(finalBinRoot, "floorp");
+    const finalDeveloperPath = path.join(finalBinRoot, "kit");
     assertEquals(
       content.split(`<string>${finalDeveloperPath}</string>`).length - 1,
       2,
@@ -768,23 +814,23 @@ Deno.test("locked Runtime install validates then swaps and retains recovery stat
     assert(result.backupPath);
     assert(result.controlBackupPath);
     assertEquals(
-      await Deno.readTextFile(`${result.backupPath}/floorp/old.txt`),
+      await Deno.readTextFile(`${result.backupPath}/kit/old.txt`),
       "old-runtime",
     );
     assert(await Deno.stat(`${result.backupPath}/applied_patches/marker`));
-    assert(await Deno.stat(`${result.backupPath}/floorp/.git/config`));
+    assert(await Deno.stat(`${result.backupPath}/kit/.git/config`));
     const layout = runtimeLayoutFor(binRoot, artifact);
     assertEquals((await Deno.stat(layout.executable)).isFile, true);
     assertEquals(await Deno.readTextFile(layout.legacyVersionFile), "002");
     assertEquals(
-      (await Deno.readTextFile(`${binRoot}/.floorp-runtime-lock.json`))
+      (await Deno.readTextFile(`${binRoot}/.kit-runtime-lock.json`))
         .includes(
           artifact.buildId,
         ),
       true,
     );
     await assertRejects(() => Deno.stat(`${binRoot}/applied_patches`));
-    await assertRejects(() => Deno.stat(`${binRoot}/floorp/.git`));
+    await assertRejects(() => Deno.stat(`${binRoot}/kit/.git`));
     assertEquals(
       await Deno.readTextFile(
         `${result.controlBackupPath}/marionette-port.txt`,
@@ -831,7 +877,7 @@ Deno.test("locked macOS Runtime commits only final developer paths", async () =>
       "Info.plist",
     );
     const content = await Deno.readTextFile(infoPlistPath);
-    const finalDeveloperPath = path.join(binRoot, "floorp");
+    const finalDeveloperPath = path.join(binRoot, "kit");
     assertEquals(
       content.split("MozillaDeveloperRepoPath").length - 1,
       1,
@@ -907,7 +953,7 @@ Deno.test("locked macOS Runtime preserves dollar replacement tokens in final dev
       "Info.plist",
     );
     const content = await Deno.readTextFile(infoPlistPath);
-    const finalDeveloperPath = path.join(binRoot, "floorp");
+    const finalDeveloperPath = path.join(binRoot, "kit");
     const escapedFinalDeveloperPath = finalDeveloperPath.replaceAll(
       "&",
       "&amp;",
@@ -954,7 +1000,7 @@ Deno.test("locked macOS plist patch failure aborts before swap and invalidates c
       "missing its closing </dict>",
     );
     assertEquals(
-      await Deno.readTextFile(`${binRoot}/floorp/old.txt`),
+      await Deno.readTextFile(`${binRoot}/kit/old.txt`),
       "old-runtime",
     );
     assertEquals(
@@ -1377,7 +1423,7 @@ for (
           }),
       );
       assertEquals(
-        await Deno.readTextFile(`${binRoot}/floorp/old.txt`),
+        await Deno.readTextFile(`${binRoot}/kit/old.txt`),
         "old-runtime",
       );
       assertEquals(
@@ -1438,7 +1484,7 @@ Deno.test("locked Runtime control backup collision rejects without deleting pree
       "2828",
     );
     assertEquals(
-      await Deno.readTextFile(`${binRoot}/floorp/old.txt`),
+      await Deno.readTextFile(`${binRoot}/kit/old.txt`),
       "old-runtime",
     );
   } finally {
@@ -1489,7 +1535,7 @@ Deno.test("locked Runtime transaction collision invalidates control without dele
       "preserve",
     );
     assertEquals(
-      await Deno.readTextFile(`${binRoot}/floorp/old.txt`),
+      await Deno.readTextFile(`${binRoot}/kit/old.txt`),
       "old-runtime",
     );
     assertEquals(
@@ -1542,7 +1588,7 @@ Deno.test("locked Runtime swap failure restores the previous live tree", async (
       "injected swap failure",
     );
     assertEquals(
-      await Deno.readTextFile(`${binRoot}/floorp/old.txt`),
+      await Deno.readTextFile(`${binRoot}/kit/old.txt`),
       "old-runtime",
     );
     await assertRejects(() => Deno.stat(`${binRoot}.runtime-backup-${nonce}`));
@@ -1614,7 +1660,7 @@ Deno.test("locked Runtime failure removes live control when quarantine rename fa
       )
     );
     assertEquals(
-      await Deno.readTextFile(`${binRoot}/floorp/old.txt`),
+      await Deno.readTextFile(`${binRoot}/kit/old.txt`),
       "old-runtime",
     );
     assertEquals(
@@ -1680,7 +1726,7 @@ Deno.test("locked Runtime failure reports live and recovery paths when control i
     assert(error.message.includes("injected removal failure"));
     assertEquals(await Deno.readTextFile(liveControl), "current-control");
     assertEquals(
-      await Deno.readTextFile(`${binRoot}/floorp/old.txt`),
+      await Deno.readTextFile(`${binRoot}/kit/old.txt`),
       "old-runtime",
     );
     assertEquals(
@@ -1824,7 +1870,7 @@ Deno.test("locked Runtime rollback failure retains the recovery backup path", as
       backupRoot,
     );
     assertEquals(
-      await Deno.readTextFile(`${backupRoot}/floorp/old.txt`),
+      await Deno.readTextFile(`${backupRoot}/kit/old.txt`),
       "old-runtime",
     );
   } finally {

@@ -5,14 +5,35 @@
 // the way Browser Use's SKILL.md is for CDP: models know BiDi less well than
 // CDP, so the commands, their shapes and Kit's limits are spelled out here
 // instead of wrapped in more helpers.
+//
+// The same manual is the companion's skill for Kit (COMPANION_SKILL): the one
+// agent the user's apps share gets it the first time it comes to Kit.
+
+import type { Skill } from "./types.ts";
+
+const TOOLS = `- bidi: send one WebDriver BiDi command ({method, params}) and get its result.
+- helper: run a function from Kit's helpers file inside a page. helpers_source reads that file, helpers_edit rewrites it.`;
 
 export const SYSTEM_PROMPT = `You are the assistant in Kit, the user's web browser. You act in the browser only through Kit's tools; you have no shell or file system.
 
-- bidi: send one WebDriver BiDi command ({method, params}) and get its result.
-- helper: run a function from Kit's helpers file inside a page. helpers_source reads that file, helpers_edit rewrites it.
-- autopilot (when listed): hand a task on the current page to a fast local model. It clicks, selects and scrolls on its own; when a field needs text it asks you for only that value (call autopilot again with text), then carries on.
+${TOOLS}
 
-# WebDriver BiDi in Kit
+${manual()}`;
+
+export const COMPANION_SKILL: Skill = {
+  name: "kit-browser",
+  description: "Working in Kit, the user's web browser, through its own tools",
+  instructions: `You are in Kit, the user's web browser. Work in the page through Kit's tools (\`mcp__kit__…\`), not the desktop's: they read the page and act in it directly, as real input, without moving the user's mouse.
+
+${TOOLS}
+
+The tab the user means is the active one in the window you are in (getTree marks it "active"). What they circled or clicked on the desktop is in screen pixels: find it in the page by what it says or looks like, not by those numbers. Point at things on the desktop with the overlay's tools when showing helps; act in the page with Kit's. Your text reply shows in Kit's panel.
+
+${manual()}`,
+};
+
+function manual(): string {
+  return `# WebDriver BiDi in Kit
 
 ## Tabs
 Every tab and frame is a browsing context with a string id.
@@ -52,3 +73,4 @@ The helper tool runs {name, args, context} from a helpers.js file that you own. 
 
 # Working
 Look before you act, act in small steps and check each one. Don't send messages, post, buy or submit forms for the user unless they asked for exactly that. Answer briefly: what you did and what you found.`;
+}

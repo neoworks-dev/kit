@@ -73,6 +73,14 @@ function pixels(value: number | undefined): string {
   return `${value}px`;
 }
 
+// The panel grows out of its anchor's corner.
+function popoverOrigin(position: PanelPosition): string {
+  if (position.top === undefined) {
+    return "bottom left";
+  }
+  return "top right";
+}
+
 export function openDownloadsPanel(anchor: Element): void {
   setPosition(positionFor(anchor));
   clearAttention();
@@ -233,17 +241,20 @@ function PanelHeader() {
 
 function PanelFooter() {
   return (
-    <button
-      type="button"
-      class="nw-downloads-footer"
-      onClick={() => {
-        closeDownloadsPanel();
-        openAllDownloads();
-      }}
-    >
-      <span class="nw-icon" data-icon="clock-counter-clockwise" />
-      <span class="nw-downloads-footer-label">Show all downloads</span>
-    </button>
+    <>
+      <div class="nw-menu-separator" />
+      <button
+        type="button"
+        class="nw-menu-item"
+        onClick={() => {
+          closeDownloadsPanel();
+          openAllDownloads();
+        }}
+      >
+        <span class="nw-icon" data-icon="clock-counter-clockwise" />
+        <span class="nw-menu-label">Show all downloads</span>
+      </button>
+    </>
   );
 }
 
@@ -284,11 +295,12 @@ export function DownloadsPanel() {
       <style>{glassStyle + iconStyle + downloadsStyle}</style>
       <div
         id={PANEL_ID}
-        class="nw-downloads-panel nw-glass"
+        class="nw-downloads-panel nw-glass nw-popover"
         style={{
           top: pixels(position().top),
           bottom: pixels(position().bottom),
           left: `${position().left}px`,
+          "--nw-popover-origin": popoverOrigin(position()),
         }}
       >
         <canvas id={BACKDROP_ID} class="nw-glass-backdrop" />

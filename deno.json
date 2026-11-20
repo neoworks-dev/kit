@@ -38,6 +38,7 @@
     "**/_dist/**/*",
     "**/*.timestamp-*.mjs",
     "libs/@types/gecko/**/*",
+    "browser-features/chrome/common/neoworks-spotlight/bangs.json",
     "libs/vite-plugin-gen-jarmn/**/*",
     "libs/vite-plugin-disable-csp/**/*",
     "tools/build/tasks/inject/mixins/**/*",

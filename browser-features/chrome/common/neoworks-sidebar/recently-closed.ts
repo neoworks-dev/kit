@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // The sidebar's Recently closed list: the active workspace's most recently
-// closed tabs, read from SessionStore. Whether the list is folded away lives
+// closed tabs, read from SessionStore, from every window (with window sync a
+// tab closed here lands in the list of the window that had its page). Whether the list is folded away lives
 // in a pref.
 
 import { createSignal } from "solid-js";
@@ -15,6 +16,7 @@ const MAX_SHOWN = 5;
 
 interface ClosedTabData {
   closedId: number;
+  closedAt: number;
   title: string;
   image: string | null;
   state: {
@@ -26,8 +28,15 @@ interface ClosedTabData {
 }
 
 interface SessionStoreApi {
-  getClosedTabDataForWindow(window: Window): ClosedTabData[];
-  undoCloseById(closedId: number, includePrivate: boolean, targetWindow: Window): unknown;
+  getClosedTabData(options: {
+    sourceWindow: Window;
+    closedTabsFromAllWindows: boolean;
+  }): ClosedTabData[];
+  undoCloseById(
+    closedId: number,
+    includePrivate: boolean,
+    targetWindow: Window,
+  ): unknown;
 }
 
 const browserWindow = window as unknown as { SessionStore: SessionStoreApi };
@@ -40,7 +49,12 @@ function urlOf(data: ClosedTabData): string {
 
 function toClosedTab(data: ClosedTabData): ClosedTab {
   const url = urlOf(data);
-  return { closedId: data.closedId, title: data.title || url, url, image: data.image ?? "" };
+  return {
+    closedId: data.closedId,
+    title: data.title || url,
+    url,
+    image: data.image ?? "",
+  };
 }
 
 // A blank tab isn't worth bringing back.
@@ -52,14 +66,21 @@ function readClosedTabs(): ClosedTab[] {
   // Reading the active workspace makes the list follow workspace switches.
   activeWorkspaceId();
   try {
-    return browserWindow.SessionStore.getClosedTabDataForWindow(window)
+    return browserWindow.SessionStore.getClosedTabData({
+      sourceWindow: window,
+      closedTabsFromAllWindows: true,
+    })
+      .sort((a, b) => b.closedAt - a.closedAt)
       .filter((data) => isInActiveWorkspace(data.state.extData))
       .map(toClosedTab)
       .filter(isWorthReopening)
       .slice(0, MAX_SHOWN);
   } catch (error) {
     // Windows SessionStore doesn't track, e.g. before it has initialized.
-    console.error("[neoworks-sidebar] Couldn't read recently closed tabs:", error);
+    console.error(
+      "[neoworks-sidebar] Couldn't read recently closed tabs:",
+      error,
+    );
     return [];
   }
 }
@@ -88,7 +109,8 @@ export function reopenClosedTab(tab: ClosedTab): void {
 export function watchRecentlyClosed(): () => void {
   const closedObserver = { observe: () => setRevision((value) => value + 1) };
   const prefObserver = {
-    observe: () => setCollapsed(Services.prefs.getBoolPref(COLLAPSED_PREF, false)),
+    observe: () =>
+      setCollapsed(Services.prefs.getBoolPref(COLLAPSED_PREF, false)),
   };
   Services.obs.addObserver(closedObserver, CLOSED_OBJECTS_TOPIC);
   Services.prefs.addObserver(COLLAPSED_PREF, prefObserver);

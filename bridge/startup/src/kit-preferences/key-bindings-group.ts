@@ -68,7 +68,8 @@ export function registerKeyBindingsGroup(win: PreferencesWindow): void {
     [KEY_BINDINGS_GROUP_ID]: {
       controlAttrs: {
         label: "Keyboard shortcuts",
-        description: "Type these anywhere outside a text field. Changing them isn't possible yet.",
+        description:
+          "Type these anywhere outside a text field. Changing them isn't possible yet.",
       },
       headingLevel: 2,
       items: [{ id: KEY_BINDINGS_SETTING_ID, control: KEY_BINDINGS_ELEMENT }],

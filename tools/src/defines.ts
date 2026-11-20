@@ -7,10 +7,20 @@ import * as path from "@std/path";
  * Modernized for ESNext + latest TypeScript while preserving Deno APIs.
  */
 
+// Kit's names for the installed runtime: its folder and executable.
 export const BRANDING = {
+  base_name: "kit",
+  display_name: "Kit",
+  dev_suffix: "noraneko-dev",
+} as const;
+
+// The prebuilt runtime's own names, as its archives ship them: the top-level
+// folder and executables (renamed to Kit's on install, see
+// initializer.adoptRuntimeLayout), the macOS app bundle (kept) and the Name in
+// its application.ini.
+export const RUNTIME_BRANDING = {
   base_name: "floorp",
   display_name: "Floorp",
-  dev_suffix: "noraneko-dev",
 } as const;
 
 export type Platform = "windows" | "darwin" | "linux";
@@ -57,7 +67,7 @@ export const BIN_DIR =
     : path.join(
         PATHS.bin_root,
         BRANDING.base_name,
-        `${BRANDING.display_name}.app`,
+        `${RUNTIME_BRANDING.display_name}.app`,
         "Contents",
         "Resources",
       );
@@ -69,14 +79,14 @@ export const PROD_BIN_DIR = "../obj-artifact-build-output/dist/bin";
 
 export const BIN_PATH_EXE =
   PLATFORM !== "darwin"
-    ? BIN_PATH + (PLATFORM === "windows" ? ".exe" : "-bin")
+    ? BIN_PATH + (PLATFORM === "windows" ? ".exe" : "")
     : path.join(
         PATHS.bin_root,
         BRANDING.base_name,
-        `${BRANDING.display_name}.app`,
+        `${RUNTIME_BRANDING.display_name}.app`,
         "Contents",
         "MacOS",
-        BRANDING.base_name,
+        RUNTIME_BRANDING.base_name,
       );
 
 export const BIN_VERSION = path.join(BIN_DIR, "nora.version.txt");

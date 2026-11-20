@@ -160,7 +160,7 @@ const STATIC_RULES: TriageRule[] = [
     api: "OpenBrowserWindow",
     classification: "unsupported",
     pattern: /\bOpenBrowserWindow\b/,
-    reason: "opens browser windows with semantics not covered by Floorp runner",
+    reason: "opens browser windows with semantics not covered by Kit's runner",
   },
   {
     api: "BrowserTestUtils.addContentEventListener",

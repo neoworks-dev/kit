@@ -11,10 +11,10 @@ const VISIBLE_MS = 1600;
 const [toast, setToast] = createSignal<ToastMessage | null>(null);
 let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
-export function showToast(text: string, icon = "check"): void {
+export function showToast(text: string, icon = "check", visibleMs = VISIBLE_MS): void {
   clearTimeout(hideTimer);
   setToast({ text, icon });
-  hideTimer = setTimeout(() => setToast(null), VISIBLE_MS);
+  hideTimer = setTimeout(() => setToast(null), visibleMs);
 }
 
 export function hideToast(): void {

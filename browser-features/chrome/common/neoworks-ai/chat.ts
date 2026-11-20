@@ -17,20 +17,18 @@ import {
   type HarnessSession,
   type PermissionReply,
   type RequestPermissionRequest,
-  type SessionUpdate,
 } from "@neoworks/harness/client";
 import type {
   AgentApproval,
   AgentBrowserModule,
   AgentEndpoint,
-  ChatItem,
   ConnectionState,
   HarnessId,
   HarnessInfo,
   HarnessModule,
   ModelInfo,
-  ToolStatus,
 } from "./types.ts";
+import { createConversation } from "./conversation.ts";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 
 const HARNESS_PREF = "neoworks.ai.harness";
@@ -46,7 +44,9 @@ const [harness, setHarness] = createSignal<HarnessId>(
   Services.prefs.getStringPref(HARNESS_PREF, DEFAULT_HARNESS) as HarnessId,
 );
 const [model, setModel] = createSignal(readModelPref(harness()));
-const [items, setItems] = createSignal<ChatItem[]>([]);
+const conversation = createConversation();
+const items = conversation.items;
+const addItem = conversation.add;
 const [running, setRunning] = createSignal(false);
 
 export { connection, harness, harnesses, items, model, models, running };
@@ -67,135 +67,6 @@ function errorText(error: unknown): string {
     return error.message;
   }
   return String(error);
-}
-
-function addItem(item: ChatItem): void {
-  setItems((current) => [...current, item]);
-}
-
-function streamedItem(kind: "assistant" | "thought"): Extract<ChatItem, { kind: "assistant" | "thought" }> {
-  const [text, setText] = createSignal("");
-  return { kind, text, append: (chunk) => setText((value) => value + chunk) };
-}
-
-// Appends to the message being streamed, or starts a new one.
-function appendText(kind: "assistant" | "thought", chunk: string): void {
-  const last = items().at(-1);
-  if ((last?.kind === "assistant" || last?.kind === "thought") && last.kind === kind) {
-    last.append(chunk);
-    return;
-  }
-  const item = streamedItem(kind);
-  item.append(chunk);
-  addItem(item);
-}
-
-interface ToolUpdater {
-  setTitle(title: string): void;
-  setStatus(status: ToolStatus): void;
-  setInput(input: string): void;
-  setOutput(output: string): void;
-}
-
-const toolUpdaters = new Map<string, ToolUpdater>();
-
-function addTool(id: string, title: string, status: ToolStatus, input: string): void {
-  const [toolTitle, setTitle] = createSignal(title);
-  const [toolStatus, setStatus] = createSignal(status);
-  const [toolInput, setInput] = createSignal(input);
-  const [toolOutput, setOutput] = createSignal("");
-  toolUpdaters.set(id, { setTitle, setStatus, setInput, setOutput });
-  addItem({ kind: "tool", id, title: toolTitle, status: toolStatus, input: toolInput, output: toolOutput });
-}
-
-// What the tool was called with, for the expanded row: the local model's
-// goal as it is, anything else as JSON.
-function toolInputText(rawInput: unknown): string {
-  if (typeof rawInput !== "object" || rawInput === null || Object.keys(rawInput).length === 0) {
-    return "";
-  }
-  const input = rawInput as Record<string, unknown>;
-  if (typeof input.goal === "string") {
-    return input.goal;
-  }
-  return JSON.stringify(input, null, 2);
-}
-
-// The text the tool returned; images are left out.
-function toolOutputText(content: unknown): string {
-  if (!Array.isArray(content)) {
-    return "";
-  }
-  return content.flatMap((entry: unknown) => {
-    const block = (entry as { content?: { type?: string; text?: unknown } }).content;
-    return block?.type === "text" && typeof block.text === "string" ? [block.text] : [];
-  }).join("\n\n");
-}
-
-// Kit's browser tools show as what they do: a `bidi` call as its command
-// ("browsingContext.navigate"), a helper as its call ("helper: snapshot").
-function toolTitle(title: string | null | undefined, rawInput: unknown): string | undefined {
-  const input = typeof rawInput === "object" && rawInput !== null ? rawInput as Record<string, unknown> : {};
-  if (typeof input.method === "string" && input.method) {
-    return input.method;
-  }
-  if (title?.endsWith("helpers_source")) {
-    return "Read browser helpers";
-  }
-  if (title?.endsWith("helpers_edit")) {
-    return "Edit browser helpers";
-  }
-  if (title?.endsWith("autopilot") && typeof input.goal === "string") {
-    return typeof input.text === "string"
-      ? `Local model: type ${JSON.stringify(input.text)}, then ${input.goal}`
-      : `Local model: ${input.goal}`;
-  }
-  if (typeof input.name === "string" && input.name) {
-    return `helper: ${input.name}`;
-  }
-  return title ?? undefined;
-}
-
-function handleUpdate(update: SessionUpdate): void {
-  switch (update.sessionUpdate) {
-    case "agent_message_chunk":
-    case "agent_thought_chunk": {
-      if (update.content.type === "text") {
-        const kind = update.sessionUpdate === "agent_message_chunk" ? "assistant" : "thought";
-        appendText(kind, update.content.text);
-      }
-      return;
-    }
-    case "tool_call":
-      addTool(
-        update.toolCallId,
-        toolTitle(update.title, update.rawInput) ?? "Tool",
-        update.status ?? "pending",
-        toolInputText(update.rawInput),
-      );
-      return;
-    case "tool_call_update": {
-      const updater = toolUpdaters.get(update.toolCallId);
-      const title = toolTitle(update.title, update.rawInput);
-      if (title) {
-        updater?.setTitle(title);
-      }
-      if (update.status) {
-        updater?.setStatus(update.status);
-      }
-      const input = toolInputText(update.rawInput);
-      if (input) {
-        updater?.setInput(input);
-      }
-      const output = toolOutputText(update.content);
-      if (output) {
-        updater?.setOutput(output);
-      }
-      return;
-    }
-    default:
-      return;
-  }
 }
 
 // Shows the request in the chat and waits for the user's answer.
@@ -362,7 +233,7 @@ export async function send(text: string): Promise<void> {
     const activeSession = await currentSession();
     for await (const event of activeSession.prompt(prompt)) {
       if (event.type === "update") {
-        handleUpdate(event.update);
+        conversation.update(event.update);
       }
     }
   } catch (error) {
@@ -396,8 +267,7 @@ export function newChat(): void {
   session = null;
   sessionKey = "";
   closeEndpoint();
-  toolUpdaters.clear();
-  setItems([]);
+  conversation.clear();
 }
 
 // For hot reload and window close: the sidecar itself keeps running.

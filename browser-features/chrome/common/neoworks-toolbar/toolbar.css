@@ -15,14 +15,7 @@
 /* Only Neoworks' buttons and extension actions stay in the bar; other widgets
    (home, library, ...) are still reachable through customize mode. Kit's own
    downloads button (neoworks-downloads) replaces Firefox's. */
-:root:not([customizing]) #nav-bar-customization-target > :not(
-  #back-button,
-  #forward-button,
-  #stop-reload-button,
-  #urlbar-container,
-  #unified-extensions-button,
-  .unified-extensions-item
-) {
+:root:not([customizing]) #nav-bar-customization-target > :not(#back-button, #forward-button, #stop-reload-button, #urlbar-container, #unified-extensions-button, .unified-extensions-item) {
   display: none !important;
 }
 
@@ -207,9 +200,9 @@
 
 /* While Marionette drives the browser (the dev build always), Firefox shows a
    robot icon and red stripes in the URL bar. Kit makes it unmistakable
-   instead: an amber border around the whole window and a "Remote control"
-   pill before the window buttons. Amber, so it can't be taken for a
-   container or workspace color. */
+   instead: an amber ring around the page with a glow spilling into the
+   frame, and a "Remote control" pill before the window buttons. Amber, so
+   it can't be taken for a container or workspace color. */
 #remote-control-box {
   display: none !important;
 }
@@ -218,13 +211,39 @@
   background-image: none !important;
 }
 
-:root[remotecontrol] > body::after {
+/* The page pane is #tabbrowser-tabbox (neoworks-ui/frame.css). The glow
+   is inside it, so it never reaches the sidebar or the top bar whatever the
+   sidebar's state; the page paints over its container, so an overlay draws
+   it on top, letting clicks through. Fullscreen video has no pane to mark. */
+:root[remotecontrol]:not([inDOMFullscreen]) #tabbrowser-tabbox {
+  position: relative;
+}
+
+:root[remotecontrol]:not([inDOMFullscreen]) #tabbrowser-tabbox::after {
   content: "";
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 2147483647;
-  border: 2px solid var(--nw-warning);
+  z-index: 10;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1.5px var(--nw-warning),
+    inset 0 0 28px 2px color-mix(in srgb, var(--nw-warning) 40%, transparent);
   pointer-events: none;
+  animation: nw-remote-control-glow 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes nw-remote-control-glow {
+  from {
+    box-shadow:
+      inset 0 0 0 1.5px var(--nw-warning),
+      inset 0 0 14px 0 color-mix(in srgb, var(--nw-warning) 22%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[remotecontrol] #tabbrowser-tabbox::after {
+    animation: none;
+  }
 }
 
 /* Pseudo-elements are flex items too: order puts the pill after the
@@ -294,15 +313,33 @@
   color: var(--nw-chip-color) !important;
 }
 
-#userContext-icons.identity-color-blue { --nw-chip-color: #37adff; }
-#userContext-icons:is(.identity-color-turquoise, .identity-color-cyan) { --nw-chip-color: #00c79a; }
-#userContext-icons.identity-color-green { --nw-chip-color: #51cd00; }
-#userContext-icons.identity-color-yellow { --nw-chip-color: #ffcb00; }
-#userContext-icons.identity-color-orange { --nw-chip-color: #ff9f00; }
-#userContext-icons.identity-color-red { --nw-chip-color: #ff613d; }
-#userContext-icons.identity-color-pink { --nw-chip-color: #ff4bda; }
-#userContext-icons.identity-color-purple { --nw-chip-color: #af51f5; }
-#userContext-icons.identity-color-gray { --nw-chip-color: #9e9e9e; }
+#userContext-icons.identity-color-blue {
+  --nw-chip-color: #37adff;
+}
+#userContext-icons:is(.identity-color-turquoise, .identity-color-cyan) {
+  --nw-chip-color: #00c79a;
+}
+#userContext-icons.identity-color-green {
+  --nw-chip-color: #51cd00;
+}
+#userContext-icons.identity-color-yellow {
+  --nw-chip-color: #ffcb00;
+}
+#userContext-icons.identity-color-orange {
+  --nw-chip-color: #ff9f00;
+}
+#userContext-icons.identity-color-red {
+  --nw-chip-color: #ff613d;
+}
+#userContext-icons.identity-color-pink {
+  --nw-chip-color: #ff4bda;
+}
+#userContext-icons.identity-color-purple {
+  --nw-chip-color: #af51f5;
+}
+#userContext-icons.identity-color-gray {
+  --nw-chip-color: #9e9e9e;
+}
 
 /* Not while the tab uses its workspace's own container: every tab would
    show the same chip (the sidebar sets the attribute). */
@@ -351,7 +388,8 @@
   height: calc(16px + 2 * var(--toolbarbutton-inner-padding)) !important;
   list-style-image: none !important;
   background-color: transparent !important;
-  background-image: linear-gradient(var(--text-muted), var(--text-muted)) !important;
+  background-image: linear-gradient(var(--text-muted), var(--text-muted))
+    !important;
   background-clip: content-box !important;
   mask-size: 16px;
   mask-repeat: no-repeat;
@@ -425,7 +463,8 @@
   background-image: linear-gradient(
     90deg,
     var(--nw-info) var(--nw-download-progress, 0%),
-    color-mix(in srgb, var(--nw-ink) 16%, transparent) var(--nw-download-progress, 0%)
+    color-mix(in srgb, var(--nw-ink) 16%, transparent)
+    var(--nw-download-progress, 0%)
   ) !important;
   background-size: 16px 2px !important;
   background-position: center bottom 3px !important;
@@ -434,7 +473,8 @@
 
 /* A download finished while the panel was closed. */
 #neoworks-downloads-button[nw-attention]:not([nw-downloading]) {
-  background-image: radial-gradient(circle, var(--nw-info) 3px, transparent 3.5px) !important;
+  background-image: radial-gradient(circle, var(--nw-info) 3px, transparent
+    3.5px) !important;
   background-size: 8px 8px !important;
   background-position: right 3px top 3px !important;
   background-repeat: no-repeat !important;

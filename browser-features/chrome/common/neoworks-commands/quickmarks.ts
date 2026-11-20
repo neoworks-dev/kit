@@ -8,6 +8,7 @@ import {
   type NWCommandInvocation,
 } from "#features-modules/common/NWKeymap.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
+import { tabUrl } from "../neoworks-window-sync/mirrors.ts";
 import type { NeoworksCommand } from "./registry.ts";
 
 export interface Quickmark {
@@ -64,7 +65,7 @@ function setQuickmark(invocation: NWCommandInvocation): void {
 
 export function jumpToQuickmark(quickmark: Quickmark): void {
   const browser = tabbrowser();
-  const openTab = browser.tabs.find((tab) => tab.linkedBrowser.currentURI.spec === quickmark.url);
+  const openTab = browser.tabs.find((tab) => tabUrl(tab) === quickmark.url);
   if (openTab) {
     browser.selectedTab = openTab;
     return;

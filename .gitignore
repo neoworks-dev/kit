@@ -1,5 +1,7 @@
 /dist/
 **/_dist/
+# An unpacked package (kit-*-linux-*.tar.xz) to try it from the repo.
+/kit/
 **/node_modules/
 **/.turbo
 **/.vite/

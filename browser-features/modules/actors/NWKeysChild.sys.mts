@@ -5,6 +5,7 @@
 import { findScrollableElement, isEditableEvent } from "./NWPageUtils.ts";
 import { NWLinkHintSession } from "./NWLinkHints.ts";
 import {
+  globalBindingFor,
   INSERT_MODE_EXIT_KEY,
   isModifierKey,
   isPageCommand,
@@ -59,7 +60,8 @@ function isSpaceActivatedFocus(document: Document): boolean {
 export class NWKeysChild extends JSWindowActorChild {
   private readonly dispatcher = new NWKeyDispatcher({
     runBinding: (binding) => this.runBinding(binding),
-    pendingChanged: (keys) => this.sendAsyncMessage(NW_KEYS_PENDING_MESSAGE, { keys }),
+    pendingChanged: (keys) =>
+      this.sendAsyncMessage(NW_KEYS_PENDING_MESSAGE, { keys }),
     prefixAbandoned: (keys) => this.replayAbandonedSpace(keys),
     startTimer: (callback, delayMs) => {
       const timer = setTimeout(callback, delayMs);
@@ -111,6 +113,13 @@ export class NWKeysChild extends JSWindowActorChild {
   private handleKeyDown(event: KeyboardEvent): void {
     const document = this.contentWindow?.document;
     if (!document || event.isComposing || isModifierKey(event)) {
+      return;
+    }
+    const global = globalBindingFor(keyToken(event));
+    if (global) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      this.runBinding(global);
       return;
     }
     // Embedded content (iframes) often handles keys without a focused text

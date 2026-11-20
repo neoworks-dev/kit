@@ -10,11 +10,12 @@ import { MAX_ESSENTIALS } from "./essentials.ts";
 import { foreignContainerColor } from "./identity-colors.ts";
 import { closeOnMiddleClick, selectTab } from "./tab-actions.ts";
 import {
-  allowDrop,
   allowGridDrop,
+  allowTabDrop,
   draggingTab,
   dropIntoGrid,
   dropOntoTab,
+  dropPositionOf,
   endDrag,
   ESSENTIALS,
   isDropTarget,
@@ -22,7 +23,13 @@ import {
   PINNED,
   startTabDrag,
 } from "./tab-drag.ts";
-import { attributeFlag, Favicon, tabIcon, tabReader, TabRow } from "./tab-row.tsx";
+import {
+  attributeFlag,
+  Favicon,
+  tabIcon,
+  tabReader,
+  TabRow,
+} from "./tab-row.tsx";
 import { hoverTab, unhoverTab } from "./tab-preview.ts";
 import type { BrowserTab, TabState } from "./types.ts";
 
@@ -44,21 +51,24 @@ function Tile(props: { tab: BrowserTab; tabState: TabState; class: string }) {
       draggable="true"
       data-selected={attributeFlag(selected())}
       data-unloaded={attributeFlag(unloaded())}
-      data-drop-target={attributeFlag(isDropTarget(tab))}
+      data-drop={dropPositionOf(tab)}
       onClick={() => selectTab(tab)}
       onAuxClick={(event: MouseEvent) => closeOnMiddleClick(event, tab)}
       onContextMenu={(event: MouseEvent) => openTabContextMenu(event, tab)}
       onDragStart={(event: DragEvent) => startTabDrag(event, tab)}
-      onDragOver={(event: DragEvent) => allowDrop(event, tab)}
+      onDragOver={(event: DragEvent) => allowTabDrop(event, tab)}
       onDragLeave={() => leaveDrop(tab)}
       onDrop={(event: DragEvent) => dropOntoTab(event, tab)}
       onDragEnd={endDrag}
-      onMouseEnter={(event: MouseEvent) => hoverTab(tab, event.currentTarget as Element)}
+      onMouseEnter={(event: MouseEvent) =>
+        hoverTab(tab, event.currentTarget as Element)}
       onMouseLeave={unhoverTab}
     >
       <Favicon source={favicon()} busy={busy()} />
       <Show when={container()}>
-        {(color) => <span class="nw-pinned-container" style={{ background: color() }} />}
+        {(color) => (
+          <span class="nw-pinned-container" style={{ background: color() }} />
+        )}
       </Show>
     </div>
   );
@@ -83,7 +93,8 @@ function gridHandlers(grid: Grid) {
 }
 
 // An empty grid only shows up while a tab is dragged, as a place to drop it.
-function DropHint(props: { grid: Grid; label: string }) {
+// The compact sidebar shows the icon instead of the label.
+function DropHint(props: { grid: Grid; label: string; icon: string }) {
   return (
     <div
       class="nw-grid-drop-hint"
@@ -92,7 +103,8 @@ function DropHint(props: { grid: Grid; label: string }) {
       onDragLeave={() => leaveDrop(props.grid)}
       onDrop={(event: DragEvent) => dropIntoGrid(event, props.grid)}
     >
-      {props.label}
+      <span class="nw-icon nw-drop-hint-icon" data-icon={props.icon} />
+      <span class="nw-drop-hint-label">{props.label}</span>
     </div>
   );
 }
@@ -105,7 +117,11 @@ function EssentialsGrid(props: { tabState: TabState }) {
       when={tabs().length > 0}
       fallback={
         <Show when={draggingTab()}>
-          <DropHint grid={ESSENTIALS} label="Drop to add to Essentials" />
+          <DropHint
+            grid={ESSENTIALS}
+            label="Drop to add to Essentials"
+            icon="star"
+          />
         </Show>
       }
     >
@@ -119,7 +135,13 @@ function EssentialsGrid(props: { tabState: TabState }) {
         onDrop={handlers.onDrop}
       >
         <For each={tabs()}>
-          {(tab) => <Tile tab={tab} tabState={props.tabState} class="nw-essential-tile" />}
+          {(tab) => (
+            <Tile
+              tab={tab}
+              tabState={props.tabState}
+              class="nw-essential-tile"
+            />
+          )}
         </For>
       </div>
     </Show>
@@ -133,7 +155,7 @@ function PinnedRow(props: { tabState: TabState }) {
       when={props.tabState.pinnedTabs().length > 0}
       fallback={
         <Show when={draggingTab()}>
-          <DropHint grid={PINNED} label="Drop to pin" />
+          <DropHint grid={PINNED} label="Drop to pin" icon="push-pin" />
         </Show>
       }
     >
@@ -154,7 +176,8 @@ function PinnedRow(props: { tabState: TabState }) {
 
 export function PinnedGrid(props: { tabState: TabState }) {
   const hasTopTabs = () =>
-    props.tabState.essentialTabs().length > 0 || props.tabState.pinnedTabs().length > 0;
+    props.tabState.essentialTabs().length > 0 ||
+    props.tabState.pinnedTabs().length > 0;
   return (
     <>
       <EssentialsGrid tabState={props.tabState} />

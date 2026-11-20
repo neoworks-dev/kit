@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
-/* The sidebar has one look in both modes: tabs straight on the window
-   frame. Docked, it takes a full-height column left of the top bar and the
-   page. Collapsed, it lives below the top bar: the page gets the full width
-   and the sidebar slides in over its left side on hover, on the frame color
-   so it reads the same. */
+/* The sidebar has one look in every state (sidebar-state.ts): tabs straight
+   on the window frame. Expanded or compact (docked), it takes a full-height
+   column left of the top bar and the page; compact narrows it to icons.
+   Hidden, it lives below the top bar: the page gets the full width and the
+   sidebar slides in over its left side on hover, on the frame color so it
+   reads the same. */
 #browser {
   position: relative;
 }
@@ -52,8 +53,10 @@
   background: var(--bg);
   mask-image:
     linear-gradient(#000, #000),
-    radial-gradient(circle at 100% 100%, transparent var(--nw-page-radius), #000 calc(var(--nw-page-radius) + 0.5px)),
-    radial-gradient(circle at 100% 0, transparent var(--nw-page-radius), #000 calc(var(--nw-page-radius) + 0.5px)),
+    radial-gradient(circle at 100% 100%, transparent var(--nw-page-radius), #000
+    calc(var(--nw-page-radius) + 0.5px)),
+    radial-gradient(circle at 100% 0, transparent var(--nw-page-radius), #000
+    calc(var(--nw-page-radius) + 0.5px)),
     linear-gradient(#000, #000);
   mask-size:
     calc(100% - var(--nw-page-radius)) 100%,
@@ -88,12 +91,19 @@
   backdrop-filter: none;
 }
 
+/* Docked: the top bar and #browser make room: 8px frame + 240px sidebar
+   (compact: 48px, a 32px icon between 8px gaps), and their own 8px gap
+   follows. DOM fullscreen (video) gives the page the whole window. */
+:root[nw-sidebar-docked] {
+  --nw-sidebar-width: 248px;
+}
 
-/* Docked: the top bar and #browser make room: 8px frame + 240px sidebar,
-   and their own 8px gap follows. DOM fullscreen (video) gives the page the
-   whole window. */
+:root[nw-sidebar-docked][nw-sidebar-compact] {
+  --nw-sidebar-width: 56px;
+}
+
 :root[nw-sidebar-docked]:not([inDOMFullscreen]) :is(#navigator-toolbox, #browser) {
-  padding-inline-start: 248px !important;
+  padding-inline-start: var(--nw-sidebar-width) !important;
 }
 
 :root[nw-sidebar-docked][inDOMFullscreen] #neoworks-sidebar-layer,
@@ -102,7 +112,7 @@
 }
 
 :root[nw-sidebar-docked] #neoworks-sidebar {
-  width: 248px;
+  width: var(--nw-sidebar-width);
   padding: 8px 0 8px 8px;
   background: none;
   backdrop-filter: none;
@@ -110,11 +120,31 @@
   transition: none;
 }
 
+/* The compact sidebar widened over the page for a menu (sidebar.tsx) gets
+   the floating sidebar's background back, and a shadow along the page. */
+:root[nw-sidebar-docked] #neoworks-sidebar[data-widened] {
+  width: 248px;
+  border-radius: 0 var(--nw-page-radius) var(--nw-page-radius) 0;
+  background: var(--bg);
+  box-shadow: 0 0 24px var(--nw-shadow);
+}
+
+:root[nw-sidebar-docked][nw-window-transparent] #neoworks-sidebar[data-widened] {
+  background: color-mix(in srgb, var(--nw-tint) 88%, transparent);
+  backdrop-filter: blur(30px) saturate(160%);
+}
+
+:root[nw-sidebar-docked][lwtheme] #neoworks-sidebar[data-widened] {
+  background-color: var(--lwt-accent-color);
+  backdrop-filter: none;
+}
+
 /* An add-on theme's image, continued from the frame (neoworks-ui/frame.css)
    over the collapsed sidebar's own background. Fixed to the window, so it
    lines up and stays put while the sidebar slides; docked, the sidebar has
    no background and the frame shows through. */
-:root[lwtheme]:not([nw-sidebar-docked]) #neoworks-sidebar {
+:root[lwtheme]:not([nw-sidebar-docked]) #neoworks-sidebar,
+:root[lwtheme][nw-sidebar-docked] #neoworks-sidebar[data-widened] {
   background-image: var(--toolbox-background-image);
   background-repeat: var(--toolbox-background-repeat);
   background-position: var(--toolbox-background-position);
@@ -133,7 +163,9 @@
   z-index: -1;
   width: 100vw;
   height: 100vh;
-  background: var(--lwt-header-image) right top no-repeat;
+  background:
+    linear-gradient(var(--nw-image-veil), var(--nw-image-veil)),
+    var(--lwt-header-image) right top no-repeat;
   transform: scaleX(-1);
   pointer-events: none;
 }
@@ -160,7 +192,12 @@
   border-radius: var(--radius-md);
 }
 
+/* Fill and border are custom properties so hover and selection also reach
+   the tile over a theme's image, which layers the fill on a base. */
 #neoworks-sidebar .nw-essential-tile {
+  --nw-tile-fill: color-mix(in srgb, var(--nw-ink) 6%, transparent);
+  --nw-tile-border: transparent;
+
   position: relative;
   display: flex;
   align-items: center;
@@ -168,10 +205,21 @@
   height: 44px;
   min-width: 0;
   box-sizing: border-box;
-  border: 1px solid transparent;
+  border: 1px solid var(--nw-tile-border);
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--nw-ink) 6%, transparent);
+  background: var(--nw-tile-fill);
   transition: background-color var(--dur-fast), border-color var(--dur-fast);
+}
+
+/* Over a theme's image, a tile gets a base of the frame color so its
+   favicon doesn't sink into the art. :where() keeps this at the plain tile
+   rule's weight, so hover and selection still override the properties. */
+:where(:root[lwtheme-image]) #neoworks-sidebar .nw-essential-tile {
+  --nw-tile-border: var(--border-faint);
+
+  background:
+    linear-gradient(var(--nw-tile-fill), var(--nw-tile-fill)),
+    color-mix(in srgb, var(--nw-frame) 70%, transparent);
 }
 
 #neoworks-sidebar .nw-essential-tile .nw-favicon,
@@ -211,6 +259,10 @@
   box-shadow: 0 0 0 1px var(--border-strong);
 }
 
+#neoworks-sidebar .nw-grid-drop-hint .nw-drop-hint-icon {
+  display: none;
+}
+
 #neoworks-sidebar .nw-grid-drop-hint[data-drop-target] {
   border-style: solid;
   background: var(--glass-hover);
@@ -238,13 +290,15 @@
   background: var(--glass-divider);
 }
 
+/* Tiles rest on a 6% fill, so hover steps up from there; the rows' 7%
+   glass-hover would barely differ. Selected stays above both. */
 #neoworks-sidebar .nw-essential-tile:hover {
-  background: var(--glass-hover);
+  --nw-tile-fill: color-mix(in srgb, var(--nw-ink) 10%, transparent);
 }
 
 #neoworks-sidebar .nw-essential-tile[data-selected] {
-  border-color: color-mix(in srgb, var(--nw-ink) 18%, transparent);
-  background: var(--glass-selected);
+  --nw-tile-fill: var(--glass-selected);
+  --nw-tile-border: color-mix(in srgb, var(--nw-ink) 18%, transparent);
 }
 
 #neoworks-sidebar .nw-pinned-container {
@@ -345,8 +399,12 @@
 }
 
 @keyframes nw-pulse {
-  from { opacity: 0.3; }
-  to { opacity: 1; }
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 #neoworks-sidebar .nw-tab-label {
@@ -464,7 +522,8 @@
 }
 
 #neoworks-sidebar .nw-tab:hover .nw-tab-label {
-  mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent calc(100% - 40px));
+  mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent
+    calc(100% - 40px));
 }
 
 #neoworks-sidebar .nw-group-header {
@@ -497,11 +556,56 @@
   margin-bottom: 2px;
 }
 
-/* Drag and drop: the row under the pointer is where the dragged tab or
-   folder lands; below the list, a line marks "out of any folder, at the end". */
-#neoworks-sidebar :is(.nw-tab, .nw-group-header, .nw-essential-tile)[data-drop-target] {
-  background: var(--glass-hover);
-  box-shadow: inset 0 0 0 1px var(--border-strong);
+/* Drag and drop (tab-drag.ts): a line in the gap above or below the row
+   under the pointer marks where the dragged tab or folder lands; a ring marks
+   a folder it would join. Ink, like the rest of the sidebar: color is kept
+   for status (glass.css). Below the list, a line marks "out of any folder, at
+   the end". */
+#neoworks-sidebar .nw-group-header {
+  position: relative;
+}
+
+#neoworks-sidebar :is(.nw-tab, .nw-group-header):is([data-drop="before"], [data-drop="after"])::after {
+  content: "";
+  position: absolute;
+  inset-inline: 4px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--text);
+  pointer-events: none;
+}
+
+/* Centered in the 2px gap between rows. */
+#neoworks-sidebar :is(.nw-tab, .nw-group-header)[data-drop="before"]::after {
+  top: -2px;
+}
+
+#neoworks-sidebar :is(.nw-tab, .nw-group-header)[data-drop="after"]::after {
+  bottom: -2px;
+}
+
+#neoworks-sidebar .nw-group-header[data-drop="inside"] {
+  background: var(--glass-selected);
+  box-shadow: inset 0 0 0 1.5px var(--text);
+}
+
+/* Essentials sit side by side: the line stands in the 6px gap beside one. */
+#neoworks-sidebar .nw-essential-tile:is([data-drop="before"], [data-drop="after"])::after {
+  content: "";
+  position: absolute;
+  inset-block: 6px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--text);
+  pointer-events: none;
+}
+
+#neoworks-sidebar .nw-essential-tile[data-drop="before"]::after {
+  left: -4px;
+}
+
+#neoworks-sidebar .nw-essential-tile[data-drop="after"]::after {
+  right: -4px;
 }
 
 #neoworks-sidebar .nw-drop-end {
@@ -510,7 +614,7 @@
 }
 
 #neoworks-sidebar .nw-drop-end[data-drop-target] {
-  box-shadow: inset 0 2px 0 var(--border-strong);
+  box-shadow: inset 0 2px 0 var(--text);
 }
 
 /* Recently closed (recently-closed-list.tsx), under the tab list. */
@@ -691,7 +795,8 @@
   background-image: linear-gradient(
     90deg,
     var(--nw-info) var(--nw-download-progress, 0%),
-    color-mix(in srgb, var(--nw-ink) 16%, transparent) var(--nw-download-progress, 0%)
+    color-mix(in srgb, var(--nw-ink) 16%, transparent)
+    var(--nw-download-progress, 0%)
   );
   background-size: 16px 2px;
   background-position: center bottom 3px;
@@ -699,7 +804,8 @@
 }
 
 #neoworks-sidebar .nw-footer-button[data-attention] {
-  background-image: radial-gradient(circle, var(--nw-info) 3px, transparent 3.5px);
+  background-image: radial-gradient(circle, var(--nw-info) 3px, transparent
+    3.5px);
   background-size: 8px 8px;
   background-position: right 3px top 3px;
   background-repeat: no-repeat;
@@ -733,7 +839,8 @@
 }
 
 #neoworks-sidebar .nw-workspace-icons[data-overflow-start][data-overflow-end] {
-  mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% -
+    16px), transparent);
 }
 
 /* Inactive workspaces are dimmed; the active one shows its color. */
@@ -797,14 +904,25 @@
   flex-direction: column;
   gap: 2px;
   max-height: 360px;
-  padding: 4px;
   overflow-y: auto;
-  border-radius: var(--radius-lg);
-  background-color: color-mix(in srgb, var(--bg-elevated) 85%, transparent);
+  --nw-popover-origin: bottom center;
 }
 
+/* Rows as in the other menus (.nw-menu-item, neoworks-ui/glass.css). */
 #neoworks-sidebar .nw-container-menu .nw-container-option {
-  height: 30px;
+  gap: 12px;
+  height: 36px;
+  padding: 0 6px 0 12px;
+  border-radius: var(--radius-control);
+}
+
+#neoworks-sidebar .nw-container-menu .nw-container-option > .nw-icon {
+  width: 16px;
+  height: 16px;
+}
+
+#neoworks-sidebar .nw-container-menu .nw-tab-label {
+  font-weight: 400;
 }
 
 #neoworks-sidebar .nw-container-check {
@@ -816,9 +934,10 @@
 }
 
 #neoworks-sidebar .nw-container-divider {
+  flex-shrink: 0;
   height: 1px;
-  margin: 2px 4px;
-  background: var(--glass-divider);
+  margin: 4px 0;
+  background: var(--line);
 }
 
 /* flex: 1 fills a row; in the column menus it would size the input from 0,
@@ -873,7 +992,8 @@
 }
 
 #neoworks-sidebar .nw-container-swatch[data-selected] {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nw-tint) 90%, transparent), 0 0 0 3.5px var(--text);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nw-tint) 90%, transparent), 0 0
+    0 3.5px var(--text);
 }
 
 #neoworks-sidebar .nw-icon-picker {
@@ -929,4 +1049,132 @@
 
 #neoworks-sidebar .nw-container-chip[data-selected] {
   box-shadow: inset 0 0 0 1.5px var(--nw-chip-color);
+}
+
+/* Compact (icons only, sidebar-state.ts): every row is a 32px square of its
+   icon. Titles, counts and row buttons hide; tabs keep their preview card
+   as the tooltip, other rows get a title. The workspace menu and a folder's
+   name field widen the sidebar back over the page (data-widened), so they
+   need no compact form. */
+#neoworks-sidebar[data-compact] .nw-scroll {
+  scrollbar-width: none;
+}
+
+#neoworks-sidebar[data-compact] :is(.nw-tab-label, .nw-tab-actions, .nw-tab-audio, .nw-tab-ai, .nw-tab-grove, .nw-group-chevron, .nw-group-count, .nw-recently-closed, .nw-media-info, .nw-media-button:not([data-main]), .nw-drop-hint-label) {
+  display: none;
+}
+
+#neoworks-sidebar[data-compact] :is(.nw-tab, .nw-group-header) {
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}
+
+#neoworks-sidebar[data-compact] .nw-folder-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Essentials stack in one column, still on their tile fill. */
+#neoworks-sidebar[data-compact] .nw-essentials-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+
+#neoworks-sidebar[data-compact] .nw-essential-tile {
+  height: 32px;
+  border-radius: var(--radius-md);
+}
+
+#neoworks-sidebar[data-compact] .nw-essential-tile .nw-favicon,
+#neoworks-sidebar[data-compact] .nw-essential-tile .nw-favicon img {
+  width: 16px;
+  min-width: 16px;
+  max-width: 16px;
+  height: 16px;
+}
+
+/* Stacked, the drop line lies in the 4px gap above or below a tile. */
+#neoworks-sidebar[data-compact] .nw-essential-tile:is([data-drop="before"], [data-drop="after"])::after {
+  inset-block: auto;
+  inset-inline: 4px;
+  width: auto;
+  height: 2px;
+}
+
+#neoworks-sidebar[data-compact] .nw-essential-tile[data-drop="before"]::after {
+  top: -4px;
+}
+
+#neoworks-sidebar[data-compact] .nw-essential-tile[data-drop="after"]::after {
+  bottom: -4px;
+}
+
+#neoworks-sidebar[data-compact] .nw-grid-drop-hint {
+  height: 32px;
+}
+
+#neoworks-sidebar[data-compact] .nw-grid-drop-hint .nw-drop-hint-icon {
+  display: inline-block;
+}
+
+/* An open folder boxes its tabs with its header, as a split view does; the
+   box reaches into the list's padding so the rows keep their 32px. */
+#neoworks-sidebar[data-compact] .nw-group-tabs {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: none;
+}
+
+#neoworks-sidebar[data-compact] .nw-group:has(> .nw-group-tabs) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-inline: -3px;
+  padding: 2px;
+  border: 1px solid var(--glass-divider);
+  border-radius: calc(var(--radius-md) + 2px);
+}
+
+#neoworks-sidebar[data-compact] .nw-split-group {
+  margin-inline: -3px;
+}
+
+/* The player keeps the tab's favicon and play / pause, stacked. */
+#neoworks-sidebar[data-compact] .nw-media {
+  margin: 0 4px 4px;
+  padding: 2px;
+}
+
+#neoworks-sidebar[data-compact] .nw-media-controls {
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 0;
+}
+
+#neoworks-sidebar[data-compact] .nw-web-panel-bar {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+/* The footer stacks too: workspaces, +, then downloads at the bottom. The
+   workspace icons scroll once more than five are open. */
+#neoworks-sidebar[data-compact] .nw-sidebar-footer {
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0 6px;
+}
+
+#neoworks-sidebar[data-compact] .nw-sidebar-footer > #neoworks-sidebar-downloads {
+  order: 1;
+}
+
+#neoworks-sidebar[data-compact] .nw-workspace-icons {
+  flex: none;
+  flex-direction: column;
+  width: 100%;
+  max-height: 150px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  mask-image: none;
 }

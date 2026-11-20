@@ -24,6 +24,7 @@ import {
 } from "./essentials.ts";
 import { ESSENTIALS_SCOPE_PREF } from "./essentials-scope.ts";
 import { tabbrowser } from "./tabbrowser.ts";
+import { getTabValue, setTabValue } from "./tab-values.ts";
 import type { BrowserTab, Workspace } from "./types.ts";
 import { removeFromSplit } from "../neoworks-split/split-view.ts";
 import type { SplitTab } from "../neoworks-split/types.ts";
@@ -39,12 +40,12 @@ const ACTIVE_WORKSPACE_PREF = "neoworks.workspaces.active";
 const TAB_WORKSPACE_KEY = "neoworksWorkspaceId";
 const WINDOW_WORKSPACE_KEY = "neoworksActiveWorkspace";
 const WORKSPACE_CONTAINER_ICON = "briefcase";
+// Window sync (NWWindowSync.sys.mts) copied a tab's values from another window.
+const TAB_SYNCED_EVENT = "NWTabSynced";
 // Floorp's own workspaces also hide tabs; Kit's replace them.
 const FLOORP_WORKSPACES_PREF = "floorp.workspaces.enabled";
 
 interface SessionStoreApi {
-  getCustomTabValue(tab: BrowserTab, key: string): string;
-  setCustomTabValue(tab: BrowserTab, key: string, value: string): void;
   getCustomWindowValue(window: Window, key: string): string;
   setCustomWindowValue(window: Window, key: string, value: string): void;
 }
@@ -70,7 +71,10 @@ export function workspaceById(id: string): Workspace | undefined {
 // while Kit starts up.
 function windowWorkspaceId(): string {
   try {
-    return browserWindow.SessionStore.getCustomWindowValue(window, WINDOW_WORKSPACE_KEY);
+    return browserWindow.SessionStore.getCustomWindowValue(
+      window,
+      WINDOW_WORKSPACE_KEY,
+    );
   } catch {
     return "";
   }
@@ -78,7 +82,11 @@ function windowWorkspaceId(): string {
 
 function saveWindowWorkspaceId(id: string): void {
   try {
-    browserWindow.SessionStore.setCustomWindowValue(window, WINDOW_WORKSPACE_KEY, id);
+    browserWindow.SessionStore.setCustomWindowValue(
+      window,
+      WINDOW_WORKSPACE_KEY,
+      id,
+    );
   } catch {
     // Saved again on the next switch; the pref covers new windows meanwhile.
   }
@@ -98,7 +106,9 @@ function readActiveWorkspaceId(): string {
   return workspaces()[0].id;
 }
 
-const [activeWorkspaceId, setActiveWorkspaceId] = createSignal(readActiveWorkspaceId());
+const [activeWorkspaceId, setActiveWorkspaceId] = createSignal(
+  readActiveWorkspaceId(),
+);
 
 export { activeWorkspaceId, workspaces };
 
@@ -130,7 +140,9 @@ function workspaceIdOf(tab: BrowserTab): string {
 }
 
 // For closed tabs: SessionStore keeps a tab's custom values in its extData.
-export function isInActiveWorkspace(extData: Record<string, string> | undefined): boolean {
+export function isInActiveWorkspace(
+  extData: Record<string, string> | undefined,
+): boolean {
   const stored = extData?.[TAB_WORKSPACE_KEY];
   if (!stored || !workspaceById(stored)) {
     return true;
@@ -139,11 +151,11 @@ export function isInActiveWorkspace(extData: Record<string, string> | undefined)
 }
 
 export function storedWorkspaceId(tab: BrowserTab): string {
-  return browserWindow.SessionStore.getCustomTabValue(tab, TAB_WORKSPACE_KEY);
+  return getTabValue(tab, TAB_WORKSPACE_KEY);
 }
 
 function assignTab(tab: BrowserTab, workspaceId: string): void {
-  browserWindow.SessionStore.setCustomTabValue(tab, TAB_WORKSPACE_KEY, workspaceId);
+  setTabValue(tab, TAB_WORKSPACE_KEY, workspaceId);
 }
 
 export { assignTab as assignTabToWorkspace };
@@ -156,7 +168,7 @@ export function claimForActiveWorkspace(tab: BrowserTab): void {
 // Essentials excluded: they aren't the workspace's own.
 function workspaceTabs(workspaceId: string): BrowserTab[] {
   return tabbrowser().tabs.filter((tab) =>
-    !isEssential(tab) && workspaceIdOf(tab) === workspaceId
+    !tab.closing && !isEssential(tab) && workspaceIdOf(tab) === workspaceId
   );
 }
 
@@ -201,7 +213,10 @@ function openTabIn(workspace: Workspace): BrowserTab {
 
 // Opens `url` in a background tab of the workspace, which stays hidden
 // unless the workspace is the active one.
-export function openTabInWorkspace(workspaceId: string, url: string): BrowserTab {
+export function openTabInWorkspace(
+  workspaceId: string,
+  url: string,
+): BrowserTab {
   const workspace = workspaceById(workspaceId);
   if (!workspace) {
     throw new Error(`No workspace ${workspaceId}`);
@@ -223,7 +238,9 @@ function tabToSelectIn(workspace: Workspace): BrowserTab {
   if (tabs.length === 0) {
     return openTabIn(workspace);
   }
-  return tabs.reduce((latest, tab) => tab.lastAccessed > latest.lastAccessed ? tab : latest);
+  return tabs.reduce((latest, tab) =>
+    tab.lastAccessed > latest.lastAccessed ? tab : latest
+  );
 }
 
 function activate(workspace: Workspace): void {
@@ -247,7 +264,9 @@ export function switchWorkspace(workspaceId: string): void {
 
 export function switchWorkspaceBy(step: number): void {
   const list = workspaces();
-  const index = list.findIndex((workspace) => workspace.id === activeWorkspaceId());
+  const index = list.findIndex((workspace) =>
+    workspace.id === activeWorkspaceId()
+  );
   const next = list[cycleIndex(index, step, list.length)];
   switchWorkspace(next.id);
 }
@@ -284,7 +303,9 @@ export function moveTabToWorkspace(tab: BrowserTab, workspaceId: string): void {
   const browser = tabbrowser();
   removeFromSplit(tab as SplitTab);
   browser.ungroupTab(tab);
-  const last = workspaceTabs(workspaceId).filter((other) => other.pinned === tab.pinned).at(-1);
+  const last = workspaceTabs(workspaceId).filter((other) =>
+    other.pinned === tab.pinned
+  ).at(-1);
   if (last) {
     browser.moveTabAfter(tab, last.group ?? last);
   }
@@ -336,7 +357,9 @@ export function addWorkspace(
     ).userContextId;
   } else {
     workspace.userContextId = sharedContainerId;
-    const shared = ContextualIdentityService.getPublicIdentityFromId(sharedContainerId);
+    const shared = ContextualIdentityService.getPublicIdentityFromId(
+      sharedContainerId,
+    );
     if (shared) {
       workspace.color = shared.color;
     }
@@ -350,7 +373,9 @@ function updateWorkspaceContainer(workspace: Workspace): void {
   if (!workspace.ownsContainer || workspace.userContextId === NO_CONTAINER) {
     return;
   }
-  const identity = ContextualIdentityService.getPublicIdentityFromId(workspace.userContextId);
+  const identity = ContextualIdentityService.getPublicIdentityFromId(
+    workspace.userContextId,
+  );
   if (!identity) {
     return;
   }
@@ -388,7 +413,8 @@ async function removeWorkspaceContainer(workspace: Workspace): Promise<void> {
 function confirmDeletion(workspace: Workspace): boolean {
   let message = `Delete "${workspace.name}"? Its tabs are closed.`;
   if (workspace.ownsContainer && workspace.userContextId !== NO_CONTAINER) {
-    message = `Delete "${workspace.name}"? Its tabs are closed and its container's cookies and site data are removed.`;
+    message =
+      `Delete "${workspace.name}"? Its tabs are closed and its container's cookies and site data are removed.`;
   }
   return Services.prompt.confirm(
     window as unknown as mozIDOMWindowProxy,
@@ -399,7 +425,9 @@ function confirmDeletion(workspace: Workspace): boolean {
 
 // The last workspace can't be deleted.
 export async function deleteWorkspace(workspace: Workspace): Promise<void> {
-  const remaining = workspaces().filter((existing) => existing.id !== workspace.id);
+  const remaining = workspaces().filter((existing) =>
+    existing.id !== workspace.id
+  );
   if (remaining.length === 0 || !confirmDeletion(workspace)) {
     return;
   }
@@ -419,7 +447,7 @@ export async function deleteWorkspace(workspace: Workspace): Promise<void> {
 
 function handleTabOpen(event: Event): void {
   const tab = event.target as BrowserTab;
-  if (!browserWindow.SessionStore.getCustomTabValue(tab, TAB_WORKSPACE_KEY)) {
+  if (!getTabValue(tab, TAB_WORKSPACE_KEY)) {
     assignTab(tab, activeWorkspaceId());
   }
 }
@@ -447,7 +475,9 @@ function followSelectedTab(event?: TabSelectEvent): void {
     return;
   }
   if (event && leftByClosingLastTab(event)) {
-    browser.selectedTab = openTabIn(activeWorkspace());
+    // When the tab closed in another window too (window sync), the fresh tab
+    // that window opened is already here.
+    browser.selectedTab = tabToSelectIn(activeWorkspace());
     applyVisibility();
     return;
   }
@@ -470,7 +500,7 @@ function restoreWindowWorkspace(): void {
 
 function adoptUnassignedTabs(): void {
   for (const tab of tabbrowser().tabs) {
-    if (!browserWindow.SessionStore.getCustomTabValue(tab, TAB_WORKSPACE_KEY)) {
+    if (!getTabValue(tab, TAB_WORKSPACE_KEY)) {
       assignTab(tab, activeWorkspaceId());
     }
   }
@@ -508,6 +538,7 @@ export function watchWorkspaces(): () => void {
   tabContainer.addEventListener("TabSelect", followSelectedTab);
   // Restored tabs get their stored workspace after TabOpen.
   tabContainer.addEventListener("SSTabRestoring", applyVisibility);
+  tabContainer.addEventListener(TAB_SYNCED_EVENT, applyVisibility);
   globalThis.addEventListener("SSWindowRestored", restoreWindowWorkspace);
 
   adoptUnassignedTabs();
@@ -517,10 +548,14 @@ export function watchWorkspaces(): () => void {
 
   return () => {
     Services.prefs.removeObserver(WORKSPACES_PREF, workspacesObserver);
-    Services.prefs.removeObserver(ESSENTIALS_SCOPE_PREF, essentialsScopeObserver);
+    Services.prefs.removeObserver(
+      ESSENTIALS_SCOPE_PREF,
+      essentialsScopeObserver,
+    );
     tabContainer.removeEventListener("TabOpen", handleTabOpen);
     tabContainer.removeEventListener("TabSelect", followSelectedTab);
     tabContainer.removeEventListener("SSTabRestoring", applyVisibility);
+    tabContainer.removeEventListener(TAB_SYNCED_EVENT, applyVisibility);
     globalThis.removeEventListener("SSWindowRestored", restoreWindowWorkspace);
   };
 }

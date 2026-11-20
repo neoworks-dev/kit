@@ -8,6 +8,7 @@ import {
   type TestCase,
 } from "../../chrome/test/utils/test_harness.ts";
 import {
+  globalBindingFor,
   INSERT_MODE_EXIT_KEY,
   isBindingLetter,
   isKeyMode,
@@ -18,7 +19,10 @@ import {
   summarizeBindings,
 } from "./NWKeymap.ts";
 
-function keyEvent(key: string, modifiers: Partial<KeyboardEvent> = {}): KeyboardEvent {
+function keyEvent(
+  key: string,
+  modifiers: Partial<KeyboardEvent> = {},
+): KeyboardEvent {
   return {
     key,
     ctrlKey: false,
@@ -72,10 +76,26 @@ class DispatcherHarness {
 
 function testKeyTokens(): void {
   assertEquals(keyToken(keyEvent(" ")), "Space", "space is named");
-  assertEquals(keyToken(keyEvent("J", { shiftKey: true })), "J", "shift is part of printable keys");
-  assertEquals(keyToken(keyEvent("T", { shiftKey: true })), "T", "shifted letters keep their case");
-  assertEquals(keyToken(keyEvent("d", { ctrlKey: true })), "C-d", "ctrl prefix");
-  assertEquals(keyToken(keyEvent("Tab", { shiftKey: true })), "S-Tab", "shift prefix on named keys");
+  assertEquals(
+    keyToken(keyEvent("J", { shiftKey: true })),
+    "J",
+    "shift is part of printable keys",
+  );
+  assertEquals(
+    keyToken(keyEvent("T", { shiftKey: true })),
+    "T",
+    "shifted letters keep their case",
+  );
+  assertEquals(
+    keyToken(keyEvent("d", { ctrlKey: true })),
+    "C-d",
+    "ctrl prefix",
+  );
+  assertEquals(
+    keyToken(keyEvent("Tab", { shiftKey: true })),
+    "S-Tab",
+    "shift prefix on named keys",
+  );
   assert(isModifierKey(keyEvent("Shift")), "bare Shift is a modifier key");
 }
 
@@ -100,7 +120,11 @@ function testSequence(): void {
   assert(harness.press("g"), "g prefix is swallowed");
   assertEquals(harness.pending[0].join(" "), "g", "pending g is announced");
   harness.press("T");
-  assertEquals(harness.lastCommand(), "tab:previous", "gT switches to the previous tab");
+  assertEquals(
+    harness.lastCommand(),
+    "tab:previous",
+    "gT switches to the previous tab",
+  );
   const lastPending = harness.pending[harness.pending.length - 1];
   assertEquals(lastPending.length, 0, "completing the sequence clears pending");
 }
@@ -109,8 +133,16 @@ function testSequenceExpires(): void {
   const harness = new DispatcherHarness();
   harness.press("g");
   harness.fireTimer();
-  assertEquals(harness.pending[harness.pending.length - 1].length, 0, "expiry clears pending");
-  assertEquals(harness.abandoned[0].join(" "), "g", "expired prefix is reported");
+  assertEquals(
+    harness.pending[harness.pending.length - 1].length,
+    0,
+    "expiry clears pending",
+  );
+  assertEquals(
+    harness.abandoned[0].join(" "),
+    "g",
+    "expired prefix is reported",
+  );
   assertEquals(harness.ran.length, 0, "nothing runs on expiry");
 }
 
@@ -125,9 +157,17 @@ function testInvalidFollowUpRestarts(): void {
 function testDoubleSpace(): void {
   const harness = new DispatcherHarness();
   assert(harness.press("Space"), "first Space is swallowed");
-  assertEquals(harness.timerDelayMs, 2000, "Space waits long enough for leader sequences");
+  assertEquals(
+    harness.timerDelayMs,
+    2000,
+    "Space waits long enough for leader sequences",
+  );
   harness.press("Space");
-  assertEquals(harness.lastCommand(), "spotlight:open", "double Space opens spotlight");
+  assertEquals(
+    harness.lastCommand(),
+    "spotlight:open",
+    "double Space opens spotlight",
+  );
 }
 
 function testLeaderSequences(): void {
@@ -135,18 +175,30 @@ function testLeaderSequences(): void {
   harness.press("Space");
   harness.press("w");
   harness.press("v");
-  assertEquals(harness.lastCommand(), "split:vertical", "Space w v splits side by side");
+  assertEquals(
+    harness.lastCommand(),
+    "split:vertical",
+    "Space w v splits side by side",
+  );
   harness.press("Space");
   harness.press("w");
   harness.press("s");
-  assertEquals(harness.lastCommand(), "split:horizontal", "Space w s splits stacked");
+  assertEquals(
+    harness.lastCommand(),
+    "split:horizontal",
+    "Space w s splits stacked",
+  );
 }
 
 function testLoneSpaceIsAbandoned(): void {
   const harness = new DispatcherHarness();
   harness.press("Space");
   harness.fireTimer();
-  assertEquals(harness.abandoned[0].join(" "), "Space", "lone Space is handed back");
+  assertEquals(
+    harness.abandoned[0].join(" "),
+    "Space",
+    "lone Space is handed back",
+  );
   assertEquals(harness.ran.length, 0, "lone Space runs nothing");
 }
 
@@ -156,7 +208,11 @@ function testHeldKeys(): void {
   assert(harness.press("Space", true), "held Space is still swallowed");
   assertEquals(harness.ran.length, 0, "held Space never opens spotlight");
   assert(harness.press("j", true), "held j is consumed");
-  assertEquals(harness.lastCommand(), "page:scroll-down", "held j keeps scrolling");
+  assertEquals(
+    harness.lastCommand(),
+    "page:scroll-down",
+    "held j keeps scrolling",
+  );
   assert(!harness.press("g", true), "held prefix keys pass through");
 }
 
@@ -164,7 +220,11 @@ function testQuickmarkLetters(): void {
   const harness = new DispatcherHarness();
   harness.press("'");
   harness.press("a");
-  assertEquals(harness.lastCommand(), "quickmark:jump", "'a jumps to a quickmark");
+  assertEquals(
+    harness.lastCommand(),
+    "quickmark:jump",
+    "'a jumps to a quickmark",
+  );
   assertEquals(harness.ran[0].letter, "a", "letter is passed along");
 }
 
@@ -172,14 +232,26 @@ function testWorkspaceSequences(): void {
   const harness = new DispatcherHarness();
   harness.press("g");
   harness.press("3");
-  assertEquals(harness.lastCommand(), "workspace:switch", "g3 switches workspace");
+  assertEquals(
+    harness.lastCommand(),
+    "workspace:switch",
+    "g3 switches workspace",
+  );
   assertEquals(harness.ran[0].letter, "3", "workspace number is passed along");
   harness.press("g");
   harness.press("w");
-  assertEquals(harness.lastCommand(), "workspace:next", "gw goes to the next workspace");
+  assertEquals(
+    harness.lastCommand(),
+    "workspace:next",
+    "gw goes to the next workspace",
+  );
   harness.press("g");
   harness.press("W");
-  assertEquals(harness.lastCommand(), "workspace:previous", "gW goes to the previous workspace");
+  assertEquals(
+    harness.lastCommand(),
+    "workspace:previous",
+    "gW goes to the previous workspace",
+  );
 }
 
 function testBindingLetters(): void {
@@ -194,8 +266,30 @@ function testUnboundKeysPassThrough(): void {
   assert(!harness.press("q"), "unbound keys reach the page");
 }
 
+function testModifierBindingsAreGlobal(): void {
+  const token = keyToken(keyEvent("c", { altKey: true }));
+  assertEquals(token, "A-c", "Alt+C token");
+  assertEquals(
+    globalBindingFor(token)?.command,
+    "sidebar:toggle",
+    "Alt+C toggles the sidebar",
+  );
+  assertEquals(
+    globalBindingFor("c"),
+    undefined,
+    "plain letters are never global",
+  );
+  assertEquals(
+    globalBindingFor("A-q"),
+    undefined,
+    "unbound combinations pass through",
+  );
+}
+
 function summaryKeys(command: string): string {
-  const summary = summarizeBindings().find((entry) => entry.command === command);
+  const summary = summarizeBindings().find((entry) =>
+    entry.command === command
+  );
   if (!summary) {
     return "";
   }
@@ -204,11 +298,24 @@ function summaryKeys(command: string): string {
 
 function testBindingSummary(): void {
   assertEquals(summaryKeys("tab:next"), "J, g t", "all sequences of a command");
-  assertEquals(summaryKeys("quickmark:set"), "m a–z", "quickmark letters collapse");
-  assertEquals(summaryKeys("workspace:switch"), "g 1–9", "workspace numbers collapse");
+  assertEquals(
+    summaryKeys("quickmark:set"),
+    "m a–z",
+    "quickmark letters collapse",
+  );
+  assertEquals(
+    summaryKeys("workspace:switch"),
+    "g 1–9",
+    "workspace numbers collapse",
+  );
   assertEquals(summaryKeys("spotlight:open"), "o, Space Space", "named keys");
+  assertEquals(summaryKeys("sidebar:toggle"), "Alt+C", "modifiers spelled out");
   const commands = summarizeBindings().map((entry) => entry.command);
-  assertEquals(new Set(commands).size, commands.length, "one entry per command");
+  assertEquals(
+    new Set(commands).size,
+    commands.length,
+    "one entry per command",
+  );
 }
 
 export async function runAllTests(): Promise<void> {
@@ -218,7 +325,10 @@ export async function runAllTests(): Promise<void> {
     { name: "insert mode keys", fn: testInsertModeKeys },
     { name: "two-key sequence runs", fn: testSequence },
     { name: "pending sequence expires", fn: testSequenceExpires },
-    { name: "invalid follow-up key starts a new sequence", fn: testInvalidFollowUpRestarts },
+    {
+      name: "invalid follow-up key starts a new sequence",
+      fn: testInvalidFollowUpRestarts,
+    },
     { name: "double Space opens spotlight", fn: testDoubleSpace },
     { name: "Space leader sequences", fn: testLeaderSequences },
     { name: "lone Space is handed back", fn: testLoneSpaceIsAbandoned },
@@ -228,6 +338,7 @@ export async function runAllTests(): Promise<void> {
     { name: "binding letters", fn: testBindingLetters },
     { name: "unbound keys pass through", fn: testUnboundKeysPassThrough },
     { name: "binding summary for the key reference", fn: testBindingSummary },
+    { name: "modifier bindings are global", fn: testModifierBindingsAreGlobal },
   ];
   await runTests("NWKeymap.test.ts", tests);
 }

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // Drawn over the page: the dividers between split panes (drag to resize, the
-// plus in the middle adds a pane there) and, while a tab is dragged from the
-// sidebar, the drop targets that split the page.
+// plus in the middle adds a pane there), a handle at the top of each pane
+// (drag to move the pane, take its tab out, or show only its tab) and, while
+// a tab is dragged
+// from the sidebar, the drop targets that split the page.
 
 import { createSignal, For, Index, Show } from "solid-js";
 import {
@@ -15,6 +17,8 @@ import {
   activeLayout,
   addPaneAt,
   contentBounds,
+  removeFromSplit,
+  showAlone,
   splitWith,
   startResize,
 } from "./split-view.ts";
@@ -108,13 +112,9 @@ function paneAt(x: number, y: number): PaneRect<SplitTab> | undefined {
   );
 }
 
-// Pinned tabs and Essentials can't join a split view.
+// Pinned tabs and Essentials join as a copy of their page (splitWith).
 function droppableTab(): SplitTab | null {
-  const tab = draggedTab() as SplitTab | null;
-  if (!tab || tab.pinned) {
-    return null;
-  }
-  return tab;
+  return draggedTab() as SplitTab | null;
 }
 
 function chooseDrop(event: DragEvent): void {
@@ -182,15 +182,107 @@ function DropTargets() {
   );
 }
 
+// The pane whose handle is being dragged to move it within the split.
+const [movingTab, setMovingTab] = createSignal<SplitTab | null>(null);
+
+const HANDLE_ZONE_WIDTH_PX = 220;
+const HANDLE_ZONE_HEIGHT_PX = 10;
+
+// A thin strip at the top center of the pane. Pages don't pass pointer
+// moves to the browser chrome, so hovering this strip is what reveals the
+// handle; it covers only that much of the page.
+function handleZone(rect: Rect): Rect {
+  const width = Math.min(HANDLE_ZONE_WIDTH_PX, rect.width - 24);
+  return {
+    x: rect.x + (rect.width - width) / 2,
+    y: rect.y,
+    width,
+    height: HANDLE_ZONE_HEIGHT_PX,
+  };
+}
+
+function PaneHandle(props: { pane: PaneRect<SplitTab> }) {
+  function beginMove(event: PointerEvent): void {
+    if (event.button !== 0) {
+      return;
+    }
+    const grip = event.currentTarget as HTMLElement;
+    grip.setPointerCapture(event.pointerId);
+    const tab = props.pane.item;
+    setMovingTab(tab);
+    const move = (moveEvent: PointerEvent) => {
+      const target = paneAt(moveEvent.clientX, moveEvent.clientY);
+      if (!target || target.item === tab) {
+        setDropChoice(null);
+        return;
+      }
+      const side = nearestSide(target.rect, moveEvent.clientX, moveEvent.clientY);
+      setDropChoice({ target: target.item, side, rect: sideRect(target.rect, side) });
+    };
+    const end = (endEvent: Event) => {
+      grip.removeEventListener("pointermove", move);
+      grip.removeEventListener("pointerup", end);
+      grip.removeEventListener("lostpointercapture", end);
+      const choice = dropChoice();
+      setDropChoice(null);
+      setMovingTab(null);
+      if (choice && endEvent.type === "pointerup") {
+        splitWith(choice.target, tab, choice.side);
+      }
+    };
+    grip.addEventListener("pointermove", move);
+    grip.addEventListener("pointerup", end);
+    grip.addEventListener("lostpointercapture", end);
+  }
+
+  return (
+    <div
+      class="nw-split-handle-zone"
+      data-moving={movingTab() === props.pane.item ? "true" : undefined}
+      style={placement(handleZone(props.pane.rect))}
+    >
+      <div class="nw-split-handle">
+        <span class="nw-split-grip" title="Drag to move this pane" onPointerDown={beginMove}>
+          <span class="nw-icon" data-icon="dots-six" />
+        </span>
+        <button
+          type="button"
+          class="nw-split-handle-button"
+          title="Take this tab out of the split"
+          onClick={() => removeFromSplit(props.pane.item)}
+        >
+          <span class="nw-icon" data-icon="arrow-square-out" />
+        </button>
+        <button
+          type="button"
+          class="nw-split-handle-button"
+          title="Show only this tab"
+          onClick={() => showAlone(props.pane.item)}
+        >
+          <span class="nw-icon" data-icon="arrows-out-simple" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function SplitOverlay(props: { style: string }) {
   return (
-    <div id="neoworks-split-overlay">
+    <div id="neoworks-split-overlay" data-moving={movingTab() ? "true" : undefined}>
       <style>{props.style}</style>
-      {/* Index keeps each divider's element across layouts, so a resize
-          drag keeps its pointer capture. */}
+      {/* Index keeps each divider's and handle's element across layouts, so
+          a resize or move drag keeps its pointer capture. */}
       <Index each={activeLayout()?.dividers ?? []}>
         {(divider) => <Divider divider={divider()} />}
       </Index>
+      <Index each={activeLayout()?.panes ?? []}>
+        {(entry) => <PaneHandle pane={entry()} />}
+      </Index>
+      <Show when={movingTab() && dropChoice()}>
+        {(choice) => (
+          <div class="nw-split-drop-choice nw-split-move-choice" style={placement(choice().rect)} />
+        )}
+      </Show>
       <Show when={draggingTab() && droppableTab()}>
         <DropTargets />
       </Show>

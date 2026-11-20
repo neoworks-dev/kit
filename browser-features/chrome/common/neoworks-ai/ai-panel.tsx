@@ -17,9 +17,22 @@ import {
   send,
   stop,
 } from "./chat.ts";
+import {
+  callCompanionHere,
+  companionInThisWindow,
+  companionItems,
+  companionState,
+  panelMode,
+  resetCompanion,
+  sendCompanionAway,
+  sendToCompanion,
+  setPanelMode,
+  stopCompanion,
+} from "./companion.ts";
 import { Markdown } from "./markdown.tsx";
 import { aiPanelOpen, closeAiPanel } from "./panel.ts";
 import { Picker } from "./picker.tsx";
+import { rambleDuration, rambleSegments } from "./ramble.ts";
 import type { ChatItem, ConnectionState, HarnessId, PermissionOption, PickerOption } from "./types.ts";
 
 const HARNESSES: Record<HarnessId, { label: string; icon: string }> = {
@@ -58,10 +71,32 @@ function Pickers() {
   );
 }
 
+function inCompanion(): boolean {
+  return panelMode() === "companion";
+}
+
 function Header() {
+  return (
+    <Show when={!inCompanion()} fallback={<CompanionHeader />}>
+      <ChatHeader />
+    </Show>
+  );
+}
+
+function ChatHeader() {
   return (
     <div class="nw-ai-header">
       <span class="nw-ai-title">AI</span>
+      <Show when={companionState().connection === "ready"}>
+        <button
+          type="button"
+          class="nw-ai-icon-button"
+          title="The agent your apps share"
+          onClick={() => setPanelMode("companion")}
+        >
+          <span class="nw-icon" data-icon="sparkle" />
+        </button>
+      </Show>
       <button
         type="button"
         class="nw-ai-icon-button"
@@ -77,6 +112,107 @@ function Header() {
         <span class="nw-icon" data-icon="x" />
       </button>
     </div>
+  );
+}
+
+// Where the shared agent is, as the header says it.
+function whereLabel(): string {
+  const state = companionState();
+  if (state.connection !== "ready") {
+    return "Not running";
+  }
+  if (companionInThisWindow()) {
+    return "Here";
+  }
+  if (state.here === null) {
+    return "On the desktop";
+  }
+  if (state.here === state.surfaceId) {
+    return "In another window";
+  }
+  return `In ${state.here.slice(0, state.here.lastIndexOf("-"))}`;
+}
+
+// The Agent Control view's header: where the agent is, and moving it.
+function CompanionHeader() {
+  return (
+    <div class="nw-ai-header nw-ai-companion-header" data-here={flag(companionInThisWindow())}>
+      <span class="nw-ai-companion-dot" />
+      <span class="nw-ai-title">Agent</span>
+      <span class="nw-ai-companion-where">{whereLabel()}</span>
+      <Show
+        when={companionInThisWindow()}
+        fallback={
+          <Show when={companionState().connection === "ready"}>
+            <button type="button" class="nw-ai-icon-button" title="Call the agent here" onClick={callCompanionHere}>
+              <span class="nw-icon" data-icon="hand-pointing" />
+            </button>
+          </Show>
+        }
+      >
+        <button type="button" class="nw-ai-icon-button" title="Send the agent back to the desktop" onClick={sendCompanionAway}>
+          <span class="nw-icon" data-icon="sign-out" />
+        </button>
+      </Show>
+      <button type="button" class="nw-ai-icon-button" title="New conversation" onClick={resetCompanion}>
+        <span class="nw-icon" data-icon="plus" />
+      </button>
+      <button type="button" class="nw-ai-icon-button" title="Kit's own chats" onClick={() => setPanelMode("chat")}>
+        <span class="nw-icon" data-icon="arrow-left" />
+      </button>
+      <button type="button" class="nw-ai-icon-button" title="Close" onClick={closeAiPanel}>
+        <span class="nw-icon" data-icon="x" />
+      </button>
+    </div>
+  );
+}
+
+// A ramble from the desktop: what the user said, with what they did as chips
+// where it happened, and the screenshots they drew on.
+function RambleCard(props: { item: Extract<ChatItem, { kind: "ramble" }> }) {
+  const segments = rambleSegments(props.item.capture);
+  return (
+    <div class="nw-ai-message nw-ai-user nw-ai-ramble">
+      <div class="nw-ai-ramble-header">
+        <span class="nw-icon" data-icon="microphone" />
+        <span>Ramble</span>
+        <span class="nw-ai-ramble-meta">{rambleDuration(props.item.capture)}</span>
+      </div>
+      <div class="nw-ai-ramble-body">
+        <For each={segments}>
+          {(segment) => (
+            <Switch>
+              <Match when={segment.kind === "words" && segment}>
+                {(words) => <span class="nw-ai-ramble-words">{words().text} </span>}
+              </Match>
+              <Match when={segment.kind === "event" && segment}>
+                {(event) => (
+                  <span class="nw-ai-ramble-chip">
+                    <span class="nw-icon" data-icon={event().icon} />
+                    {event().label}
+                  </span>
+                )}
+              </Match>
+            </Switch>
+          )}
+        </For>
+      </div>
+      <Show when={props.item.capture.screenshots.length > 0}>
+        <div class="nw-ai-ramble-shots">
+          <For each={props.item.capture.screenshots}>
+            {(shot) => <img class="nw-ai-ramble-shot" src={PathUtils.toFileURI(shot.path)} alt={`Screenshot of ${shot.monitor}`} />}
+          </For>
+        </div>
+      </Show>
+    </div>
+  );
+}
+
+function From(props: { from?: string }) {
+  return (
+    <Show when={props.from}>
+      <span class="nw-ai-from">from {props.from}</span>
+    </Show>
   );
 }
 
@@ -115,7 +251,9 @@ function ApprovalRow(props: { item: Extract<ChatItem, { kind: "approval" }> }) {
   return (
     <div class="nw-ai-permission" data-answered={flag(props.item.answered())}>
       <span class="nw-ai-permission-title">{props.item.title}</span>
-      <span class="nw-ai-permission-detail">{props.item.detail}</span>
+      <Show when={props.item.detail}>
+        <span class="nw-ai-permission-detail">{props.item.detail}</span>
+      </Show>
       <Show when={!props.item.answered()}>
         <div class="nw-ai-permission-actions">
           <button type="button" class="nw-ai-button" onClick={() => props.item.answer(false)}>
@@ -160,7 +298,19 @@ function ItemRow(props: { item: ChatItem }): JSX.Element {
   const item = props.item;
   switch (item.kind) {
     case "user":
-      return <div class="nw-ai-message nw-ai-user">{item.text}</div>;
+      return (
+        <div class="nw-ai-message nw-ai-user">
+          <From from={item.from} />
+          {item.text}
+        </div>
+      );
+    case "ramble":
+      return (
+        <>
+          <From from={item.from} />
+          <RambleCard item={item} />
+        </>
+      );
     case "assistant":
       return (
         <div class="nw-ai-message nw-ai-assistant">
@@ -212,6 +362,39 @@ function EmptyState() {
   );
 }
 
+function CompanionEmptyState() {
+  return (
+    <div class="nw-ai-empty">
+      <span class="nw-icon" data-icon="sparkle" />
+      <Switch fallback={<span>The agent your apps share. Ramble about this window, or write to it here.</span>}>
+        <Match when={companionState().connection === "absent"}>
+          <span>The agent isn't running.</span>
+          <span class="nw-ai-empty-detail">systemctl --user start neoworks-harness</span>
+        </Match>
+        <Match when={companionState().connection === "connecting"}>
+          <span>Looking for the agent…</span>
+        </Match>
+      </Switch>
+    </div>
+  );
+}
+
+// Whether the conversation on show is busy: Kit's chat, or the shared agent.
+function busy(): boolean {
+  if (inCompanion()) {
+    return companionState().running;
+  }
+  return running();
+}
+
+function stopShown(): void {
+  if (inCompanion()) {
+    stopCompanion();
+    return;
+  }
+  stop();
+}
+
 function Composer() {
   const [draft, setDraft] = createSignal("");
   const input = (
@@ -231,9 +414,9 @@ function Composer() {
           event.preventDefault();
           submit();
         }
-        if (event.key === "Escape" && running()) {
+        if (event.key === "Escape" && busy()) {
           event.preventDefault();
-          stop();
+          stopShown();
         }
       }}
     />
@@ -241,12 +424,17 @@ function Composer() {
 
   function submit(): void {
     const text = draft();
-    if (!text.trim() || running()) {
+    // The shared agent takes a message mid-turn; Kit's own chat waits for the turn to end.
+    if (!text.trim() || (!inCompanion() && running())) {
       return;
     }
     setDraft("");
     input.value = "";
     input.style.height = "auto";
+    if (inCompanion()) {
+      void sendToCompanion(text);
+      return;
+    }
     void send(text);
   }
 
@@ -261,9 +449,11 @@ function Composer() {
     <div class="nw-ai-composer">
       {input}
       <div class="nw-ai-composer-bar">
-        <Pickers />
+        <Show when={!inCompanion()} fallback={<span class="nw-ai-composer-hint">Shared with your other apps</span>}>
+          <Pickers />
+        </Show>
         <Show
-          when={running()}
+          when={busy()}
           fallback={
             <button
               type="button"
@@ -276,7 +466,7 @@ function Composer() {
             </button>
           }
         >
-          <button type="button" class="nw-ai-send" title="Stop" onClick={stop}>
+          <button type="button" class="nw-ai-send" title="Stop" onClick={stopShown}>
             <span class="nw-icon" data-icon="stop" />
           </button>
         </Show>
@@ -288,8 +478,17 @@ function Composer() {
 export function AiPanel(props: { style: string }) {
   const list = (
     <div class="nw-ai-messages">
-      <Show when={items().length > 0} fallback={<EmptyState />}>
-        <For each={items()}>{(item) => <ItemRow item={item} />}</For>
+      <Show
+        when={inCompanion()}
+        fallback={
+          <Show when={items().length > 0} fallback={<EmptyState />}>
+            <For each={items()}>{(item) => <ItemRow item={item} />}</For>
+          </Show>
+        }
+      >
+        <Show when={companionItems().length > 0} fallback={<CompanionEmptyState />}>
+          <For each={companionItems()}>{(item) => <ItemRow item={item} />}</For>
+        </Show>
       </Show>
     </div>
   ) as HTMLDivElement;
@@ -308,7 +507,7 @@ export function AiPanel(props: { style: string }) {
   observer.observe(list, { childList: true, subtree: true, characterData: true });
 
   return (
-    <div id="neoworks-ai" data-open={flag(aiPanelOpen())}>
+    <div id="neoworks-ai" data-open={flag(aiPanelOpen())} data-mode={panelMode()}>
       <style>{props.style}</style>
       <Header />
       {list}

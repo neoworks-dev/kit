@@ -11,7 +11,9 @@ import type { BrowserTabGroup } from "./types.ts";
 const EDITOR_NAME = "folder-editor";
 export const FOLDER_NAME_INPUT_ID = "neoworks-folder-name-input";
 
-const [editedFolder, setEditedFolder] = createSignal<BrowserTabGroup | null>(null);
+const [editedFolder, setEditedFolder] = createSignal<BrowserTabGroup | null>(
+  null,
+);
 
 export { editedFolder };
 

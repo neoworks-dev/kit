@@ -13,12 +13,15 @@
    indirection is what lets a popup read the root's value of a variable it
    redefines. */
 :root {
-  --nw-popup-background: var(--bg-elevated);
+  /* The color glass popovers are tinted with: native popups can't blur what
+     is behind them, so they are that color, opaque. */
+  --nw-popup-background: var(--nw-tint);
   --nw-popup-text: var(--text);
-  --nw-popup-border: color-mix(in srgb, var(--nw-ink) 10%, transparent);
+  --nw-popup-border: var(--line);
 }
 
-:root[lwtheme] {
+/* Firefox sets [lwt-popup] when the theme has popup colors of its own. */
+:root[lwt-popup] {
   --nw-popup-background: var(--panel-background-color);
   --nw-popup-text: var(--panel-text-color);
   --nw-popup-border: var(--panel-border-color);
@@ -29,11 +32,12 @@ panel {
   --panel-background-color: var(--nw-popup-background);
   --panel-text-color: var(--nw-popup-text);
   --panel-border-color: var(--nw-popup-border);
-  --panel-separator-color: color-mix(in srgb, var(--nw-popup-text) 8%, transparent);
-  --panel-box-shadow: 0 12px 32px light-dark(rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0.5));
-  --button-background-color-hover: color-mix(in srgb, var(--nw-popup-text) 8%, transparent);
+  --panel-separator-color: color-mix(in srgb, var(--nw-popup-text) 10%, transparent);
+  --panel-box-shadow: 0 16px 40px -16px light-dark(rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.6));
+  --button-background-color-hover: color-mix(in srgb, var(--nw-popup-text) 7%, transparent);
   --button-background-color-active: color-mix(in srgb, var(--nw-popup-text) 13%, transparent);
-  --panel-menuitem-border-radius: 6px;
+  --panel-menuitem-border-radius: var(--radius-control);
+  --panel-border-radius: var(--radius-card);
 }
 
 /* Firefox sets the popup scheme of a theme on panels only. */
@@ -45,42 +49,103 @@ panel {
   color-scheme: dark;
 }
 
+/* The shape of @neoworks-dev/ui's Menu (see .nw-popover in glass.css). */
 menupopup {
-  --panel-border-radius: 10px;
-  --panel-padding: 4px;
-  --panel-padding-block: 4px;
-  --menuitem-border-radius: 6px;
-  --menuitem-padding-block: 6px;
-  --menuitem-padding-inline: 10px;
-  --menu-arrow-opacity: 0.55;
-  font: 13px "Geist", ui-sans-serif, system-ui, sans-serif;
+  --panel-padding: 6px;
+  --panel-padding-block: 6px;
+  --menuitem-border-radius: var(--radius-control);
+  --menuitem-padding-block: 8px;
+  --menuitem-padding-inline: 12px;
+  --menu-arrow-size: 14px;
+  font: 14px/20px "Geist", ui-sans-serif, system-ui, sans-serif;
 }
 
 panel {
-  --panel-border-radius: 12px;
   font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
 }
 
 menupopup :is(menu, menuitem) {
-  min-width: 180px;
+  min-width: 200px;
+  transition: background-color 150ms var(--ease-out);
 }
 
 menupopup :is(menu, menuitem)[_moz-menuactive]:not([disabled]) {
-  background-color: color-mix(in srgb, var(--panel-text-color) 8%, transparent);
+  background-color: color-mix(in srgb, var(--panel-text-color) 7%, transparent);
   color: var(--panel-text-color);
 }
 
 menupopup :is(menu, menuitem)[disabled] {
+  color: var(--panel-text-color);
+  opacity: 0.4;
+}
+
+menupopup :is(menu, menuitem) > .menu-icon {
+  width: 16px;
+  height: 16px;
+  margin-inline-end: 12px;
+}
+
+/* Shortcuts as plain faint text, not chips. */
+menupopup .menu-accel {
+  margin-inline-start: 24px;
   color: color-mix(in srgb, var(--panel-text-color) 40%, transparent);
+  font-size: 13px;
+}
+
+/* Kit's check and caret instead of GTK's checkbox, radio and arrow
+   (--nw-icon-*: icons.css). */
+menupopup menuitem:is([type="checkbox"], [type="radio"], [checked]) > .menu-icon {
+  appearance: none;
+  visibility: hidden;
+  background-color: var(--panel-text-color);
+  mask: var(--nw-icon-check) center / 14px no-repeat;
+}
+
+menupopup menuitem[checked="true"] > .menu-icon {
+  visibility: inherit;
+}
+
+menupopup > menu::after {
+  background: color-mix(in srgb, var(--panel-text-color) 55%, transparent);
+  mask: var(--nw-icon-caret-right) center / 12px no-repeat;
+}
+
+menupopup > menu:-moz-locale-dir(rtl)::after {
+  background-image: none;
+  scale: -1 1;
 }
 
 menupopup > menuseparator {
-  padding-block: 4px;
-  padding-inline: 6px;
+  padding-block: 6px;
+  padding-inline: 0;
 }
 
 /* Destructive items (class="nw-menu-danger"), e.g. "Close tab". */
-menupopup menuitem.nw-menu-danger[_moz-menuactive]:not([disabled]) {
-  background-color: color-mix(in srgb, var(--nw-danger) 16%, transparent);
+menupopup menuitem.nw-menu-danger:not([disabled]) {
   color: var(--nw-danger);
+}
+
+menupopup menuitem.nw-menu-danger[_moz-menuactive]:not([disabled]) {
+  background-color: color-mix(in srgb, var(--nw-danger) 14%, transparent);
+  color: var(--nw-danger);
+}
+
+/* Pop open like the website's menus. On top of Firefox's own fade where it
+   has one; on Wayland it has none. */
+menupopup::part(content) {
+  transform-origin: top left;
+  animation: nw-menu-pop 200ms var(--ease-out);
+}
+
+@keyframes nw-menu-pop {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  menupopup::part(content) {
+    animation: none;
+  }
 }

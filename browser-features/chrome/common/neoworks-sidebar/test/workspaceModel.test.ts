@@ -48,16 +48,30 @@ function testMissingOwnershipIsFilledIn(): void {
   const stored = [
     { id: "default", name: "Default", color: "blue", userContextId: 0 },
     { id: "a", name: "Work", color: "green", userContextId: 7 },
-    { id: "b", name: "Play", color: "red", userContextId: 8, ownsContainer: false },
+    {
+      id: "b",
+      name: "Play",
+      color: "red",
+      userContextId: 8,
+      ownsContainer: false,
+    },
   ];
   const parsed = parseWorkspaces(JSON.stringify(stored), FALLBACK);
   assertEquals(parsed[0].ownsContainer, false, "no container, nothing owned");
-  assertEquals(parsed[1].ownsContainer, true, "older workspaces own their container");
+  assertEquals(
+    parsed[1].ownsContainer,
+    true,
+    "older workspaces own their container",
+  );
   assertEquals(parsed[2].ownsContainer, false, "a stored flag is kept");
 }
 
 function testMalformedJsonFallsBack(): void {
-  assertEquals(parseWorkspaces("{not json", FALLBACK), FALLBACK, "malformed JSON");
+  assertEquals(
+    parseWorkspaces("{not json", FALLBACK),
+    FALLBACK,
+    "malformed JSON",
+  );
 }
 
 function testEmptyListFallsBack(): void {
@@ -91,10 +105,22 @@ function testWorkspaceAtNumber(): void {
       icon: "code",
     },
   ];
-  assertEquals(workspaceAtNumber(list, "1")?.id, "default", "1 is the first workspace");
-  assertEquals(workspaceAtNumber(list, "2")?.id, "work", "2 is the second workspace");
+  assertEquals(
+    workspaceAtNumber(list, "1")?.id,
+    "default",
+    "1 is the first workspace",
+  );
+  assertEquals(
+    workspaceAtNumber(list, "2")?.id,
+    "work",
+    "2 is the second workspace",
+  );
   assertEquals(workspaceAtNumber(list, "3"), undefined, "past the end");
-  assertEquals(workspaceAtNumber(list, "0"), undefined, "0 is not a workspace number");
+  assertEquals(
+    workspaceAtNumber(list, "0"),
+    undefined,
+    "0 is not a workspace number",
+  );
 }
 
 function testWithWorkspaceContainer(): void {
@@ -110,7 +136,11 @@ function testWithWorkspaceContainer(): void {
     },
   ];
   const updated = withWorkspaceContainer(list, "work", 3);
-  assertEquals(updated[1].userContextId, 3, "the named workspace gets the container");
+  assertEquals(
+    updated[1].userContextId,
+    3,
+    "the named workspace gets the container",
+  );
   assertEquals(updated[1].ownsContainer, false, "and only shares it");
   assertEquals(updated[0], list[0], "other workspaces stay untouched");
   assertEquals(list[1].userContextId, 7, "the input list is not mutated");
@@ -118,11 +148,17 @@ function testWithWorkspaceContainer(): void {
 
 export async function runAllTests(): Promise<void> {
   const tests: TestCase[] = [
-    { name: "withWorkspaceContainer changes one workspace", fn: testWithWorkspaceContainer },
+    {
+      name: "withWorkspaceContainer changes one workspace",
+      fn: testWithWorkspaceContainer,
+    },
     { name: "workspaceAtNumber counts from 1", fn: testWorkspaceAtNumber },
     { name: "valid list is parsed", fn: testValidListIsParsed },
     { name: "missing icon is filled in", fn: testMissingIconIsFilledIn },
-    { name: "missing container ownership is filled in", fn: testMissingOwnershipIsFilledIn },
+    {
+      name: "missing container ownership is filled in",
+      fn: testMissingOwnershipIsFilledIn,
+    },
     { name: "malformed JSON falls back", fn: testMalformedJsonFallsBack },
     { name: "empty list falls back", fn: testEmptyListFallsBack },
     { name: "invalid entry falls back", fn: testInvalidEntryFallsBack },

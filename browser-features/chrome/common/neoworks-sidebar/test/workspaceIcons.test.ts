@@ -19,21 +19,41 @@ const tests: TestCase[] = [
     fn: () => {
       assert(isEmojiIcon("🚀"), "emoji detected");
       assert(!isEmojiIcon("rocket"), "icon names are not emoji");
-      assertEquals(importedWorkspaceIcon("🚀"), "🚀", "importedWorkspaceIcon(🚀), 🚀");
+      assertEquals(
+        importedWorkspaceIcon("🚀"),
+        "🚀",
+        "importedWorkspaceIcon(🚀), 🚀",
+      );
     },
   },
   {
     name: "Zen icon names map to Kit icons",
     fn: () => {
-      assertEquals(importedWorkspaceIcon("home"), "house", "importedWorkspaceIcon(home), house");
-      assertEquals(importedWorkspaceIcon("rocket"), "rocket", "importedWorkspaceIcon(rocket), rocket");
+      assertEquals(
+        importedWorkspaceIcon("home"),
+        "house",
+        "importedWorkspaceIcon(home), house",
+      );
+      assertEquals(
+        importedWorkspaceIcon("rocket"),
+        "rocket",
+        "importedWorkspaceIcon(rocket), rocket",
+      );
     },
   },
   {
     name: "unknown or missing icons fall back to the first icon",
     fn: () => {
-      assertEquals(importedWorkspaceIcon("no-such-icon"), WORKSPACE_ICONS[0], "importedWorkspaceIcon(no-such-icon), WORKSPACE_ICO");
-      assertEquals(importedWorkspaceIcon(undefined), WORKSPACE_ICONS[0], "importedWorkspaceIcon(undefined), WORKSPACE_ICONS[");
+      assertEquals(
+        importedWorkspaceIcon("no-such-icon"),
+        WORKSPACE_ICONS[0],
+        "importedWorkspaceIcon(no-such-icon), WORKSPACE_ICO",
+      );
+      assertEquals(
+        importedWorkspaceIcon(undefined),
+        WORKSPACE_ICONS[0],
+        "importedWorkspaceIcon(undefined), WORKSPACE_ICONS[",
+      );
     },
   },
 ];

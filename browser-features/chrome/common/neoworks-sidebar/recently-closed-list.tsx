@@ -29,9 +29,15 @@ export function RecentlyClosedList() {
   const tabs = createMemo(closedTabs);
   return (
     <Show when={tabs().length > 0}>
-      <div class="nw-recently-closed" data-collapsed={attributeFlag(recentlyClosedCollapsed())}>
+      <div
+        class="nw-recently-closed"
+        data-collapsed={attributeFlag(recentlyClosedCollapsed())}
+      >
         <div class="nw-recently-closed-header" onClick={toggleRecentlyClosed}>
-          <span class="nw-icon nw-recently-closed-caret" data-icon="caret-right" />
+          <span
+            class="nw-icon nw-recently-closed-caret"
+            data-icon="caret-right"
+          />
           <span>Recently closed</span>
         </div>
         <Show when={!recentlyClosedCollapsed()}>

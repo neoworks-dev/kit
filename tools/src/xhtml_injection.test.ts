@@ -249,7 +249,7 @@ Deno.test("browser XHTML rejects the loader origin in non-script directives", ()
 });
 
 Deno.test("browser XHTML injection leaves source bytes unchanged on validation failure", async () => {
-  const temp = await Deno.makeTempDir({ prefix: "floorp-xhtml-failure-" });
+  const temp = await Deno.makeTempDir({ prefix: "kit-xhtml-failure-" });
   const directory = `${temp}/browser/chrome/browser/content/browser`;
   const path = `${directory}/browser.xhtml`;
   const invalid = fixture("default-src 'none'");
@@ -337,7 +337,7 @@ Deno.test("development preferences XHTML requires exactly one CSP meta", () => {
 
 Deno.test("development preferences XHTML injection leaves source unchanged on CSP validation failure", async () => {
   const temp = await Deno.makeTempDir({
-    prefix: "floorp-preferences-failure-",
+    prefix: "kit-preferences-failure-",
   });
   const directory =
     `${temp}/browser/chrome/browser/content/browser/preferences`;

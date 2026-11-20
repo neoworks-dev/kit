@@ -15,7 +15,10 @@ export function watchSidebarOffset(): () => void {
     return () => {};
   }
   const observer = new ResizeObserver(() => {
-    root.style.setProperty(OFFSET_PROPERTY, `${toolbox.getBoundingClientRect().bottom}px`);
+    root.style.setProperty(
+      OFFSET_PROPERTY,
+      `${toolbox.getBoundingClientRect().bottom}px`,
+    );
   });
   observer.observe(toolbox);
   return () => {

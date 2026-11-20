@@ -32,7 +32,10 @@ export function isNewTabPage(uri: string): boolean {
 
 // Session restore recreates tabs lazily or in bulk and already knows their
 // container; an explicit userContextId (even 0) is a deliberate choice.
-function needsDefaultContainer(uri: string, params: AddTabParams | undefined): boolean {
+function needsDefaultContainer(
+  uri: string,
+  params: AddTabParams | undefined,
+): boolean {
   if (!isNewTabPage(uri)) {
     return false;
   }
@@ -53,7 +56,10 @@ export function routeNewTabsToDefaultContainer(): () => void {
     if (!needsDefaultContainer(uri, params)) {
       return originalAddTab.call(this, uri, params);
     }
-    return originalAddTab.call(this, uri, { ...params, userContextId: defaultContainerId() });
+    return originalAddTab.call(this, uri, {
+      ...params,
+      userContextId: defaultContainerId(),
+    });
   };
   return () => {
     tabbrowser.addTab = originalAddTab;

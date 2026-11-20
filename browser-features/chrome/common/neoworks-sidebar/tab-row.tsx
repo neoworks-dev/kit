@@ -11,15 +11,16 @@ import {
   togglePinned,
 } from "./tab-actions.ts";
 import {
-  allowDrop,
+  allowTabDrop,
   dropOntoTab,
+  dropPositionOf,
   endDrag,
-  isDropTarget,
   leaveDrop,
   startTabDrag,
 } from "./tab-drag.ts";
 import { removeFromSplit } from "../neoworks-split/split-view.ts";
 import type { SplitTab } from "../neoworks-split/types.ts";
+import { tabUrl } from "../neoworks-window-sync/mirrors.ts";
 import { hoverTab, unhoverTab } from "./tab-preview.ts";
 import type { BrowserTab, TabState } from "./types.ts";
 
@@ -40,7 +41,7 @@ function stopThen(action: () => void): (event: Event) => void {
 
 // Getter that re-runs whenever any tab changes.
 export function tabReader(tabState: TabState) {
-  return <T,>(getter: () => T): (() => T) => () => {
+  return <T,>(getter: () => T): () => T => () => {
     tabState.revision();
     return getter();
   };
@@ -67,7 +68,7 @@ export function Favicon(props: { source: string; busy: boolean }) {
 const KIT_LOGO = "chrome://branding/content/icon32.png";
 
 export function tabIcon(tab: BrowserTab): string {
-  if (isNewTabPage(tab.linkedBrowser.currentURI?.spec ?? "")) {
+  if (isNewTabPage(tabUrl(tab))) {
     return KIT_LOGO;
   }
   return tab.image;
@@ -108,21 +109,24 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
       draggable="true"
       data-selected={attributeFlag(selected())}
       data-unloaded={attributeFlag(unloaded())}
-      data-drop-target={attributeFlag(isDropTarget(tab))}
+      data-drop={dropPositionOf(tab)}
       data-grove={attributeFlag(!!groveWorktree())}
       onClick={() => selectTab(tab)}
       onAuxClick={(event: MouseEvent) => closeOnMiddleClick(event, tab)}
       onContextMenu={(event: MouseEvent) => openTabContextMenu(event, tab)}
       onDragStart={(event: DragEvent) => startTabDrag(event, tab)}
-      onDragOver={(event: DragEvent) => allowDrop(event, tab)}
+      onDragOver={(event: DragEvent) => allowTabDrop(event, tab)}
       onDragLeave={() => leaveDrop(tab)}
       onDrop={(event: DragEvent) => dropOntoTab(event, tab)}
       onDragEnd={endDrag}
-      onMouseEnter={(event: MouseEvent) => hoverTab(tab, event.currentTarget as Element)}
+      onMouseEnter={(event: MouseEvent) =>
+        hoverTab(tab, event.currentTarget as Element)}
       onMouseLeave={unhoverTab}
     >
       <Show when={container()}>
-        {(color) => <span class="nw-tab-container" style={{ background: color() }} />}
+        {(color) => (
+          <span class="nw-tab-container" style={{ background: color() }} />
+        )}
       </Show>
       <Favicon source={favicon()} busy={busy()} />
       <Show when={playing() || muted()}>
@@ -136,7 +140,11 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
         </button>
       </Show>
       <Show when={aiControlled()}>
-        <span class="nw-icon nw-tab-ai" data-icon="sparkle" title="AI is controlling this tab" />
+        <span
+          class="nw-icon nw-tab-ai"
+          data-icon="sparkle"
+          title="AI is controlling this tab"
+        />
       </Show>
       <Show when={groveWorktree()}>
         {(worktree) => (
@@ -144,7 +152,9 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
             class="nw-icon nw-tab-grove"
             data-icon="git-branch"
             data-active={attributeFlag(!!groveActivity())}
-            title={`Grove: ${worktree()}${groveActivity() ? ` · ${groveActivity()}` : ""}`}
+            title={`Grove: ${worktree()}${
+              groveActivity() ? ` · ${groveActivity()}` : ""
+            }`}
           />
         )}
       </Show>
@@ -167,7 +177,10 @@ export function TabRow(props: { tab: BrowserTab; tabState: TabState }) {
           title={pinned() ? "Unpin tab" : "Pin tab"}
           onClick={stopThen(() => togglePinned(tab))}
         >
-          <span class="nw-icon" data-icon={pinned() ? "push-pin-slash" : "push-pin"} />
+          <span
+            class="nw-icon"
+            data-icon={pinned() ? "push-pin-slash" : "push-pin"}
+          />
         </button>
         <button
           type="button"

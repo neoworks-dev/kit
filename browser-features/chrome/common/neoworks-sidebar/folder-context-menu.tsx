@@ -22,7 +22,10 @@ const MENU_ID = "neoworks-sidebar-folder-menu";
 
 const [menuFolder, setMenuFolder] = createSignal<BrowserTabGroup | null>(null);
 
-export function openFolderContextMenu(event: MouseEvent, group: BrowserTabGroup): void {
+export function openFolderContextMenu(
+  event: MouseEvent,
+  group: BrowserTabGroup,
+): void {
   setMenuFolder(group);
   openContextMenuAt(MENU_ID, event);
 }
@@ -93,9 +96,15 @@ export function FolderContextMenu(props: { tabState: TabState }) {
         setSidebarMenuOpen(MENU_ID, false);
       }}
     >
-      <xul:menuitem label="Rename folder" onCommand={withMenuFolder(startFolderEdit)} />
+      <xul:menuitem
+        label="Rename folder"
+        onCommand={withMenuFolder(startFolderEdit)}
+      />
       <ColorSubmenu tabState={props.tabState} />
-      <xul:menuitem label="New tab in folder" onCommand={withMenuFolder(openTabInFolder)} />
+      <xul:menuitem
+        label="New tab in folder"
+        onCommand={withMenuFolder(openTabInFolder)}
+      />
       <xul:menuitem
         label="Unload tabs in folder"
         onCommand={withMenuFolder((group) => unloadTabs(group.tabs))}
@@ -110,7 +119,10 @@ export function FolderContextMenu(props: { tabState: TabState }) {
         onCommand={withMenuFolder((group) => moveFolderBy(group, 1))}
       />
       <xul:menuseparator />
-      <xul:menuitem label="Delete folder, keep tabs" onCommand={withMenuFolder(dissolveFolder)} />
+      <xul:menuitem
+        label="Delete folder, keep tabs"
+        onCommand={withMenuFolder(dissolveFolder)}
+      />
       <xul:menuitem
         label={closeTabsLabel(props.tabState)}
         class="nw-menu-danger"

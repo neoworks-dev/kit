@@ -2,7 +2,7 @@
 
 import type { TestRunSharedData } from "./test_run_owner_types.ts";
 
-const TEST_RUN_OWNER_KEY = "floorp/test-run-owner";
+const TEST_RUN_OWNER_KEY = "kit/test-run-owner";
 
 export function claimTestRunOwnership(sharedData: TestRunSharedData): boolean {
   // This map belongs to the browser process, unlike module globals (one per

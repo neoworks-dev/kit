@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { bindingsForCommand, describeKeys } from "#features-modules/common/NWKeymap.ts";
+import {
+  bindingsForCommand,
+  describeKeys,
+} from "#features-modules/common/NWKeymap.ts";
 import { readQuickmarks } from "../neoworks-commands/quickmarks.ts";
 import {
   commandTitle,
@@ -9,8 +12,21 @@ import {
 } from "../neoworks-commands/registry.ts";
 import { archivedTabs } from "../neoworks-sidebar/tab-archive.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
-import { activeWorkspaceId, workspaces } from "../neoworks-sidebar/workspaces.ts";
+import { tabUrl } from "../neoworks-window-sync/mirrors.ts";
+import {
+  activeWorkspaceId,
+  workspaces,
+} from "../neoworks-sidebar/workspaces.ts";
+import {
+  bangIcon,
+  bangIndex,
+  bangsStartingWith,
+  bangUrl,
+  parseBangQuery,
+} from "./bangs.ts";
+import { defaultEngine } from "./engine.ts";
 import { fuzzyScore, rankByScore } from "./fuzzy.ts";
+import type { BrowserTab } from "../neoworks-sidebar/types.ts";
 import type { SpotlightResult } from "./types.ts";
 
 const uriFixupFlags = Ci.nsIURIFixup as unknown as {
@@ -20,7 +36,15 @@ const uriFixupFlags = Ci.nsIURIFixup as unknown as {
 
 const OPEN_URL_SUBTITLE = "Open";
 const MAX_ARCHIVED_RESULTS = 8;
-const SEARCH_SUBTITLE = "Search the web";
+const MAX_BANG_RESULTS = 6;
+
+function searchSubtitle(): string {
+  const engine = defaultEngine();
+  if (!engine) {
+    return "Search the web";
+  }
+  return "Search with " + engine.name;
+}
 
 // Firefox's URL fixup decides between "open this URL" and "search for this",
 // using the default search engine for the latter.
@@ -32,12 +56,56 @@ export function navigateResult(query: string): SpotlightResult | null {
     const url = fixupInfo.preferredURI.spec;
     // Firefox 157 leaves keywordProviderName empty; keywordAsSent marks a search.
     if (fixupInfo.keywordAsSent) {
-      return { kind: "navigate", title: query, subtitle: SEARCH_SUBTITLE, url };
+      const icon = defaultEngine()?.icon || undefined;
+      return {
+        kind: "navigate",
+        title: query,
+        subtitle: searchSubtitle(),
+        url,
+        icon,
+      };
     }
     return { kind: "navigate", title: url, subtitle: OPEN_URL_SUBTITLE, url };
   } catch {
     return null;
   }
+}
+
+// "!yt cats" searches YouTube; "!yt" alone lists the sites whose trigger
+// starts with "yt", which open the site or, with Tab, take the terms. Empty
+// until the list has loaded, or when no site has the trigger.
+export function bangResults(query: string): SpotlightResult[] {
+  const bang = parseBangQuery(query);
+  const index = bangIndex();
+  if (!bang || !index) {
+    return [];
+  }
+  if (bang.terms) {
+    const entry = index.get(bang.trigger);
+    if (!entry) {
+      return [];
+    }
+    return [{
+      kind: "bang",
+      title: bang.terms,
+      subtitle: "Search " + entry.name,
+      url: bangUrl(entry, bang.terms),
+      icon: bangIcon(entry),
+      trigger: bang.trigger,
+      terms: bang.terms,
+    }];
+  }
+  return bangsStartingWith(index, bang.trigger, MAX_BANG_RESULTS).map((
+    { trigger, entry },
+  ) => ({
+    kind: "bang",
+    title: entry.name,
+    subtitle: "!" + trigger,
+    url: bangUrl(entry, ""),
+    icon: bangIcon(entry),
+    trigger,
+    terms: "",
+  }));
 }
 
 // Addresses get no search suggestions; only text that would be searched does.
@@ -49,16 +117,33 @@ export function isSearchQuery(result: SpotlightResult | null): boolean {
 }
 
 export function openTabUrls(): Set<string> {
-  return new Set(tabbrowser().nonHiddenTabs.map((tab) => tab.linkedBrowser.currentURI.spec));
+  return new Set(
+    tabbrowser().nonHiddenTabs.map(tabUrl),
+  );
+}
+
+function tabResult(tab: BrowserTab): SpotlightResult {
+  return {
+    kind: "tab",
+    title: tab.label,
+    subtitle: tabUrl(tab),
+    tab,
+  };
 }
 
 function tabResults(): SpotlightResult[] {
-  return tabbrowser().nonHiddenTabs.map((tab) => ({
-    kind: "tab",
-    title: tab.label,
-    subtitle: tab.linkedBrowser.currentURI.spec,
-    tab,
-  }));
+  return tabbrowser().nonHiddenTabs.map(tabResult);
+}
+
+// The open tab showing `url`, as a row to switch to it.
+export function openTabResult(url: string): SpotlightResult | null {
+  const tab = tabbrowser().nonHiddenTabs.find((candidate) =>
+    tabUrl(candidate) === url
+  );
+  if (!tab) {
+    return null;
+  }
+  return tabResult(tab);
 }
 
 function archivedResults(): SpotlightResult[] {
@@ -127,8 +212,7 @@ function commandResults(): SpotlightResult[] {
 }
 
 // Everything that can be listed without I/O: open tabs, workspaces,
-// quickmarks, commands, then archived tabs once there is a query (the
-// archive can hold hundreds).
+// quickmarks and commands.
 export function localResults(query: string): SpotlightResult[] {
   const candidates = [
     ...tabResults(),
@@ -139,11 +223,16 @@ export function localResults(query: string): SpotlightResult[] {
   if (!query) {
     return candidates;
   }
+  return rankByScore(candidates, (result) => resultScore(query, result));
+}
+
+// Archived tabs only once there is a query; the archive can hold hundreds.
+export function archivedMatches(query: string): SpotlightResult[] {
+  if (!query) {
+    return [];
+  }
   const score = (result: SpotlightResult) => resultScore(query, result);
-  return [
-    ...rankByScore(candidates, score),
-    ...rankByScore(archivedResults(), score).slice(0, MAX_ARCHIVED_RESULTS),
-  ];
+  return rankByScore(archivedResults(), score).slice(0, MAX_ARCHIVED_RESULTS);
 }
 
 // Titles match fuzzily; subtitles (mostly long URLs) only as plain substrings,

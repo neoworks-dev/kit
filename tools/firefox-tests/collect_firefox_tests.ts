@@ -721,7 +721,7 @@ function buildSummary(manifest: CollectionManifest): string {
     ...extensionLines,
     "",
     "Raw files are stored under `files/` using their upstream repository paths.",
-    "Use `manifest.json` for exact provenance and `browser-chrome-candidates.json` for Floorp import triage.",
+    "Use `manifest.json` for exact provenance and `browser-chrome-candidates.json` for Kit import triage.",
     "",
   ].join("\n");
 }

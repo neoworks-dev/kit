@@ -29,8 +29,18 @@ import { setSidebarMenuOpen } from "./sidebar-visibility.ts";
 import { removeFromSplit } from "../neoworks-split/split-view.ts";
 import type { SplitTab } from "../neoworks-split/types.ts";
 import { tabbrowser } from "./tabbrowser.ts";
-import type { BrowserTab, BrowserTabGroup, TabState, Workspace } from "./types.ts";
-import { activeWorkspace, activeWorkspaceId, moveTabToWorkspace, workspaces } from "./workspaces.ts";
+import type {
+  BrowserTab,
+  BrowserTabGroup,
+  TabState,
+  Workspace,
+} from "./types.ts";
+import {
+  activeWorkspace,
+  activeWorkspaceId,
+  moveTabToWorkspace,
+  workspaces,
+} from "./workspaces.ts";
 import { GroveTabMenu } from "../neoworks-grove/tab-menu.tsx";
 
 const MENU_ID = "neoworks-sidebar-tab-menu";
@@ -137,7 +147,9 @@ function ContainerMenuItem(props: { label: string; userContextId: number }) {
       type="checkbox"
       label={props.label}
       checked={isMenuTabContainer(props.userContextId)}
-      onCommand={withMenuTab((tab) => moveTabToContainer(tab, props.userContextId))}
+      onCommand={withMenuTab((tab) =>
+        moveTabToContainer(tab, props.userContextId)
+      )}
     />
   );
 }
@@ -150,7 +162,10 @@ function ContainerSubmenu() {
         <xul:menuseparator />
         <For each={containers()}>
           {(container: Container) => (
-            <ContainerMenuItem label={container.name} userContextId={container.userContextId} />
+            <ContainerMenuItem
+              label={container.name}
+              userContextId={container.userContextId}
+            />
           )}
         </For>
       </xul:menupopup>
@@ -176,7 +191,9 @@ function WorkspaceSubmenu(props: { tabState: TabState }) {
             {(workspace: Workspace) => (
               <xul:menuitem
                 label={workspace.name}
-                onCommand={withMenuTab((tab) => moveTabToWorkspace(tab, workspace.id))}
+                onCommand={withMenuTab((tab) =>
+                  moveTabToWorkspace(tab, workspace.id)
+                )}
               />
             )}
           </For>
@@ -200,7 +217,10 @@ function FolderSubmenu(props: { tabState: TabState }) {
   return (
     <xul:menu label="Move to folder">
       <xul:menupopup>
-        <xul:menuitem label="New folder" onCommand={withMenuTab(moveTabToNewFolder)} />
+        <xul:menuitem
+          label="New folder"
+          onCommand={withMenuTab(moveTabToNewFolder)}
+        />
         <Show when={otherFolders().length > 0}>
           <xul:menuseparator />
         </Show>
@@ -258,7 +278,10 @@ export function TabContextMenu(props: { tabState: TabState }) {
         disabled={menuTabUnloaded(props.tabState) || undefined}
         onCommand={withMenuTab((tab) => unloadTabs([tab]))}
       />
-      <xul:menuitem label="Unload other tabs" onCommand={withMenuTab(unloadOtherTabs)} />
+      <xul:menuitem
+        label="Unload other tabs"
+        onCommand={withMenuTab(unloadOtherTabs)}
+      />
       <Show when={!menuTab()?.pinned}>
         <FolderSubmenu tabState={props.tabState} />
       </Show>

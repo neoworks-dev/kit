@@ -6,7 +6,9 @@ import { For } from "solid-js";
 import { TabRow } from "./tab-row.tsx";
 import type { BrowserSplitView, TabState } from "./types.ts";
 
-export function SplitRow(props: { split: BrowserSplitView; tabState: TabState }) {
+export function SplitRow(
+  props: { split: BrowserSplitView; tabState: TabState },
+) {
   const tabs = () => {
     props.tabState.revision();
     return props.split.tabs;

@@ -120,7 +120,7 @@ Deno.test("triageFirefoxBrowserTests classifies locked, quarantined, direct, run
       {
         path: quarantinedPath,
         classification: "quarantined",
-        reason: "popup window semantics are blocked in Floorp test profiles",
+        reason: "popup window semantics are blocked in Kit test profiles",
         requiredApis: ["OpenBrowserWindow"],
         sourceRef: "fixture-ref",
         lastObserved: "2026-06-30",

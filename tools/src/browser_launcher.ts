@@ -307,7 +307,7 @@ function defaultIsolatedBrowserSpawner(
 function prepareMarionetteProfile(port: number): string {
   assertMarionettePort(port);
   const profilePath = Deno.makeTempDirSync({
-    prefix: "floorp-notes-sync-marionette-",
+    prefix: "kit-notes-sync-marionette-",
   });
   try {
     assertPrivateGeneratedPath(profilePath, "directory");

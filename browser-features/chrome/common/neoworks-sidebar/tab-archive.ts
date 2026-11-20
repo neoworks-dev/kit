@@ -4,17 +4,23 @@
 // pref are closed and kept in Kit's archive (NWTabArchive.sys.mts), where
 // the spotlight finds them. Pinned tabs, Essentials, the selected tab, split
 // view panes and tabs playing sound stay. Tabs in other workspaces count
-// too: they go unused while you work elsewhere.
+// too: they go unused while you work elsewhere. With window sync, a tab counts
+// as used when it was used in any window, and only the window that has its
+// page archives it.
 
 import { createSignal } from "solid-js";
 import { isEssential } from "./essentials.ts";
 import { isNewTabPage } from "./new-tab-container.ts";
 import { tabbrowser } from "./tabbrowser.ts";
 import type { ArchivedTab, BrowserTab, TabArchiveModule } from "./types.ts";
+import {
+  isMirror,
+  lastAccessedAnywhere,
+} from "../neoworks-window-sync/mirrors.ts";
 
 // 0 turns archiving off. Kit's settings pane offers 12 hours to 7 days.
 const ARCHIVE_AFTER_PREF = "neoworks.tabs.archiveAfterHours";
-const DEFAULT_ARCHIVE_AFTER_HOURS = 24;
+const DEFAULT_ARCHIVE_AFTER_HOURS = 168;
 const HOUR_MS = 60 * 60 * 1000;
 const SWEEP_INTERVAL_MS = 10 * 60 * 1000;
 // Lets session restore finish before the first sweep.
@@ -27,7 +33,11 @@ const { PrivateBrowsingUtils } = ChromeUtils.importESModule(
 // SessionStore collects a tab's history lazily; flushing brings it up to date.
 const { TabStateFlusher } = ChromeUtils.importESModule(
   "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs",
-) as { TabStateFlusher: { flush(browser: BrowserTab["linkedBrowser"]): Promise<void> } };
+) as {
+  TabStateFlusher: {
+    flush(browser: BrowserTab["linkedBrowser"]): Promise<void>;
+  };
+};
 
 interface SessionStoreApi {
   getTabState(tab: BrowserTab): string;
@@ -48,12 +58,23 @@ const [archived, setArchived] = createSignal<ArchivedTab[]>([]);
 export { archived as archivedTabs };
 
 function archiveAfterHours(): number {
-  return Services.prefs.getIntPref(ARCHIVE_AFTER_PREF, DEFAULT_ARCHIVE_AFTER_HOURS);
+  return Services.prefs.getIntPref(
+    ARCHIVE_AFTER_PREF,
+    DEFAULT_ARCHIVE_AFTER_HOURS,
+  );
 }
+
+// Only time Kit was running counts as unused: SessionStore restores
+// lastAccessed, so after a day closed every restored tab would look a day old
+// and be archived a minute after startup.
+const kitStartedAt =
+  (Services.startup.getStartupInfo() as { process?: Date }).process
+    ?.getTime() ?? Date.now();
 
 function isStale(tab: BrowserTab, cutoff: number): boolean {
   return !tab.pinned && !tab.selected && !tab.closing && !tab.splitview &&
-    !isEssential(tab) && !tab.hasAttribute("soundplaying") && tab.lastAccessed < cutoff;
+    !isEssential(tab) && !tab.hasAttribute("soundplaying") && !isMirror(tab) &&
+    Math.max(lastAccessedAnywhere(tab), kitStartedAt) < cutoff;
 }
 
 function toArchivedTab(tab: BrowserTab): ArchivedTab {
@@ -81,13 +102,18 @@ async function sweep(): Promise<void> {
     return;
   }
   const browser = tabbrowser();
-  const stale = browser.tabs.filter((tab) => isStale(tab, Date.now() - hours * HOUR_MS));
+  const stale = browser.tabs.filter((tab) =>
+    isStale(tab, Date.now() - hours * HOUR_MS)
+  );
   if (stale.length === 0) {
     return;
   }
   const worthKeeping = stale.filter((tab) => !isBlank(tab));
-  await Promise.all(worthKeeping.map((tab) => TabStateFlusher.flush(tab.linkedBrowser)));
-  const kept = worthKeeping.filter((tab) => !tab.closing && tab.isConnected).map(toArchivedTab);
+  await Promise.all(
+    worthKeeping.map((tab) => TabStateFlusher.flush(tab.linkedBrowser)),
+  );
+  const kept = worthKeeping.filter((tab) => !tab.closing && tab.isConnected)
+    .map(toArchivedTab);
   await tabArchive().archive(kept);
   for (const tab of stale) {
     if (!tab.closing && tab.isConnected) {
@@ -97,7 +123,9 @@ async function sweep(): Promise<void> {
 }
 
 function sweepSafely(): void {
-  sweep().catch((error) => console.error("[neoworks-sidebar] Tab archiving failed:", error));
+  sweep().catch((error) =>
+    console.error("[neoworks-sidebar] Tab archiving failed:", error)
+  );
 }
 
 interface StoredTabState {
@@ -113,17 +141,25 @@ function parseState(entry: ArchivedTab): StoredTabState {
   }
 }
 
-function restoreState(entry: ArchivedTab, state: StoredTabState): BrowserTab | null {
+function restoreState(
+  entry: ArchivedTab,
+  state: StoredTabState,
+): BrowserTab | null {
   if (!state.entries?.length) {
     return null;
   }
   const browser = tabbrowser();
-  const tab = browser.addTrustedTab("about:blank", { userContextId: state.userContextId ?? 0 });
+  const tab = browser.addTrustedTab("about:blank", {
+    userContextId: state.userContextId ?? 0,
+  });
   try {
     browserWindow.SessionStore.setTabState(tab, entry.state);
     return tab;
   } catch (error) {
-    console.error("[neoworks-sidebar] Couldn't restore the archived tab:", error);
+    console.error(
+      "[neoworks-sidebar] Couldn't restore the archived tab:",
+      error,
+    );
     browser.removeTab(tab, { animate: false, skipSessionStore: true });
     return null;
   }
@@ -150,14 +186,21 @@ export function watchTabArchive(): () => void {
   Services.obs.addObserver(changeObserver, archive.TAB_ARCHIVE_CHANGED_TOPIC);
   archive.ready().then(() => setArchived(archive.archivedTabs()));
   if (PrivateBrowsingUtils.isWindowPrivate(window)) {
-    return () => Services.obs.removeObserver(changeObserver, archive.TAB_ARCHIVE_CHANGED_TOPIC);
+    return () =>
+      Services.obs.removeObserver(
+        changeObserver,
+        archive.TAB_ARCHIVE_CHANGED_TOPIC,
+      );
   }
   const prefObserver = { observe: sweepSafely };
   Services.prefs.addObserver(ARCHIVE_AFTER_PREF, prefObserver);
   const firstSweep = setTimeout(sweepSafely, FIRST_SWEEP_DELAY_MS);
   const interval = setInterval(sweepSafely, SWEEP_INTERVAL_MS);
   return () => {
-    Services.obs.removeObserver(changeObserver, archive.TAB_ARCHIVE_CHANGED_TOPIC);
+    Services.obs.removeObserver(
+      changeObserver,
+      archive.TAB_ARCHIVE_CHANGED_TOPIC,
+    );
     Services.prefs.removeObserver(ARCHIVE_AFTER_PREF, prefObserver);
     clearTimeout(firstSweep);
     clearInterval(interval);

@@ -59,16 +59,44 @@ function isInsideLinkOrButton(element: HTMLElement): boolean {
   return !!element.parentElement?.closest("a[href], button");
 }
 
-function findHintTargets(win: Window): HTMLElement[] {
+// Center first, then just inside each corner, of the part in the viewport.
+function hitTestPoints(rect: DOMRect, win: Window): [number, number][] {
+  const left = Math.max(rect.left, 0);
+  const top = Math.max(rect.top, 0);
+  const right = Math.min(rect.right, win.innerWidth) - 1;
+  const bottom = Math.min(rect.bottom, win.innerHeight) - 1;
+  return [
+    [(left + right) / 2, (top + bottom) / 2],
+    [left + 1, top + 1],
+    [right - 1, top + 1],
+    [left + 1, bottom - 1],
+    [right - 1, bottom - 1],
+  ];
+}
+
+// Something else drawn on top makes an element unclickable for the user, and
+// its badge would sit on whatever covers it: YouTube's channel watermark lies
+// under the fullscreen button and opened the channel instead.
+function isUncovered(element: HTMLElement, rect: DOMRect, win: Window): boolean {
+  return hitTestPoints(rect, win).some(([x, y]) => {
+    const hit = win.document.elementFromPoint(x, y);
+    return hit != null && element.contains(hit);
+  });
+}
+
+export function findHintTargets(win: Window): HTMLElement[] {
   const elements = Array.from(
     win.document.querySelectorAll<HTMLElement>(CLICKABLE_SELECTOR),
   );
-  return elements.filter((element) =>
-    isClickable(element) &&
-    !isInsideLinkOrButton(element) &&
-    isInViewport(element.getBoundingClientRect(), win) &&
-    element.checkVisibility({ checkVisibilityCSS: true, checkOpacity: true })
-  );
+  return elements.filter((element) => {
+    if (!isClickable(element) || isInsideLinkOrButton(element)) {
+      return false;
+    }
+    const rect = element.getBoundingClientRect();
+    return isInViewport(rect, win) &&
+      element.checkVisibility({ checkVisibilityCSS: true, checkOpacity: true }) &&
+      isUncovered(element, rect, win);
+  });
 }
 
 function linkUrl(element: HTMLElement): string | null {

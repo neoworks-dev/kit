@@ -265,9 +265,9 @@ async function createRuntimeFixture(): Promise<string> {
   await runCommand(dir, "git", ["add", "."]);
   await runCommand(dir, "git", [
     "-c",
-    "user.name=Floorp Test",
+    "user.name=Kit Test",
     "-c",
-    "user.email=floorp-test@example.invalid",
+    "user.email=kit-test@example.invalid",
     "commit",
     "-q",
     "-m",
@@ -714,9 +714,9 @@ Deno.test("candidate collection verifies HEAD against the tracking ref", async (
     await runCommand(runtimeDir, "git", ["add", "candidate-drift.txt"]);
     await runCommand(runtimeDir, "git", [
       "-c",
-      "user.name=Floorp Test",
+      "user.name=Kit Test",
       "-c",
-      "user.email=floorp-test@example.invalid",
+      "user.email=kit-test@example.invalid",
       "commit",
       "-q",
       "-m",

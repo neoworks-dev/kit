@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { defaultContainerId } from "./containers.ts";
-import { addToEssentials, isEssential, removeFromEssentials } from "./essentials.ts";
+import {
+  addToEssentials,
+  isEssential,
+  removeFromEssentials,
+} from "./essentials.ts";
 import { tabbrowser } from "./tabbrowser.ts";
-import type { BrowserTab } from "./types.ts";
+import type { BrowserTab, EdgePosition } from "./types.ts";
+import { tabUrl } from "../neoworks-window-sync/mirrors.ts";
 
 const MIDDLE_MOUSE_BUTTON = 1;
 
@@ -31,12 +36,15 @@ export function openNewTab(): BrowserTab {
 
 // A tab can't change container in place: reopen its page in the target
 // container at the same position, then close the original.
-export function moveTabToContainer(tab: BrowserTab, userContextId: number): void {
+export function moveTabToContainer(
+  tab: BrowserTab,
+  userContextId: number,
+): void {
   if (tab.userContextId === userContextId) {
     return;
   }
   const browser = tabbrowser();
-  const replacement = browser.addTrustedTab(tab.linkedBrowser.currentURI.spec, {
+  const replacement = browser.addTrustedTab(tabUrl(tab), {
     userContextId,
     pinned: tab.pinned,
     index: tab.index + 1,
@@ -107,18 +115,19 @@ export function pinTab(tab: BrowserTab): void {
   }
 }
 
-// Moves `draggedTab` to `targetTab`'s position and into (or out of) the
-// target's folder and section, mirroring Neoworks' drop-on-row behavior.
-export function moveTabOnto(draggedTab: BrowserTab, targetTab: BrowserTab): void {
+// Moves `draggedTab` just above or below `targetTab`, into its section and
+// into or out of its folder: next to a tab in a folder is inside the folder.
+export function moveTabNextTo(
+  draggedTab: BrowserTab,
+  targetTab: BrowserTab,
+  edge: EdgePosition,
+): void {
   if (draggedTab === targetTab || !joinSectionOf(draggedTab, targetTab)) {
     return;
   }
-  const browser = tabbrowser();
-  if (targetTab.group && targetTab.group !== draggedTab.group) {
-    browser.moveTabToExistingGroup(draggedTab, targetTab.group);
+  if (edge === "before") {
+    tabbrowser().moveTabBefore(draggedTab, targetTab);
+    return;
   }
-  if (!targetTab.group && draggedTab.group) {
-    browser.ungroupTab(draggedTab);
-  }
-  browser.moveTabTo(draggedTab, { tabIndex: browser.tabs.indexOf(targetTab) });
+  tabbrowser().moveTabAfter(draggedTab, targetTab);
 }

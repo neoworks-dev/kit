@@ -10,19 +10,29 @@ import {
 import { fuzzyScore, rankByScore } from "../fuzzy.ts";
 
 function testNonSubsequenceIsRejected(): void {
-  assertEquals(fuzzyScore("xyz", "New Tab"), -1, "missing characters reject the match");
+  assertEquals(
+    fuzzyScore("xyz", "New Tab"),
+    -1,
+    "missing characters reject the match",
+  );
 }
 
 function testWordStartsBeatScatteredMatches(): void {
   const wordStart = fuzzyScore("nt", "New Tab");
   const scattered = fuzzyScore("nt", "Pinned content");
-  assert(wordStart > scattered, "initials of words should outrank scattered letters");
+  assert(
+    wordStart > scattered,
+    "initials of words should outrank scattered letters",
+  );
 }
 
 function testConsecutiveCharactersScoreHigher(): void {
   const consecutive = fuzzyScore("rel", "Reload Tab");
   const spread = fuzzyScore("rel", "Reopen Closed Tab");
-  assert(consecutive > spread, "consecutive characters should outrank spread ones");
+  assert(
+    consecutive > spread,
+    "consecutive characters should outrank spread ones",
+  );
 }
 
 function testRankByScoreSortsAndFilters(): void {
@@ -41,9 +51,18 @@ function testRankByScoreSortsAndFilters(): void {
 export async function runAllTests(): Promise<void> {
   const tests: TestCase[] = [
     { name: "non-subsequence is rejected", fn: testNonSubsequenceIsRejected },
-    { name: "word starts beat scattered matches", fn: testWordStartsBeatScatteredMatches },
-    { name: "consecutive characters score higher", fn: testConsecutiveCharactersScoreHigher },
-    { name: "rankByScore sorts and filters", fn: testRankByScoreSortsAndFilters },
+    {
+      name: "word starts beat scattered matches",
+      fn: testWordStartsBeatScatteredMatches,
+    },
+    {
+      name: "consecutive characters score higher",
+      fn: testConsecutiveCharactersScoreHigher,
+    },
+    {
+      name: "rankByScore sorts and filters",
+      fn: testRankByScoreSortsAndFilters,
+    },
   ];
   await runTests("fuzzy.test.ts", tests);
 }

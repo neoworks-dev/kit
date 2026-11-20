@@ -5,11 +5,25 @@ import { createPageBackdrop } from "../neoworks-ui/page-backdrop.ts";
 import { jumpToQuickmark } from "../neoworks-commands/quickmarks.ts";
 import { runCommand } from "../neoworks-commands/registry.ts";
 import { selectTab } from "../neoworks-sidebar/tab-actions.ts";
-import { archivedTabs, reopenArchivedTab } from "../neoworks-sidebar/tab-archive.ts";
+import {
+  archivedTabs,
+  reopenArchivedTab,
+} from "../neoworks-sidebar/tab-archive.ts";
 import { tabbrowser } from "../neoworks-sidebar/tabbrowser.ts";
 import { switchWorkspace } from "../neoworks-sidebar/workspaces.ts";
-import { autofillResult, placesResults, resultUrl } from "./places.ts";
-import { isSearchQuery, localResults, navigateResult, openTabUrls } from "./search.ts";
+import { bangIndex, loadBangs, parseBangQuery } from "./bangs.ts";
+import { defaultEngine } from "./engine.ts";
+import { displayUrl, inlineCompletion } from "./history-rank.ts";
+import { historyResults, rememberPick, resultUrl } from "./places.ts";
+import {
+  archivedMatches,
+  bangResults,
+  isSearchQuery,
+  localResults,
+  navigateResult,
+  openTabResult,
+  openTabUrls,
+} from "./search.ts";
 import { stopSuggestions, suggestionResults } from "./suggestions.ts";
 import { ResultRow, sectionTitle, startsSection } from "./result-row.tsx";
 import type { SpotlightResult } from "./types.ts";
@@ -24,6 +38,9 @@ const browserWindow = window as unknown as {
 const [isOpen, setIsOpen] = createSignal(false);
 const [results, setResults] = createSignal<SpotlightResult[]>([]);
 const [highlightIndex, setHighlightIndex] = createSignal(0);
+// What the input shows, completion included; the ghost hint lines up after it.
+const [inputText, setInputText] = createSignal("");
+const [hint, setHint] = createSignal("");
 
 // solid-xul has no `use` helper, so refs don't compile; look elements up by id.
 const INPUT_ID = "neoworks-spotlight-input";
@@ -31,15 +48,32 @@ const RESULTS_ID = "neoworks-spotlight-results";
 const PANEL_ID = "neoworks-spotlight-panel";
 const BACKDROP_ID = "neoworks-spotlight-backdrop";
 
+const MAX_PLACES_RESULTS = 6;
+// How long Enter waits for the top hit when typed faster than history answers.
+const TOP_HIT_WAIT_MS = 250;
+
 interface AsyncResults {
-  autofill: SpotlightResult[];
+  topHit: SpotlightResult | null;
   suggestions: SpotlightResult[];
   places: SpotlightResult[];
 }
 
+const NO_ASYNC_RESULTS: AsyncResults = {
+  topHit: null,
+  suggestions: [],
+  places: [],
+};
+
 // Drops async responses that arrive after a newer keystroke.
 let searchGeneration = 0;
-let asyncResults: AsyncResults = { autofill: [], suggestions: [], places: [] };
+let asyncResults = NO_ASYNC_RESULTS;
+let pendingHistory: Promise<void> | null = null;
+// Exactly what was typed, without the inline completion.
+let typedText = "";
+// Deleting text must not bring the completion straight back, so the top hit
+// waits for the next typed character.
+let completionAllowed = true;
+let completion = "";
 
 function inputElement(): HTMLInputElement | null {
   return document.getElementById(INPUT_ID) as HTMLInputElement | null;
@@ -50,6 +84,7 @@ export function openSpotlight(): void {
     return;
   }
   setIsOpen(true);
+  completionAllowed = true;
   updateResults("");
   const input = inputElement();
   if (input) {
@@ -68,18 +103,82 @@ export function closeSpotlight(): void {
   tabbrowser().selectedBrowser.focus();
 }
 
-// Result order: the autofilled origin, the open/search row, engine
-// suggestions, matching tabs/quickmarks/commands, then history and bookmarks.
+// Result order: the top hit, the open/search row, matching
+// tabs/quickmarks/commands, history and bookmarks, archived tabs, then engine
+// suggestions. A bang shows only its own rows.
 function showResults(query: string): void {
-  const autofillUrls = new Set(asyncResults.autofill.map(resultUrl));
-  const notAutofilled = (result: SpotlightResult) => !autofillUrls.has(resultUrl(result));
+  const bangs = bangResults(query);
+  if (bangs.length > 0) {
+    setResults(bangs);
+    syncInput();
+    return;
+  }
+  const { topHit } = asyncResults;
+  const topUrl = topHit ? resultUrl(topHit) : "";
+  const notTopHit = (result: SpotlightResult) =>
+    !topUrl || resultUrl(result) !== topUrl;
   setResults([
-    ...asyncResults.autofill,
-    ...navigateResults(query).filter(notAutofilled),
+    ...(topHit ? [topHit] : []),
+    ...navigateResults(query).filter(notTopHit),
+    ...localResults(query).filter(notTopHit),
+    ...asyncResults.places.filter(notTopHit),
+    ...archivedMatches(query).filter(notTopHit),
     ...asyncResults.suggestions,
-    ...localResults(query),
-    ...asyncResults.places.filter(notAutofilled),
   ]);
+  syncInput();
+}
+
+function highlightedResult(): SpotlightResult | undefined {
+  return results()[highlightIndex()];
+}
+
+// Where Enter goes, for rows whose URL isn't already in the input.
+function hintFor(result: SpotlightResult | undefined): string {
+  // Over an empty input the hint would run into the placeholder.
+  if (!result || completion || !typedText.trim()) {
+    return "";
+  }
+  if (result.kind === "bang") {
+    return "";
+  }
+  if (result.kind === "navigate" && isSearchQuery(result)) {
+    return "";
+  }
+  if (result.kind === "suggestion") {
+    return "";
+  }
+  const url = resultUrl(result);
+  if (!url || displayUrl(url) === typedText.trim()) {
+    return "";
+  }
+  return displayUrl(url);
+}
+
+// Completes the input inline when the highlighted top hit's URL starts with
+// what was typed, with the completed part selected so typing replaces it.
+// Leaves the input alone once the user moved the caret into a completion.
+function syncInput(): void {
+  const input = inputElement();
+  if (!input) {
+    return;
+  }
+  const untouched = input.value === typedText + completion &&
+    (!completion ||
+      (input.selectionStart === typedText.length &&
+        input.selectionEnd === input.value.length));
+  if (untouched) {
+    const result = highlightedResult();
+    completion = "";
+    if (completionAllowed && result?.topHit) {
+      completion = inlineCompletion(typedText, resultUrl(result));
+    }
+    input.value = typedText + completion;
+    if (completion) {
+      input.setSelectionRange(typedText.length, input.value.length);
+    }
+  }
+  setInputText(input.value);
+  setHint(hintFor(highlightedResult()));
 }
 
 function navigateResults(query: string): SpotlightResult[] {
@@ -93,27 +192,42 @@ function navigateResults(query: string): SpotlightResult[] {
   return [navigate];
 }
 
-async function requestAutofill(query: string, generation: number): Promise<void> {
-  const autofill = await autofillResult(query);
-  if (generation !== searchGeneration || !autofill) {
-    return;
+// A top hit that is already open becomes a switch-to-tab row.
+function topHitRow(topHit: SpotlightResult | null): SpotlightResult | null {
+  if (!topHit) {
+    return null;
   }
-  asyncResults = { ...asyncResults, autofill: [autofill] };
-  showResults(query);
+  const tab = openTabResult(resultUrl(topHit));
+  if (!tab) {
+    return topHit;
+  }
+  return { ...tab, topHit: true };
 }
 
-async function requestPlaces(query: string, generation: number): Promise<void> {
-  // Archived tabs already have their own rows.
-  const excluded = new Set([...openTabUrls(), ...archivedTabs().map((tab) => tab.url)]);
-  const places = await placesResults(query, excluded);
+async function requestHistory(
+  query: string,
+  generation: number,
+): Promise<void> {
+  const history = await historyResults(query, completionAllowed);
   if (generation !== searchGeneration) {
     return;
   }
-  asyncResults = { ...asyncResults, places };
+  // Open and archived tabs already have their own rows.
+  const excluded = new Set([
+    ...openTabUrls(),
+    ...archivedTabs().map((tab) => tab.url),
+  ]);
+  const places = history.places
+    .filter((result) => !excluded.has(resultUrl(result)))
+    .slice(0, MAX_PLACES_RESULTS);
+  asyncResults = { ...asyncResults, topHit: topHitRow(history.topHit), places };
   showResults(query);
 }
 
-async function requestSuggestions(query: string, generation: number): Promise<void> {
+async function requestSuggestions(
+  query: string,
+  generation: number,
+): Promise<void> {
   const userContextId = tabbrowser().selectedTab.userContextId;
   const suggestions = await suggestionResults(query, userContextId);
   if (generation !== searchGeneration) {
@@ -124,30 +238,68 @@ async function requestSuggestions(query: string, generation: number): Promise<vo
 }
 
 function logFailure(source: string): (error: unknown) => void {
-  return (error) => console.error(`[neoworks-spotlight] ${source} failed:`, error);
+  return (error) =>
+    console.error(`[neoworks-spotlight] ${source} failed:`, error);
 }
 
 function updateResults(rawQuery: string): void {
   searchGeneration += 1;
   const generation = searchGeneration;
   const query = rawQuery.trim();
-  asyncResults = { autofill: [], suggestions: [], places: [] };
+  typedText = rawQuery;
+  completion = "";
+  asyncResults = NO_ASYNC_RESULTS;
+  pendingHistory = null;
   setHighlightIndex(0);
   showResults(query);
   if (!query) {
     stopSuggestions();
     return;
   }
-  requestAutofill(query, generation).catch(logFailure("Autofill"));
-  requestPlaces(query, generation).catch(logFailure("History search"));
-  if (isSearchQuery(navigateResult(query))) {
-    requestSuggestions(query, generation).catch(logFailure("Search suggestions"));
+  // A "!" token may be a bang: never send it to the engine for suggestions.
+  if (parseBangQuery(query)) {
+    stopSuggestions();
+    if (!bangIndex()) {
+      loadBangs()
+        .then(() => {
+          if (generation === searchGeneration) {
+            showResults(query);
+          }
+        })
+        .catch(logFailure("Loading bangs"));
+    }
+    return;
   }
+  const history = requestHistory(query, generation).catch(
+    logFailure("History search"),
+  );
+  pendingHistory = history;
+  history.finally(() => {
+    if (pendingHistory === history) {
+      pendingHistory = null;
+    }
+  });
+  if (isSearchQuery(navigateResult(query))) {
+    requestSuggestions(query, generation).catch(
+      logFailure("Search suggestions"),
+    );
+  }
+}
+
+// Searches and commands aren't pages, so they teach the top hit nothing.
+function rememberable(result: SpotlightResult): boolean {
+  if (result.kind === "suggestion" || result.kind === "bang") {
+    return false;
+  }
+  return result.kind !== "navigate" || !isSearchQuery(result);
 }
 
 function runResult(result: SpotlightResult | undefined): void {
   if (!result) {
     return;
+  }
+  if (rememberable(result)) {
+    rememberPick(typedText.trim(), resultUrl(result));
   }
   closeSpotlight();
   switch (result.kind) {
@@ -180,6 +332,41 @@ function moveHighlight(step: number): void {
   }
   setHighlightIndex((index) => (index + step + count) % count);
   scrollHighlightIntoView();
+  syncInput();
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+// Typing and pressing Enter quickly shouldn't search when the top hit is a
+// moment away, so Enter on the first row waits briefly for history.
+async function runHighlighted(): Promise<void> {
+  const generation = searchGeneration;
+  // Enter right after typing "!yt cats" shouldn't search for "!yt cats".
+  if (parseBangQuery(typedText) && !bangIndex()) {
+    try {
+      await loadBangs();
+    } catch (error) {
+      logFailure("Loading bangs")(error);
+    }
+    if (generation !== searchGeneration || !isOpen()) {
+      return;
+    }
+    showResults(typedText.trim());
+  }
+  if (highlightIndex() === 0 && pendingHistory) {
+    await Promise.race([pendingHistory, delay(TOP_HIT_WAIT_MS)]);
+    if (generation !== searchGeneration || !isOpen()) {
+      return;
+    }
+  }
+  runResult(highlightedResult());
+}
+
+function handleInput(event: InputEvent): void {
+  completionAllowed = !event.inputType.startsWith("delete");
+  updateResults((event.currentTarget as HTMLInputElement).value);
 }
 
 function highlightStep(event: KeyboardEvent): number {
@@ -206,8 +393,33 @@ function handleKeyDown(event: KeyboardEvent): void {
   }
   if (event.key === "Enter") {
     event.preventDefault();
-    runResult(results()[highlightIndex()]);
+    runHighlighted();
+    return;
   }
+  if (event.key === "Tab" && !event.shiftKey && completeBang()) {
+    event.preventDefault();
+  }
+}
+
+// Tab on a bang row takes its trigger into the input, ready for the terms.
+function completeBang(): boolean {
+  const result = highlightedResult();
+  const input = inputElement();
+  if (result?.kind !== "bang" || result.terms || !input) {
+    return false;
+  }
+  input.value = "!" + result.trigger + " ";
+  completionAllowed = true;
+  updateResults(input.value);
+  return true;
+}
+
+function placeholder(): string {
+  const engine = defaultEngine();
+  if (!engine) {
+    return "Search tabs, enter address, or run a command";
+  }
+  return `Search ${engine.name}, tabs and commands, or type !bang`;
 }
 
 function attributeFlag(enabled: boolean): string | undefined {
@@ -226,7 +438,10 @@ function ResultListItem(props: { result: SpotlightResult; index: number }) {
       <ResultRow
         result={props.result}
         highlighted={props.index === highlightIndex()}
-        onHover={() => setHighlightIndex(props.index)}
+        onHover={() => {
+          setHighlightIndex(props.index);
+          syncInput();
+        }}
         onRun={() => runResult(props.result)}
       />
     </>
@@ -259,21 +474,30 @@ export function Spotlight() {
         <canvas id={BACKDROP_ID} class="nw-glass-backdrop" />
         <div class="nw-spotlight-search">
           <span class="nw-icon" data-icon="magnifying-glass" />
-          <input
-            id={INPUT_ID}
-            class="nw-spotlight-input"
-            placeholder="Search tabs, enter address, or run a command"
-            spellcheck={false}
-            onInput={(event: InputEvent) =>
-              updateResults((event.currentTarget as HTMLInputElement).value)}
-            onKeyDown={handleKeyDown}
-            onBlur={closeSpotlight}
-          />
+          <div class="nw-spotlight-field">
+            <input
+              id={INPUT_ID}
+              class="nw-spotlight-input"
+              placeholder={placeholder()}
+              spellcheck={false}
+              onInput={handleInput}
+              onKeyDown={handleKeyDown}
+              onBlur={closeSpotlight}
+            />
+            <Show when={hint()}>
+              <div class="nw-spotlight-ghost">
+                <span class="nw-spotlight-ghost-text">{inputText()}</span>
+                <span class="nw-spotlight-hint">{"  →  " + hint()}</span>
+              </div>
+            </Show>
+          </div>
         </div>
         <Show when={results().length > 0}>
           <div id={RESULTS_ID} class="nw-spotlight-results">
             <For each={results()}>
-              {(result, index) => <ResultListItem result={result} index={index()} />}
+              {(result, index) => (
+                <ResultListItem result={result} index={index()} />
+              )}
             </For>
           </div>
         </Show>
