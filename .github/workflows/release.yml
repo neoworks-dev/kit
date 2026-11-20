@@ -1,0 +1,95 @@
+# Builds Kit for Linux when a release is published and attaches the
+# tarballs to it. The release's tag is the version (v12.20.0 → 12.20.0): it
+# goes into the build, the tarball's name and version.txt, which kit-update
+# on users' machines compares against the latest release.
+#
+# Assets per architecture: kit-<version>-linux-<arch>.tar.xz and its .sha256
+# (kit-update downloads both and checks one against the other).
+
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag of an existing release to build again (e.g. v12.20.0)
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    name: Linux ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      # The locked runtime comes from Floorp-Runtime's releases.
+      KIT_RUNTIME_GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Version from the tag
+        id: version
+        run: |
+          version="${TAG#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+(\.[0-9]+)*$'; then
+            echo "::error::Tag $TAG isn't a version like v12.20.0."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # The build reads the version from package.json.
+          deno eval '
+            const file = "package.json";
+            const pkg = JSON.parse(Deno.readTextFileSync(file));
+            pkg.version = Deno.args[0];
+            Deno.writeTextFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
+          ' "$version"
+
+      - name: Install dependencies
+        run: deno install
+
+      - name: Build the package
+        run: deno task feles-build package
+
+      - name: Checksum
+        id: asset
+        working-directory: _dist/package
+        run: |
+          name="kit-${{ steps.version.outputs.version }}-linux-${{ matrix.arch }}.tar.xz"
+          if [ ! -f "$name" ]; then
+            echo "::error::The build didn't produce $name."
+            ls -la
+            exit 1
+          fi
+          sha256sum "$name" > "$name.sha256"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Attach to the release
+        working-directory: _dist/package
+        run: |
+          gh release upload "$TAG" \
+            "${{ steps.asset.outputs.name }}" \
+            "${{ steps.asset.outputs.name }}.sha256" \
+            --clobber
